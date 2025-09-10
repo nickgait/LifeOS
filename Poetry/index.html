@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poetry Collection - LifeOS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="main-header">
+            <div class="header-content">
+                <h1>🖋️ Poetry Collection</h1>
+                <div class="header-actions">
+                    <button id="newPoemBtn" class="btn btn-primary">+ New Poem</button>
+                    <button id="searchToggleBtn" class="btn btn-secondary">🔍</button>
+                    <button id="viewToggleBtn" class="btn btn-secondary">⊞</button>
+                    <button id="settingsBtn" class="btn btn-secondary">⚙️</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="search-container" id="searchContainer" style="display: none;">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search poems by title, content, or themes...">
+                <div class="search-filters">
+                    <select id="moodFilter">
+                        <option value="">All Moods</option>
+                        <option value="melancholic">Melancholic</option>
+                        <option value="reflective">Reflective</option>
+                        <option value="dark">Dark</option>
+                        <option value="hopeful">Hopeful</option>
+                        <option value="angry">Angry</option>
+                        <option value="peaceful">Peaceful</option>
+                        <option value="nostalgic">Nostalgic</option>
+                        <option value="introspective">Introspective</option>
+                    </select>
+                    <select id="statusFilter">
+                        <option value="">All Poems</option>
+                        <option value="published">Published</option>
+                        <option value="draft">Drafts</option>
+                        <option value="favorite">Favorites</option>
+                    </select>
+                    <button id="clearFiltersBtn" class="btn btn-sm">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Poetry Collection View -->
+            <div class="view active" id="collectionView">
+                <div class="collection-header">
+                    <div class="collection-stats" id="collectionStats">
+                        <!-- Stats will be populated here -->
+                    </div>
+                </div>
+
+                <div class="poems-grid" id="poemsGrid">
+                    <!-- Poems will be populated here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-content">
+                        <h2>Your Poetry Sanctuary</h2>
+                        <p>A private space for your dark and introspective verses.</p>
+                        <p>Begin your creative journey...</p>
+                        <button class="btn btn-primary" onclick="poetryManager.showWritingView()">Write Your First Poem</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Writing View -->
+            <div class="view" id="writingView">
+                <div class="writing-header">
+                    <button id="backToCollectionBtn" class="btn btn-secondary">← Back to Collection</button>
+                    <div class="writing-controls">
+                        <button id="saveDraftBtn" class="btn btn-secondary">Save Draft</button>
+                        <button id="publishPoemBtn" class="btn btn-primary">Publish</button>
+                    </div>
+                </div>
+
+                <div class="writing-container">
+                    <div class="poem-metadata">
+                        <input type="text" id="poemTitle" placeholder="Untitled Poem" class="title-input">
+                        <div class="metadata-controls">
+                            <select id="poemMood" class="mood-select">
+                                <option value="">Select Mood</option>
+                                <option value="melancholic">Melancholic</option>
+                                <option value="reflective">Reflective</option>
+                                <option value="dark">Dark</option>
+                                <option value="hopeful">Hopeful</option>
+                                <option value="angry">Angry</option>
+                                <option value="peaceful">Peaceful</option>
+                                <option value="nostalgic">Nostalgic</option>
+                                <option value="introspective">Introspective</option>
+                            </select>
+                            <input type="text" id="poemThemes" placeholder="Add themes (comma separated)" class="themes-input">
+                        </div>
+                    </div>
+
+                    <div class="writing-area">
+                        <textarea id="poemContent" placeholder="Let your words flow...
+
+The cursor blinks, waiting
+for thoughts to transform
+into verses that cut through
+the silence of the soul..."></textarea>
+                        
+                        <div class="writing-stats">
+                            <span id="wordCount">0 words</span>
+                            <span id="lineCount">0 lines</span>
+                            <span id="lastSaved">Not saved</span>
+                        </div>
+                    </div>
+
+                    <div class="poem-notes">
+                        <textarea id="poemNotes" placeholder="Private notes about this poem..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reading View -->
+            <div class="view" id="readingView">
+                <div class="reading-header">
+                    <button id="backFromReadingBtn" class="btn btn-secondary">← Back</button>
+                    <div class="reading-controls">
+                        <button id="editPoemBtn" class="btn btn-secondary">Edit</button>
+                        <button id="favoritePoemBtn" class="btn btn-secondary">♡</button>
+                        <button id="duplicatePoemBtn" class="btn btn-secondary">Duplicate</button>
+                        <button id="exportPoemBtn" class="btn btn-secondary">Export</button>
+                        <button id="deletePoemBtn" class="btn btn-danger">Delete</button>
+                    </div>
+                </div>
+
+                <div class="reading-container">
+                    <div class="poem-header">
+                        <h1 id="readingTitle"></h1>
+                        <div class="poem-meta">
+                            <span class="poem-mood" id="readingMood"></span>
+                            <span class="poem-date" id="readingDate"></span>
+                            <span class="poem-status" id="readingStatus"></span>
+                        </div>
+                    </div>
+
+                    <div class="poem-themes" id="readingThemes"></div>
+
+                    <div class="poem-content" id="readingContent"></div>
+
+                    <div class="poem-stats" id="readingStats"></div>
+
+                    <div class="poem-notes-display" id="readingNotes" style="display: none;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close" id="closeSettingsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Appearance</h4>
+                    <div class="setting-item">
+                        <label for="fontSize">Font Size</label>
+                        <select id="fontSize">
+                            <option value="small">Small</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="large">Large</option>
+                            <option value="extra-large">Extra Large</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="fontFamily">Font Family</label>
+                        <select id="fontFamily">
+                            <option value="serif">Serif (Traditional)</option>
+                            <option value="sans-serif" selected>Sans Serif (Modern)</option>
+                            <option value="monospace">Monospace (Typewriter)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="lineHeight">Line Height</label>
+                        <select id="lineHeight">
+                            <option value="compact">Compact</option>
+                            <option value="comfortable" selected>Comfortable</option>
+                            <option value="spacious">Spacious</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Writing</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="autoSave" checked>
+                            Auto-save while writing
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="showWordCount" checked>
+                            Show word count
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="fullscreenMode">
+                            Distraction-free writing mode
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Data</h4>
+                    <div class="setting-item">
+                        <button class="btn btn-secondary" onclick="poetryManager.exportAllPoems()">Export All Poems</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import Poems</button>
+                        <input type="file" id="importFile" accept=".json,.txt" style="display: none;" onchange="poetryManager.importPoems(event)">
+                    </div>
+                    <div class="setting-item">
+                        <button class="btn btn-danger" onclick="poetryManager.clearAllData()">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+                    <button class="btn btn-danger" id="confirmOk">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <title>Journal - LifeOS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <button class="back-btn" onclick="window.location.href='../index.html'">← Back to LifeOS</button>
+                <h1>Journal</h1>
+                <div class="date-display" id="current-date"></div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Quick Entry Section -->
+            <section class="quick-entry-section">
+                <div class="quick-entry-card">
+                    <div class="quick-header">
+                        <h2>Today's Entry</h2>
+                        <div class="mood-selector">
+                            <span class="mood-label">How are you feeling?</span>
+                            <div class="mood-options">
+                                <button class="mood-btn" data-mood="terrible" title="Terrible">😞</button>
+                                <button class="mood-btn" data-mood="bad" title="Bad">😕</button>
+                                <button class="mood-btn" data-mood="okay" title="Okay">😐</button>
+                                <button class="mood-btn" data-mood="good" title="Good">🙂</button>
+                                <button class="mood-btn" data-mood="great" title="Great">😄</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="entry-form">
+                        <input type="text" id="entry-title" class="entry-title-input" placeholder="What's on your mind today?" maxlength="100">
+                        
+                        <div class="editor-toolbar">
+                            <button type="button" class="format-btn" data-format="bold" title="Bold">B</button>
+                            <button type="button" class="format-btn" data-format="italic" title="Italic">I</button>
+                            <button type="button" class="format-btn" data-format="insertUnorderedList" title="Bullet List">•</button>
+                            <div class="toolbar-divider"></div>
+                            <span class="word-count" id="word-count">0 words</span>
+                        </div>
+
+                        <div class="editor-container">
+                            <div id="entry-editor" class="entry-editor" contenteditable="true" placeholder="Start writing..."></div>
+                        </div>
+
+                        <div class="tags-section">
+                            <div class="tags-input-container">
+                                <input type="text" id="tags-input" class="tags-input" placeholder="Add tags (press Enter to add)">
+                                <div class="tags-list" id="current-tags"></div>
+                            </div>
+                        </div>
+
+                        <div class="entry-actions">
+                            <button type="button" class="save-btn" id="save-entry-btn">Save Entry</button>
+                            <span class="auto-save-indicator" id="auto-save-indicator"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Navigation & Stats -->
+            <section class="nav-stats-section">
+                <div class="nav-stats-grid">
+                    <div class="stats-card">
+                        <h3>Writing Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number" id="total-entries">0</div>
+                                <div class="stat-label">Total Entries</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="writing-streak">0</div>
+                                <div class="stat-label">Day Streak</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="total-words">0</div>
+                                <div class="stat-label">Total Words</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number" id="avg-mood">😐</div>
+                                <div class="stat-label">Avg Mood</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="navigation-card">
+                        <h3>Quick Navigation</h3>
+                        <div class="nav-buttons">
+                            <button class="nav-btn" id="view-entries-btn">📖 View All Entries</button>
+                            <button class="nav-btn" id="calendar-btn">📅 Calendar View</button>
+                            <button class="nav-btn" id="search-btn">🔍 Search Entries</button>
+                            <button class="nav-btn" id="export-btn">📤 Export Data</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Entries List View -->
+            <section class="entries-section" id="entries-section" style="display: none;">
+                <div class="entries-header">
+                    <h2>Journal Entries</h2>
+                    <div class="entries-controls">
+                        <input type="text" id="search-input" class="search-input" placeholder="Search entries...">
+                        <select id="mood-filter" class="filter-select">
+                            <option value="all">All Moods</option>
+                            <option value="great">😄 Great</option>
+                            <option value="good">🙂 Good</option>
+                            <option value="okay">😐 Okay</option>
+                            <option value="bad">😕 Bad</option>
+                            <option value="terrible">😞 Terrible</option>
+                        </select>
+                        <button class="close-entries-btn" id="close-entries-btn">✕ Close</button>
+                    </div>
+                </div>
+
+                <div class="entries-container" id="entries-container">
+                    <div class="empty-entries-state" id="empty-entries-state">
+                        <div class="empty-icon">📝</div>
+                        <h3>No entries yet</h3>
+                        <p>Start writing your first journal entry above!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Calendar View -->
+            <section class="calendar-section" id="calendar-section" style="display: none;">
+                <div class="calendar-header">
+                    <h2>Calendar View</h2>
+                    <div class="calendar-controls">
+                        <button class="calendar-nav-btn" id="prev-month">‹ Previous</button>
+                        <span class="current-month" id="current-month-year"></span>
+                        <button class="calendar-nav-btn" id="next-month">Next ›</button>
+                        <button class="close-calendar-btn" id="close-calendar-btn">✕ Close</button>
+                    </div>
+                </div>
+
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated here -->
+                </div>
+            </section>
+
+            <!-- Entry Detail Modal -->
+            <div class="entry-modal" id="entry-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="modal-entry-date"></h2>
+                        <button class="close-modal-btn" onclick="journalApp.closeEntryModal()">✕</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="modal-entry-header">
+                            <h3 id="modal-entry-title"></h3>
+                            <div class="modal-entry-meta">
+                                <span class="modal-mood" id="modal-mood"></span>
+                                <span class="modal-word-count" id="modal-word-count"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-entry-content" id="modal-entry-content"></div>
+                        
+                        <div class="modal-entry-tags" id="modal-entry-tags"></div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="edit-entry-btn" onclick="journalApp.editEntry()">Edit Entry</button>
+                        <button class="delete-entry-btn" onclick="journalApp.deleteEntry()">Delete Entry</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import File Input -->
+            <input type="file" id="import-file" accept=".json" style="display: none;">
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

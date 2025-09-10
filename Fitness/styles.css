@@ -1,0 +1,556 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 2rem;
+    transition: background-color 0.3s;
+}
+
+.dark body {
+    background-color: #111827;
+}
+.container {
+    max-width: 640px;
+    width: 100%;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.dark .container {
+    background-color: #1f2937;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+}
+.goal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.goal-selection {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+.goal-selection button {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    background-color: #f1f5f9;
+    color: #475569;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+.goal-selection button.active {
+    background-color: #0ea5e9;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.goal-stats {
+    background-color: #e0f2fe;
+    color: #0c4a6e;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    text-align: center;
+    width: 100%;
+}
+.log-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+.log-input input, .log-input select {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    width: 100%;
+}
+.log-input button {
+    background-color: #0ea5e9;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: background-color 0.3s;
+    cursor: pointer;
+    width: 100%;
+}
+.log-input button:hover {
+    background-color: #0284c7;
+}
+.history {
+    width: 100%;
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+.history-item:last-child {
+    border-bottom: none;
+}
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+.modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+}
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.progress-bar {
+    width: 100%;
+    background-color: #cbd5e1;
+    border-radius: 9999px;
+    height: 1.5rem;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+.progress-fill {
+    background-color: #0ea5e9;
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+    border-radius: 9999px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.message-modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 300px;
+    text-align: center;
+}
+
+/* Chart styles */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 1rem 0;
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.chart-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Summary views */
+.summary-container {
+    background-color: #f9fafb;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.summary-card {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Multi-goal tracking */
+.multi-goal-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.multi-goal-input {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #0ea5e9;
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Analytics dashboard */
+.analytics-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.analytics-card {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode styles for new elements */
+.dark .chart-container,
+.dark .summary-container {
+    background-color: #374151;
+}
+
+.dark .summary-card,
+.dark .analytics-card {
+    background-color: #1f2937;
+    color: white;
+}
+
+/* History entry interactions */
+.history-item {
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+.history-item:hover {
+    background-color: #f9fafb;
+}
+
+.dark .history-item:hover {
+    background-color: #374151;
+}
+
+.history-item .opacity-0 {
+    opacity: 0;
+}
+
+.history-item:hover .opacity-0 {
+    opacity: 1;
+}
+
+.edit-entry-btn,
+.delete-entry-btn {
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-entry-btn:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.delete-entry-btn:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Bulk entry modal */
+.bulk-entry-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.bulk-entry-item {
+    display: grid;
+    grid-template-columns: 1fr 100px 40px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.bulk-entry-item input {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+.bulk-entry-remove {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.bulk-entry-remove:hover {
+    background: #dc2626;
+}
+
+/* Deadline countdown */
+.deadline-countdown {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    margin: 0.5rem 0;
+    text-align: center;
+    font-weight: bold;
+}
+
+.deadline-countdown.warning {
+    background: linear-gradient(135deg, #ffa726, #ff9800);
+}
+
+.deadline-countdown.urgent {
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Journal-specific styles */
+.journal-entry {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s;
+}
+
+.journal-entry:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dark .journal-entry {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.journal-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .journal-entry-header {
+    border-bottom-color: #374151;
+}
+
+.journal-entry-date {
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.dark .journal-entry-date {
+    color: #d1d5db;
+}
+
+.journal-entry-mood {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+.journal-entry-category {
+    background-color: #ddd6fe;
+    color: #5b21b6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.dark .journal-entry-category {
+    background-color: #5b21b6;
+    color: #ddd6fe;
+}
+
+.journal-entry-content {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+}
+
+.dark .journal-entry-content {
+    color: #d1d5db;
+}
+
+.journal-entry-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.journal-tag {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.dark .journal-tag {
+    background-color: #374151;
+    color: #9ca3af;
+}
+
+.journal-entry-goals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.journal-goal-link {
+    background-color: #dbeafe;
+    color: #1e40af;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.journal-goal-link:hover {
+    background-color: #bfdbfe;
+}
+
+.dark .journal-goal-link {
+    background-color: #1e40af;
+    color: #dbeafe;
+}
+
+.dark .journal-goal-link:hover {
+    background-color: #1d4ed8;
+}
+
+.journal-entry-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.journal-entry:hover .journal-entry-actions {
+    opacity: 1;
+}
+
+.journal-action-btn {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.journal-edit-btn {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.journal-edit-btn:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+.journal-delete-btn {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.journal-delete-btn:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+}
+
+.mood-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.mood-score {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.dark .mood-score {
+    color: #9ca3af;
+}

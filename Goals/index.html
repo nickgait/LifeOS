@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <title>Goals Tracker - LifeOS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <button class="back-btn" onclick="window.location.href='../index.html'">← Back to LifeOS</button>
+                <h1>Goals Tracker</h1>
+                <div class="date-display" id="current-date"></div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Add/Edit Goal Section -->
+            <section class="goal-form-section" id="goal-form-section">
+                <div class="goal-form-card">
+                    <div class="form-header">
+                        <h2 id="form-title">Add New Goal</h2>
+                        <button class="close-form-btn" id="close-form-btn" onclick="goalsApp.cancelForm()">×</button>
+                    </div>
+                    
+                    <form id="goal-form">
+                        <div class="form-group">
+                            <label for="goal-title">Goal Title *</label>
+                            <input type="text" id="goal-title" placeholder="e.g., Run a marathon" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goal-description">Description</label>
+                            <textarea id="goal-description" placeholder="Describe your goal and why it's important to you..." rows="3"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goal-category">Category</label>
+                                <select id="goal-category">
+                                    <option value="personal">Personal</option>
+                                    <option value="career">Career</option>
+                                    <option value="health">Health & Fitness</option>
+                                    <option value="finance">Finance</option>
+                                    <option value="learning">Learning</option>
+                                    <option value="relationships">Relationships</option>
+                                    <option value="creative">Creative</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="goal-target-date">Target Date *</label>
+                                <input type="date" id="goal-target-date" required>
+                            </div>
+                        </div>
+
+                        <div class="milestones-section">
+                            <h3>Milestones</h3>
+                            <div class="milestones-container" id="milestones-container">
+                                <!-- Milestones will be added here -->
+                            </div>
+                            <button type="button" class="add-milestone-btn" id="add-milestone-btn">+ Add Milestone</button>
+                        </div>
+
+                        <div class="form-buttons">
+                            <button type="button" class="cancel-btn" onclick="goalsApp.cancelForm()">Cancel</button>
+                            <button type="submit" class="save-btn" id="save-btn">Save Goal</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Goals Overview Section -->
+            <section class="goals-overview">
+                <div class="overview-header">
+                    <h2>My Goals</h2>
+                    <div class="overview-controls">
+                        <div class="filter-controls">
+                            <input type="text" id="search-input" class="search-input" placeholder="Search goals...">
+                            
+                            <select id="status-filter" class="filter-select">
+                                <option value="all">All Status</option>
+                                <option value="not-started">Not Started</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="paused">Paused</option>
+                            </select>
+                            
+                            <select id="category-filter" class="filter-select">
+                                <option value="all">All Categories</option>
+                                <option value="personal">Personal</option>
+                                <option value="career">Career</option>
+                                <option value="health">Health & Fitness</option>
+                                <option value="finance">Finance</option>
+                                <option value="learning">Learning</option>
+                                <option value="relationships">Relationships</option>
+                                <option value="creative">Creative</option>
+                            </select>
+                        </div>
+                        
+                        <button class="add-goal-btn" id="add-goal-btn">+ Add Goal</button>
+                    </div>
+                </div>
+
+                <div class="goals-container" id="goals-container">
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-icon">🎯</div>
+                        <h3>No goals yet</h3>
+                        <p>Set your first goal and start your journey to success!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section class="stats-section">
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <h2>Statistics</h2>
+                        <div class="export-controls">
+                            <button id="export-btn" class="export-btn">Export Data</button>
+                            <input type="file" id="import-file" accept=".json" style="display: none;">
+                            <button id="import-btn" class="import-btn">Import Data</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number" id="total-goals">0</div>
+                            <div class="stat-label">Total Goals</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="active-goals">0</div>
+                            <div class="stat-label">Active Goals</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="completed-goals">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="completion-rate">0%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Goal Detail Modal -->
+            <div class="goal-detail-modal" id="goal-detail-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="detail-goal-title"></h2>
+                        <button class="close-modal-btn" onclick="goalsApp.closeDetailModal()">×</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="goal-info">
+                            <div class="info-row">
+                                <span class="info-label">Category:</span>
+                                <span class="category-badge" id="detail-category"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Target Date:</span>
+                                <span id="detail-target-date"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Status:</span>
+                                <span class="status-badge" id="detail-status"></span>
+                            </div>
+                        </div>
+
+                        <div class="goal-description" id="detail-description"></div>
+
+                        <div class="progress-section">
+                            <h3>Progress</h3>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="detail-progress-fill"></div>
+                                </div>
+                                <span class="progress-text" id="detail-progress-text">0%</span>
+                            </div>
+                            
+                            <div class="progress-controls">
+                                <button class="progress-btn" onclick="goalsApp.updateProgress(-10)">-10%</button>
+                                <button class="progress-btn" onclick="goalsApp.updateProgress(-5)">-5%</button>
+                                <button class="progress-btn" onclick="goalsApp.updateProgress(5)">+5%</button>
+                                <button class="progress-btn" onclick="goalsApp.updateProgress(10)">+10%</button>
+                            </div>
+                        </div>
+
+                        <div class="milestones-section">
+                            <h3>Milestones</h3>
+                            <div class="milestone-list" id="detail-milestones"></div>
+                        </div>
+
+                        <div class="history-section">
+                            <h3>Progress History</h3>
+                            <div class="history-list" id="detail-history"></div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <div class="status-controls">
+                            <select id="status-update" class="status-select">
+                                <option value="not-started">Not Started</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="paused">Paused</option>
+                            </select>
+                            <button class="update-status-btn" onclick="goalsApp.updateStatus()">Update Status</button>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button class="edit-goal-btn" onclick="goalsApp.editGoal()">Edit Goal</button>
+                            <button class="delete-goal-btn" onclick="goalsApp.deleteGoal()">Delete Goal</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievement Celebration -->
+            <div class="achievement-celebration" id="achievement-celebration">
+                <div class="celebration-content">
+                    <div class="celebration-icon">🎉</div>
+                    <h3>Congratulations!</h3>
+                    <p id="achievement-message">You've reached a milestone!</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
