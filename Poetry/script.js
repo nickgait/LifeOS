@@ -771,5 +771,7 @@ ${poem.content}${notes}`;
 let poetryManager;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
     poetryManager = new PoetryManager();
 });

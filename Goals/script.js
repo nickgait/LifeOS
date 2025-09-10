@@ -805,5 +805,7 @@ class GoalsTracker {
 // Initialize the app
 let goalsApp;
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
     goalsApp = new GoalsTracker();
 });

@@ -883,5 +883,7 @@ class JournalApp {
 // Initialize the app
 let journalApp;
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
     journalApp = new JournalApp();
 });

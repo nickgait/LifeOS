@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const navItems = document.querySelectorAll('.nav-item');
     const moduleContent = document.getElementById('module-content');
     
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
+    
     const modules = {
         fitness: {
             title: 'Fitness Tracker',

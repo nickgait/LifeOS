@@ -591,5 +591,7 @@ class HabitsTracker {
 // Initialize the app when the DOM is loaded
 let habitsApp;
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
     habitsApp = new HabitsTracker();
 });

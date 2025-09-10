@@ -1593,6 +1593,9 @@ if (sharedGoal) {
 
 // DOM Elements and Event Listeners setup
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
+    
     // Apply theme
     UI.applyTheme();
     

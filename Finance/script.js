@@ -4034,5 +4034,8 @@ function showView(viewName) {
 // Initialize the application
 let financeManager;
 document.addEventListener('DOMContentLoaded', () => {
+    // Load daily Quran verse
+    loadQuranVerse('daily-verse-container');
+    
     financeManager = new FinanceManager();
 });
