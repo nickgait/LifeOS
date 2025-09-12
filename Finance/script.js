@@ -4,6 +4,7 @@ class FinanceManager {
         this.accounts = JSON.parse(localStorage.getItem('finance_accounts') || '[]');
         this.budgets = JSON.parse(localStorage.getItem('finance_budgets') || '[]');
         this.goals = JSON.parse(localStorage.getItem('finance_goals') || '[]');
+        this.recurringTransactions = JSON.parse(localStorage.getItem('finance_recurring_transactions') || '[]');
         this.mealBudget = JSON.parse(localStorage.getItem('finance_meal_budget') || '{"breakfast": 0, "lunch": 0, "dinner": 0, "savingsGoal": 0}');
         this.mealLogs = JSON.parse(localStorage.getItem('finance_meal_logs') || '[]');
         this.categories = {
@@ -23,6 +24,8 @@ class FinanceManager {
         this.editingAccount = null;
         this.editingBudget = null;
         this.editingGoal = null;
+        this.editingRecurring = null;
+        this.editingMeal = null;
         this.selectedTransactions = new Set();
         this.settings = JSON.parse(localStorage.getItem('finance_settings') || '{}');
         
@@ -33,6 +36,7 @@ class FinanceManager {
         this.loadSettings();
         this.setupEventListeners();
         this.createDefaultAccounts();
+        this.migrateMealLogsToTransactions(); // Convert existing meal logs to transactions
         this.processMonthlyBudgetRollover();
         this.checkGoalAchievements();
         this.showView('dashboard');
@@ -184,6 +188,12 @@ class FinanceManager {
         document.getElementById('cancelGoal').addEventListener('click', () => this.hideGoalModal());
         document.getElementById('goalForm').addEventListener('submit', (e) => this.handleGoalSubmit(e));
 
+        // Recurring transaction modal
+        document.getElementById('addRecurringBtn').addEventListener('click', () => this.showRecurringModal());
+        document.getElementById('closeRecurringModal').addEventListener('click', () => this.hideRecurringModal());
+        document.getElementById('cancelRecurring').addEventListener('click', () => this.hideRecurringModal());
+        document.getElementById('recurringForm').addEventListener('submit', (e) => this.handleRecurringSubmit(e));
+
         // Meal budget functionality
         document.getElementById('addMealBtn').addEventListener('click', () => this.showMealModal());
         document.getElementById('closeMealModal').addEventListener('click', () => this.hideMealModal());
@@ -217,6 +227,11 @@ class FinanceManager {
         // Transaction type change
         document.getElementById('transactionType').addEventListener('change', (e) => {
             this.updateCategoryOptions(e.target.value);
+        });
+
+        // Recurring transaction type change
+        document.getElementById('recurringType')?.addEventListener('change', (e) => {
+            this.updateRecurringCategoryOptions();
         });
 
         // Filters
@@ -302,6 +317,9 @@ class FinanceManager {
             case 'transactions':
                 this.updateTransactionsList();
                 this.updateTransactionFilters();
+                break;
+            case 'recurring':
+                this.updateRecurringList();
                 break;
             case 'budgets':
                 this.updateBudgetsList();
@@ -1502,9 +1520,11 @@ class FinanceManager {
         document.getElementById('mealForm').reset();
         document.getElementById('mealBudgetInfo').innerHTML = '';
         
+        // Reset editing state
+        this.editingMeal = null;
+        
         // Set default date to today
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('mealDate').value = today;
+        document.getElementById('mealDate').value = this.getCurrentDateString();
     }
 
     handleMealSubmit(e) {
@@ -1515,24 +1535,170 @@ class FinanceManager {
         const description = document.getElementById('mealDescription').value || `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} meal`;
         const date = document.getElementById('mealDate').value;
 
-        const mealLog = {
-            id: this.generateId(),
-            type: mealType,
-            amount: amount,
-            description: description,
-            date: date,
-            budgetAmount: this.mealBudget[mealType],
-            savings: this.mealBudget[mealType] - amount,
-            createdAt: new Date().toISOString()
-        };
+        // Calculate savings based on meal type and amount
+        let savings;
+        let contributesToKitty = true;
+        
+        if (mealType === 'dinner') {
+            // For dinner, only calculate savings (and contribute to kitty) if amount > 0
+            if (amount > 0) {
+                savings = this.mealBudget[mealType] - amount;
+            } else {
+                savings = 0;
+                contributesToKitty = false;
+            }
+        } else {
+            // For breakfast and lunch, calculate savings normally
+            savings = this.mealBudget[mealType] - amount;
+        }
 
-        this.mealLogs.push(mealLog);
+        if (this.editingMeal) {
+            // Update existing meal
+            const mealIndex = this.mealLogs.findIndex(log => log.id === this.editingMeal.id);
+            if (mealIndex !== -1) {
+                const oldMeal = this.mealLogs[mealIndex];
+                
+                // Update meal log
+                this.mealLogs[mealIndex] = {
+                    ...oldMeal,
+                    type: mealType,
+                    amount: amount,
+                    description: description,
+                    date: date,
+                    budgetAmount: this.mealBudget[mealType],
+                    savings: savings,
+                    contributesToKitty: contributesToKitty,
+                    updatedAt: new Date().toISOString()
+                };
+
+                // Update corresponding transaction if it exists
+                const transactionIndex = this.transactions.findIndex(t => 
+                    t.tags && t.tags.includes('meal') && 
+                    t.tags.includes(oldMeal.type) && 
+                    t.date === oldMeal.date && 
+                    t.amount === oldMeal.amount &&
+                    t.description.includes(oldMeal.type)
+                );
+
+                if (transactionIndex !== -1) {
+                    const transaction = this.transactions[transactionIndex];
+                    
+                    // Restore old amount to account balance
+                    const account = this.accounts.find(a => a.id === transaction.account);
+                    if (account) {
+                        account.balance += oldMeal.amount; // restore old amount
+                        account.balance -= amount; // deduct new amount
+                    }
+                    
+                    // Update transaction
+                    if (amount > 0) {
+                        this.transactions[transactionIndex] = {
+                            ...transaction,
+                            amount: amount,
+                            description: `${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: ${description}`,
+                            date: date,
+                            tags: ['meal', mealType],
+                            updatedAt: new Date().toISOString()
+                        };
+                    } else {
+                        // Remove transaction if amount is 0
+                        this.transactions.splice(transactionIndex, 1);
+                        account.balance += oldMeal.amount; // fully restore balance
+                    }
+                    
+                    this.saveAccounts();
+                    this.saveTransactions();
+                } else if (amount > 0) {
+                    // Create new transaction if one didn't exist but amount > 0 now
+                    const transaction = {
+                        id: this.generateId(),
+                        type: 'expense',
+                        amount: amount,
+                        category: 'Food & Dining',
+                        account: this.accounts.length > 0 ? this.accounts[0].id : 'default',
+                        description: `${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: ${description}`,
+                        date: date,
+                        recurring: false,
+                        tags: ['meal', mealType],
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    this.transactions.push(transaction);
+                    this.saveTransactions();
+                    
+                    // Update account balance
+                    if (this.accounts.length > 0) {
+                        const account = this.accounts.find(a => a.id === transaction.account);
+                        if (account) {
+                            account.balance -= amount;
+                            this.saveAccounts();
+                        }
+                    }
+                }
+            }
+            
+            this.editingMeal = null;
+            this.showToast('Meal entry updated successfully!', 'success');
+        } else {
+            // Create new meal
+            const mealLog = {
+                id: this.generateId(),
+                type: mealType,
+                amount: amount,
+                description: description,
+                date: date,
+                budgetAmount: this.mealBudget[mealType],
+                savings: savings,
+                contributesToKitty: contributesToKitty,
+                createdAt: new Date().toISOString()
+            };
+
+            this.mealLogs.push(mealLog);
+            
+            // Create a transaction entry for this meal expense (only if amount > 0)
+            if (amount > 0) {
+                const transaction = {
+                    id: this.generateId(),
+                    type: 'expense',
+                    amount: amount,
+                    category: 'Food & Dining',
+                    account: this.accounts.length > 0 ? this.accounts[0].id : 'default', // Use first account or default
+                    description: `${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: ${description}`,
+                    date: date,
+                    recurring: false,
+                    tags: ['meal', mealType],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                this.transactions.push(transaction);
+                this.saveTransactions();
+                
+                // Update account balance
+                if (this.accounts.length > 0) {
+                    const account = this.accounts.find(a => a.id === transaction.account);
+                    if (account) {
+                        account.balance -= amount;
+                        this.saveAccounts();
+                    }
+                }
+            }
+            
+            const savingsText = savings >= 0 ? `Saved $${savings.toFixed(2)}!` : `Over budget by $${Math.abs(savings).toFixed(2)}`;
+            const transactionText = amount > 0 ? ' Added to expenses.' : '';
+            this.showToast(`Meal logged! ${savingsText}${transactionText}`, savings >= 0 ? 'success' : 'warning');
+        }
+
         this.saveMealLogs();
+        
         this.hideMealModal();
         this.updateMealBudgetView();
+        this.updateDashboard(); // Refresh dashboard to show new transaction
         
-        const savingsText = mealLog.savings >= 0 ? `Saved $${mealLog.savings.toFixed(2)}!` : `Over budget by $${Math.abs(mealLog.savings).toFixed(2)}`;
-        this.showToast(`Meal logged! ${savingsText}`, mealLog.savings >= 0 ? 'success' : 'warning');
+        const savingsText = savings >= 0 ? `Saved $${savings.toFixed(2)}!` : `Over budget by $${Math.abs(savings).toFixed(2)}`;
+        const transactionText = amount > 0 ? ' Added to expenses.' : '';
+        this.showToast(`Meal logged! ${savingsText}${transactionText}`, savings >= 0 ? 'success' : 'warning');
     }
 
     saveMealSettings() {
@@ -1574,11 +1740,16 @@ class FinanceManager {
     }
 
     calculateTotalMealSavings() {
-        return this.mealLogs.reduce((total, log) => total + Math.max(0, log.savings), 0);
+        return this.mealLogs.reduce((total, log) => {
+            // Only count savings that contribute to the kitty (positive savings)
+            // For dinner entries, check contributesToKitty flag; for older entries without this flag, use existing logic
+            const shouldCount = log.contributesToKitty !== false; // Default to true for backwards compatibility
+            return total + (shouldCount ? Math.max(0, log.savings) : 0);
+        }, 0);
     }
 
     updateTodayMeals() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = this.getCurrentDateString();
         const todayLogs = this.mealLogs.filter(log => log.date === today);
         const container = document.getElementById('todayMealGrid');
 
@@ -1639,10 +1810,14 @@ class FinanceManager {
                     <div class="meal-entry-icon">${icon}</div>
                     <div class="meal-entry-details">
                         <div class="meal-entry-description">${log.description}</div>
-                        <div class="meal-entry-date">${new Date(log.date).toLocaleDateString()}</div>
+                        <div class="meal-entry-date">${this.formatDateForDisplay(log.date)}</div>
                     </div>
                     <div class="meal-entry-amount">${this.formatCurrency(log.amount)}</div>
                     <div class="meal-entry-savings ${savingsClass}">${savingsText}</div>
+                    <div class="meal-entry-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="financeManager.editMeal('${log.id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="financeManager.deleteMeal('${log.id}')">Delete</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -1661,12 +1836,12 @@ class FinanceManager {
                 break;
             case 'all':
             default:
-                return this.mealLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                return this.mealLogs.sort((a, b) => this.parseLocalDate(b.date) - this.parseLocalDate(a.date));
         }
 
         return this.mealLogs
-            .filter(log => new Date(log.date) >= startDate)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+            .filter(log => this.parseLocalDate(log.date) >= startDate)
+            .sort((a, b) => this.parseLocalDate(b.date) - this.parseLocalDate(a.date));
     }
 
     updateMealBudgetInfo() {
@@ -1698,6 +1873,78 @@ class FinanceManager {
 
     saveMealLogs() {
         localStorage.setItem('finance_meal_logs', JSON.stringify(this.mealLogs));
+    }
+
+    editMeal(mealId) {
+        const meal = this.mealLogs.find(log => log.id === mealId);
+        if (!meal) {
+            this.showToast('Meal entry not found', 'error');
+            return;
+        }
+
+        // Set up the modal for editing
+        this.editingMeal = meal;
+        document.getElementById('mealModalTitle').textContent = 'Edit Meal';
+        
+        // Populate the form with existing data
+        document.getElementById('mealType').value = meal.type;
+        document.getElementById('mealAmount').value = meal.amount;
+        document.getElementById('mealDescription').value = meal.description;
+        document.getElementById('mealDate').value = meal.date;
+        
+        // Update budget info display
+        this.updateMealBudgetInfo();
+        
+        // Show the modal
+        document.getElementById('mealModal').classList.add('active');
+    }
+
+    deleteMeal(mealId) {
+        if (!confirm('Are you sure you want to delete this meal entry?')) {
+            return;
+        }
+
+        const mealIndex = this.mealLogs.findIndex(log => log.id === mealId);
+        if (mealIndex === -1) {
+            this.showToast('Meal entry not found', 'error');
+            return;
+        }
+
+        const meal = this.mealLogs[mealIndex];
+        
+        // Remove the meal log
+        this.mealLogs.splice(mealIndex, 1);
+        this.saveMealLogs();
+
+        // Also remove the corresponding transaction if it exists
+        const transactionIndex = this.transactions.findIndex(t => 
+            t.tags && t.tags.includes('meal') && 
+            t.tags.includes(meal.type) && 
+            t.date === meal.date && 
+            t.amount === meal.amount &&
+            t.description.includes(meal.type)
+        );
+
+        if (transactionIndex !== -1) {
+            const transaction = this.transactions[transactionIndex];
+            
+            // Restore account balance
+            const account = this.accounts.find(a => a.id === transaction.account);
+            if (account) {
+                account.balance += transaction.amount;
+                this.saveAccounts();
+            }
+            
+            // Remove the transaction
+            this.transactions.splice(transactionIndex, 1);
+            this.saveTransactions();
+        }
+
+        // Update displays
+        this.updateMealBudgetView();
+        this.updateDashboard();
+        
+        this.showToast('Meal entry deleted successfully', 'success');
     }
 
     // Reports Methods
@@ -2676,8 +2923,34 @@ class FinanceManager {
         }).format(amount);
     }
 
+    // Helper function to get current date in YYYY-MM-DD format without timezone issues
+    getCurrentDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Helper function to safely parse date strings and format them for display
+    formatDateForDisplay(dateString) {
+        // Parse the date string as local date (not UTC)
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+        const date = new Date(year, month - 1, day); // month is 0-indexed
+        return date.toLocaleDateString();
+    }
+
+    // Helper function to safely parse date strings for comparison
+    parseLocalDate(dateString) {
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+        return new Date(year, month - 1, day); // month is 0-indexed
+    }
+
     formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        // Use timezone-safe date parsing
+        const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+        const date = new Date(year, month - 1, day); // month is 0-indexed
+        return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
@@ -2715,6 +2988,98 @@ class FinanceManager {
     // Data persistence
     saveTransactions() {
         localStorage.setItem('finance_transactions', JSON.stringify(this.transactions));
+    }
+
+    // Migration function to convert existing meal logs to transactions
+    migrateMealLogsToTransactions() {
+        // Check if migration has already been done
+        const migrationDone = localStorage.getItem('finance_meal_migration_done');
+        if (migrationDone === 'true') {
+            return; // Migration already completed
+        }
+
+        let migratedCount = 0;
+        
+        // Convert existing meal logs to transactions (only if they have amount > 0)
+        this.mealLogs.forEach(mealLog => {
+            if (mealLog.amount > 0) {
+                // Check if a transaction already exists for this meal log
+                const existingTransaction = this.transactions.find(t => 
+                    t.tags && t.tags.includes('meal') && 
+                    t.tags.includes(mealLog.type) && 
+                    t.date === mealLog.date && 
+                    t.amount === mealLog.amount &&
+                    t.description.includes(mealLog.type)
+                );
+
+                if (!existingTransaction) {
+                    // Ensure date is in correct YYYY-MM-DD format without timezone issues
+                    let transactionDate = mealLog.date;
+                    
+                    // If the date looks like it might be causing timezone issues, normalize it
+                    if (typeof transactionDate === 'string' && transactionDate.includes('-')) {
+                        // Split and reconstruct to ensure proper local date formatting
+                        const dateParts = transactionDate.split('-');
+                        if (dateParts.length === 3) {
+                            const year = parseInt(dateParts[0]);
+                            const month = parseInt(dateParts[1]);
+                            const day = parseInt(dateParts[2]);
+                            
+                            // Reconstruct date ensuring proper padding
+                            transactionDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            
+                            // Debug logging
+                            console.log(`Migrating meal: ${mealLog.type} - Original date: ${mealLog.date} - Processed date: ${transactionDate}`);
+                        }
+                    }
+                    
+                    const transaction = {
+                        id: this.generateId(),
+                        type: 'expense',
+                        amount: mealLog.amount,
+                        category: 'Food & Dining',
+                        account: this.accounts.length > 0 ? this.accounts[0].id : 'default',
+                        description: `${mealLog.type.charAt(0).toUpperCase() + mealLog.type.slice(1)}: ${mealLog.description}`,
+                        date: transactionDate,
+                        recurring: false,
+                        tags: ['meal', mealLog.type],
+                        createdAt: mealLog.createdAt || new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    this.transactions.push(transaction);
+                    migratedCount++;
+                }
+            }
+        });
+
+        if (migratedCount > 0) {
+            this.saveTransactions();
+            console.log(`Migrated ${migratedCount} meal logs to transactions`);
+        }
+
+        // Mark migration as completed
+        localStorage.setItem('finance_meal_migration_done', 'true');
+    }
+
+    // Manual migration trigger for settings page
+    migrateMealData() {
+        // Reset migration flag to allow re-migration
+        localStorage.removeItem('finance_meal_migration_done');
+        
+        // Remove any existing meal-tagged transactions to avoid duplicates
+        this.transactions = this.transactions.filter(t => 
+            !(t.tags && t.tags.includes('meal'))
+        );
+        
+        // Run migration
+        this.migrateMealLogsToTransactions();
+        
+        // Update the dashboard to show new transactions
+        this.updateDashboard();
+        this.updateTransactionsList();
+        
+        this.showToast('Meal data migration completed! Your existing meal logs have been converted to transactions.', 'success');
     }
 
     saveAccounts() {
@@ -3605,6 +3970,240 @@ class FinanceManager {
         document.getElementById('goalDescription').value = `Recommended goal based on your financial analysis.`;
         
         this.showGoalModal();
+    }
+
+    // Recurring Transaction Methods
+    showRecurringModal() {
+        this.editingRecurring = null;
+        this.resetRecurringForm();
+        this.updateRecurringCategoryOptions();
+        this.updateRecurringAccountOptions();
+        document.getElementById('recurringModalTitle').textContent = 'Add Recurring Transaction';
+        document.getElementById('recurringModal').classList.add('active');
+    }
+
+    hideRecurringModal() {
+        document.getElementById('recurringModal').classList.remove('active');
+        this.editingRecurring = null;
+    }
+
+    resetRecurringForm() {
+        document.getElementById('recurringForm').reset();
+        document.getElementById('recurringStartDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('recurringDayOfMonth').value = 'same';
+        document.getElementById('customDayGroup').style.display = 'none';
+    }
+
+    updateRecurringCategoryOptions() {
+        const categorySelect = document.getElementById('recurringCategory');
+        const type = document.getElementById('recurringType').value;
+        
+        categorySelect.innerHTML = this.categories[type].map(category => 
+            `<option value="${category}">${category}</option>`
+        ).join('');
+    }
+
+    updateRecurringAccountOptions() {
+        const accountSelect = document.getElementById('recurringAccount');
+        accountSelect.innerHTML = this.accounts.map(account => 
+            `<option value="${account.id}">${account.name}</option>`
+        ).join('');
+    }
+
+    handleRecurringSubmit(e) {
+        e.preventDefault();
+
+        const recurring = {
+            id: this.editingRecurring?.id || this.generateId(),
+            type: document.getElementById('recurringType').value,
+            amount: parseFloat(document.getElementById('recurringAmount').value),
+            category: document.getElementById('recurringCategory').value,
+            account: document.getElementById('recurringAccount').value,
+            description: document.getElementById('recurringDescription').value,
+            frequency: document.getElementById('recurringFrequency').value,
+            startDate: document.getElementById('recurringStartDate').value,
+            endDate: document.getElementById('recurringEndDate').value || null,
+            dayOfMonth: document.getElementById('recurringDayOfMonth').value,
+            customDay: document.getElementById('recurringCustomDay').value || null,
+            autoProcess: document.getElementById('recurringAutoProcess').checked,
+            status: 'active',
+            lastProcessed: null,
+            createdAt: this.editingRecurring?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        if (!this.recurringTransactions) {
+            this.recurringTransactions = [];
+        }
+
+        if (this.editingRecurring) {
+            const index = this.recurringTransactions.findIndex(r => r.id === this.editingRecurring.id);
+            this.recurringTransactions[index] = recurring;
+            this.showToast('Recurring transaction updated successfully', 'success');
+        } else {
+            this.recurringTransactions.push(recurring);
+            this.showToast('Recurring transaction created successfully', 'success');
+        }
+
+        this.saveRecurringTransactions();
+        this.hideRecurringModal();
+        
+        if (this.currentView === 'recurring') {
+            this.updateRecurringList();
+        }
+    }
+
+    saveRecurringTransactions() {
+        localStorage.setItem('finance_recurring_transactions', JSON.stringify(this.recurringTransactions || []));
+    }
+
+    updateRecurringList() {
+        const container = document.getElementById('recurringList');
+        if (!container) return;
+
+        if (!this.recurringTransactions || this.recurringTransactions.length === 0) {
+            container.innerHTML = '<div class="empty-state"><h3>No recurring transactions found</h3><p>Set up recurring transactions to automate your finances.</p><button class="btn btn-primary" onclick="financeManager.showRecurringModal()">+ Add Recurring</button></div>';
+            return;
+        }
+
+        container.innerHTML = this.recurringTransactions.map(recurring => {
+            const nextDue = this.calculateNextDueDate(recurring);
+            const isDue = new Date(nextDue) <= new Date();
+            
+            return `
+                <div class="card recurring-item">
+                    <div class="recurring-header">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">${recurring.description}</h4>
+                        <span class="recurring-status ${recurring.status}">${recurring.status.toUpperCase()}</span>
+                    </div>
+                    <div class="recurring-details">
+                        <div class="recurring-info">
+                            <span class="recurring-amount ${recurring.type}">${recurring.type === 'expense' ? '-' : '+'}${this.formatCurrency(recurring.amount)}</span>
+                            <span class="recurring-category">${recurring.category}</span>
+                            <span class="recurring-frequency">${recurring.frequency}</span>
+                        </div>
+                        <div class="recurring-dates">
+                            <span class="next-due ${isDue ? 'due' : ''}">Next: ${this.formatDate(nextDue)}</span>
+                            ${recurring.endDate ? `<span class="end-date">Until: ${this.formatDate(recurring.endDate)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="recurring-actions">
+                        ${isDue ? '<button class="btn btn-sm btn-primary" onclick="financeManager.processRecurringTransaction(\'' + recurring.id + '\')">Process Now</button>' : ''}
+                        <button class="btn btn-sm btn-secondary" onclick="financeManager.editRecurringTransaction(\'' + recurring.id + '\')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="financeManager.deleteRecurringTransaction(\'' + recurring.id + '\')">Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    calculateNextDueDate(recurring) {
+        const startDate = new Date(recurring.startDate);
+        const today = new Date();
+        let nextDue = new Date(startDate);
+
+        // If we haven't processed this yet and start date is in the future, return start date
+        if (startDate > today && !recurring.lastProcessed) {
+            return startDate.toISOString().split('T')[0];
+        }
+
+        // Calculate based on frequency
+        const lastProcessed = recurring.lastProcessed ? new Date(recurring.lastProcessed) : startDate;
+        
+        switch (recurring.frequency) {
+            case 'weekly':
+                nextDue = new Date(lastProcessed);
+                nextDue.setDate(nextDue.getDate() + 7);
+                break;
+            case 'bi-weekly':
+                nextDue = new Date(lastProcessed);
+                nextDue.setDate(nextDue.getDate() + 14);
+                break;
+            case 'monthly':
+                nextDue = new Date(lastProcessed);
+                nextDue.setMonth(nextDue.getMonth() + 1);
+                break;
+            case 'quarterly':
+                nextDue = new Date(lastProcessed);
+                nextDue.setMonth(nextDue.getMonth() + 3);
+                break;
+            case 'yearly':
+                nextDue = new Date(lastProcessed);
+                nextDue.setFullYear(nextDue.getFullYear() + 1);
+                break;
+        }
+
+        return nextDue.toISOString().split('T')[0];
+    }
+
+    processRecurringTransaction(recurringId) {
+        const recurring = this.recurringTransactions.find(r => r.id === recurringId);
+        if (!recurring) return;
+
+        // Create a new transaction from the recurring template
+        const transaction = {
+            id: this.generateId(),
+            type: recurring.type,
+            amount: recurring.amount,
+            category: recurring.category,
+            account: recurring.account,
+            description: recurring.description,
+            date: new Date().toISOString().split('T')[0],
+            recurring: true,
+            recurringId: recurring.id,
+            tags: ['recurring'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        // Add transaction
+        this.transactions.push(transaction);
+        this.saveTransactions();
+
+        // Update recurring transaction last processed date
+        recurring.lastProcessed = new Date().toISOString().split('T')[0];
+        this.saveRecurringTransactions();
+
+        this.showToast(`Processed recurring transaction: ${recurring.description}`, 'success');
+        this.updateRecurringList();
+        this.updateDashboard();
+    }
+
+    editRecurringTransaction(recurringId) {
+        const recurring = this.recurringTransactions.find(r => r.id === recurringId);
+        if (!recurring) return;
+
+        this.editingRecurring = recurring;
+        
+        // Populate form with existing data
+        document.getElementById('recurringType').value = recurring.type;
+        document.getElementById('recurringAmount').value = recurring.amount;
+        document.getElementById('recurringDescription').value = recurring.description;
+        document.getElementById('recurringFrequency').value = recurring.frequency;
+        document.getElementById('recurringStartDate').value = recurring.startDate;
+        document.getElementById('recurringEndDate').value = recurring.endDate || '';
+        document.getElementById('recurringDayOfMonth').value = recurring.dayOfMonth;
+        document.getElementById('recurringCustomDay').value = recurring.customDay || '';
+        document.getElementById('recurringAutoProcess').checked = recurring.autoProcess;
+
+        this.updateRecurringCategoryOptions();
+        this.updateRecurringAccountOptions();
+        
+        document.getElementById('recurringCategory').value = recurring.category;
+        document.getElementById('recurringAccount').value = recurring.account;
+        
+        document.getElementById('recurringModalTitle').textContent = 'Edit Recurring Transaction';
+        document.getElementById('recurringModal').classList.add('active');
+    }
+
+    deleteRecurringTransaction(recurringId) {
+        if (!confirm('Are you sure you want to delete this recurring transaction?')) return;
+
+        this.recurringTransactions = this.recurringTransactions.filter(r => r.id !== recurringId);
+        this.saveRecurringTransactions();
+        
+        this.showToast('Recurring transaction deleted', 'success');
+        this.updateRecurringList();
     }
 
     // Account reconciliation
