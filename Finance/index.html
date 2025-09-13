@@ -551,6 +551,7 @@
                             <button class="btn" onclick="financeManager.exportData()">Export All Data (JSON)</button>
                             <input type="file" id="importDataBtn" accept=".json" style="display: none;" onchange="financeManager.importData(event)">
                             <button class="btn btn-secondary" onclick="document.getElementById('importDataBtn').click()">Import Data (JSON)</button>
+                            <button class="btn btn-secondary" onclick="financeManager.migrateMealData()">Migrate Meal Data to Transactions</button>
                             <button class="btn btn-secondary" onclick="financeManager.clearAllData()">Clear All Data</button>
                         </div>
                     </div>

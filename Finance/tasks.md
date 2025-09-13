@@ -145,6 +145,16 @@
 - [x] Real-time budget comparison in logging modal
 - [x] Responsive design for mobile devices
 - [x] Integration with main Finance app navigation
+- [x] Previous date meal entry capability (date picker in modal)
+- [x] Conditional dinner savings (only adds to kitty when amount > 0)
+- [x] Fixed date offset issue in meal budget system (timezone-safe date handling)
+- [x] Fixed previous date filtering and sorting issues with timezone-safe date parsing
+- [x] Integration with monthly budget - meal expenses auto-added to Food & Dining category
+- [x] Automatic migration of existing meal logs to transaction history on app load
+- [x] Manual migration button in settings for troubleshooting or re-running migration
+- [x] Edit functionality for meal budget entries (modify date, amount, description, type)
+- [x] Delete functionality for meal budget entries with transaction cleanup
+- [x] Edit/delete buttons in meal history list with hover effects
 
 ## Testing
 - [ ] Cross-browser compatibility

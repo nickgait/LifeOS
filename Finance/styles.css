@@ -1377,7 +1377,7 @@ form {
 
 .meal-entry {
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto 1fr auto auto auto;
     gap: 15px;
     align-items: center;
     padding: 15px;
@@ -1416,6 +1416,22 @@ form {
 .meal-entry-savings {
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+.meal-entry-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.meal-entry:hover .meal-entry-actions {
+    opacity: 1;
+}
+
+.meal-entry-actions .btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
 }
 
 .meal-budget-info {
