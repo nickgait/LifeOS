@@ -24,7 +24,9 @@
       "Bash(git remote add:*)",
       "Bash(open index.html)",
       "Bash(git commit:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(chmod:*)",
+      "Bash(bash:*)"
     ],
     "deny": []
   }

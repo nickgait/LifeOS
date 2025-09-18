@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LifeOS - Your Personal Life Operating System</title>
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LifeOS">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 </head>
 <body>
     <div class="container">
@@ -52,6 +60,14 @@
         </div>
     </div>
     
+    <script src="shared/error-handler.js"></script>
+    <script src="shared/storage-utils.js"></script>
+    <script src="shared/dashboard-widgets.js"></script>
+    <script src="shared/theme-manager.js"></script>
+    <script src="shared/data-manager.js"></script>
+    <script src="shared/sw-manager.js"></script>
+    <script src="shared/module-bridge.js"></script>
+    <script src="shared/global-search.js"></script>
     <script src="quran-component.js"></script>
     <script src="script.js"></script>
 </body>
