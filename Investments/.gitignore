@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+debug_layout.js
+*.png
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
