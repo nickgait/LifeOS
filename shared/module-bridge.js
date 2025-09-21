@@ -37,7 +37,7 @@ class ModuleBridge {
         const modules = ['todoList', 'habits', 'goals', 'fitness', 'finance', 'journal', 'poetry'];
         
         modules.forEach(module => {
-            const data = StorageUtils.getModuleData(module);
+            const data = window.StorageUtils.getModuleData(module);
             this.moduleData.set(module, data);
         });
 
@@ -112,7 +112,7 @@ class ModuleBridge {
         const [moduleName] = event.key.split('_');
         
         // Update local module data
-        const newData = StorageUtils.getModuleData(moduleName);
+        const newData = window.StorageUtils.getModuleData(moduleName);
         this.moduleData.set(moduleName, newData);
 
         // Trigger cross-module updates
@@ -174,7 +174,7 @@ class ModuleBridge {
         });
 
         // Save updated goals
-        StorageUtils.set('goals_list', goals);
+        window.StorageUtils.set('goals_list', goals);
     }
 
     /**
@@ -206,7 +206,7 @@ class ModuleBridge {
         });
 
         // Save updated goals
-        StorageUtils.set('goals_list', goals);
+        window.StorageUtils.set('goals_list', goals);
     }
 
     /**
@@ -252,7 +252,7 @@ class ModuleBridge {
         });
 
         // Save updated goals
-        StorageUtils.set('goals_list', goals);
+        window.StorageUtils.set('goals_list', goals);
     }
 
     /**
@@ -284,7 +284,7 @@ class ModuleBridge {
         });
 
         // Save updated goals
-        StorageUtils.set('goals_list', goals);
+        window.StorageUtils.set('goals_list', goals);
     }
 
     /**
@@ -363,7 +363,7 @@ class ModuleBridge {
         });
 
         // Save updated tasks
-        StorageUtils.set('todoList_tasks', tasks);
+        window.StorageUtils.set('todoList_tasks', tasks);
     }
 
     /**
@@ -747,5 +747,9 @@ class ModuleBridge {
     }
 }
 
-// Create global instance
-window.ModuleBridge = new ModuleBridge();
+// Create global instance when dependencies are ready
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.StorageUtils) {
+        window.ModuleBridge = new ModuleBridge();
+    }
+});

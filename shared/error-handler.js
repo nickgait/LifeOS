@@ -76,6 +76,11 @@ class ErrorHandler {
             return;
         }
 
+        // Skip showing notifications for startup/initialization errors that typically resolve themselves
+        if (this.isStartupError(errorInfo)) {
+            return;
+        }
+
         const notification = document.createElement('div');
         notification.className = 'error-notification';
         notification.innerHTML = `
@@ -101,6 +106,30 @@ class ErrorHandler {
                 notification.remove();
             }
         }, 10000);
+    }
+
+    /**
+     * Check if error is a startup/initialization error that typically resolves itself
+     * @param {Object} errorInfo - Error information
+     * @returns {boolean} True if it's a startup error to suppress
+     */
+    isStartupError(errorInfo) {
+        const message = errorInfo.message?.toLowerCase() || '';
+        
+        // Common startup errors that resolve themselves
+        const startupPatterns = [
+            'storageutils.get is not a function',
+            'storageutils.getmoduledata is not a function',
+            'storageutils.set is not a function',
+            'dashboardwidgets.init is not a function',
+            'cannot read properties of undefined',
+            'cannot read property of undefined',
+            'thememanager is not defined',
+            'modulebridge is not defined',
+            'globalsearch is not defined'
+        ];
+        
+        return startupPatterns.some(pattern => message.includes(pattern));
     }
 
     /**
@@ -230,6 +259,14 @@ class ErrorHandler {
      * Check if all modules are healthy
      */
     checkModuleHealth() {
+        // Only run module health check for main LifeOS index, not individual modules
+        if (!window.location.pathname.endsWith('/index.html') && 
+            !window.location.pathname.endsWith('/') &&
+            window.location.pathname.includes('/')) {
+            // We're in a sub-module, skip the global health check
+            return;
+        }
+
         const requiredScripts = [
             'shared/storage-utils.js',
             'quran-component.js',

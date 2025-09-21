@@ -49,41 +49,7 @@ class FitnessTrackerState {
     }
 }
 
-// Error Handler Class
-class ErrorHandler {
-    static handle(error, context = 'Application') {
-        console.error(`${context} Error:`, error);
-        
-        // Show user-friendly error message
-        const message = this.getUserFriendlyMessage(error);
-        UI.showMessage(message);
-        
-        // Log for debugging
-        this.logError(error, context);
-    }
-
-    static getUserFriendlyMessage(error) {
-        if (error.message.includes('localStorage')) {
-            return 'Unable to save data. Please check your storage settings.';
-        }
-        if (error.message.includes('notification')) {
-            return 'Unable to send notifications. Please check your browser settings.';
-        }
-        return 'An unexpected error occurred. Please try again.';
-    }
-
-    static logError(error, context) {
-        // In production, this could send errors to a logging service
-        const errorLog = {
-            timestamp: new Date().toISOString(),
-            context,
-            message: error.message,
-            stack: error.stack,
-            userAgent: navigator.userAgent
-        };
-        console.log('Error Log:', errorLog);
-    }
-}
+// ErrorHandler is now loaded from shared/error-handler.js
 
 // Chart Utilities Class
 class ChartUtils {
@@ -1802,7 +1768,7 @@ function saveGoal() {
             return;
         }
 
-        const goalData = {
+        let goalData = {
             name,
             type,
             category,

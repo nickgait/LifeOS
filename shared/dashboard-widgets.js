@@ -76,7 +76,7 @@ class DashboardWidgets {
      * Get Todo module data
      */
     getTodoData() {
-        const tasks = StorageUtils.get('todoList_tasks', []);
+        const tasks = window.StorageUtils.get('myEnhancedTodos', []);
         const completed = tasks.filter(task => task.completed).length;
         const total = tasks.length;
         const pending = total - completed;
@@ -97,7 +97,7 @@ class DashboardWidgets {
      * Get Habits module data
      */
     getHabitsData() {
-        const habits = StorageUtils.get('habits_list', []);
+        const habits = window.StorageUtils.get('lifeos-habits', []);
         const today = new Date().toDateString();
         
         const activeHabits = habits.filter(habit => habit.active !== false).length;
@@ -122,7 +122,7 @@ class DashboardWidgets {
      * Get Goals module data
      */
     getGoalsData() {
-        const goals = StorageUtils.get('goals_list', []);
+        const goals = window.StorageUtils.get('lifeos-goals', []);
         const activeGoals = goals.filter(goal => goal.status === 'active').length;
         const completedGoals = goals.filter(goal => goal.status === 'completed').length;
         
@@ -143,19 +143,20 @@ class DashboardWidgets {
      * Get Fitness module data
      */
     getFitnessData() {
-        const workouts = StorageUtils.get('fitness_workouts', []);
-        const goals = StorageUtils.get('fitness_goals', []);
+        const goals = window.StorageUtils.get('fitnessGoals', []);
         
-        const thisWeek = this.getThisWeekWorkouts(workouts);
-        const activeGoals = goals.filter(goal => goal.status === 'active').length;
+        // Calculate total workouts this week across all goals
+        const thisWeek = this.getThisWeekWorkoutsFromGoals(goals);
+        const activeGoals = goals.length;
+        const completedToday = this.getTodaysWorkouts(goals);
         
         return {
-            primary: thisWeek,
-            primaryLabel: 'This Week',
-            secondary: `${activeGoals}`,
-            secondaryLabel: 'Active Goals',
-            accent: thisWeek >= 3 ? 'Great week!' : 'Keep going!',
-            trend: this.calculateFitnessTrend(workouts)
+            primary: completedToday,
+            primaryLabel: 'Today',
+            secondary: `${thisWeek}`,
+            secondaryLabel: 'This Week',
+            accent: activeGoals > 0 ? `${activeGoals} active goals` : 'Set your first goal!',
+            trend: this.calculateFitnessTrendFromGoals(goals)
         };
     }
 
@@ -163,8 +164,8 @@ class DashboardWidgets {
      * Get Finance module data
      */
     getFinanceData() {
-        const transactions = StorageUtils.get('finance_transactions', []);
-        const budgets = StorageUtils.get('finance_budgets', []);
+        const transactions = window.StorageUtils.get('finance_transactions', []);
+        const budgets = window.StorageUtils.get('finance_budgets', []);
         
         const thisMonth = this.getThisMonthTransactions(transactions);
         const totalSpent = thisMonth.reduce((sum, t) => t.type === 'expense' ? sum + t.amount : sum, 0);
@@ -186,7 +187,7 @@ class DashboardWidgets {
      * Get Journal module data
      */
     getJournalData() {
-        const entries = StorageUtils.get('journal_entries', []);
+        const entries = window.StorageUtils.get('lifeos-journal', []);
         const thisMonth = this.getThisMonthEntries(entries);
         const totalEntries = entries.length;
         
@@ -206,7 +207,7 @@ class DashboardWidgets {
      * Get Poetry module data
      */
     getPoetryData() {
-        const poems = StorageUtils.get('poetry_collection', []);
+        const poems = window.StorageUtils.get('lifeos_poems', []);
         const recentPoems = poems.filter(poem => {
             const created = new Date(poem.dateCreated);
             const monthAgo = new Date();
@@ -555,6 +556,93 @@ class DashboardWidgets {
         const moods = ['terrible', 'bad', 'okay', 'good', 'great'];
         
         return moods[Math.round(avg) - 1] || 'okay';
+    }
+
+    /**
+     * Get today's workout count from fitness goals
+     */
+    getTodaysWorkouts(goals) {
+        const today = new Date().toDateString();
+        let todayCount = 0;
+        
+        goals.forEach(goal => {
+            if (goal.history) {
+                const todayEntry = goal.history.find(entry => {
+                    const entryDate = new Date(entry.fullDate || entry.date).toDateString();
+                    return entryDate === today;
+                });
+                if (todayEntry && todayEntry.amount > 0) {
+                    todayCount++;
+                }
+            }
+        });
+        
+        return todayCount;
+    }
+
+    /**
+     * Get this week's workout count from fitness goals
+     */
+    getThisWeekWorkoutsFromGoals(goals) {
+        const now = new Date();
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        weekStart.setHours(0, 0, 0, 0);
+        
+        let weekCount = 0;
+        
+        goals.forEach(goal => {
+            if (goal.history) {
+                goal.history.forEach(entry => {
+                    const entryDate = new Date(entry.fullDate || entry.date);
+                    if (entryDate >= weekStart && entry.amount > 0) {
+                        weekCount++;
+                    }
+                });
+            }
+        });
+        
+        return weekCount;
+    }
+
+    /**
+     * Calculate fitness trend from goals data
+     */
+    calculateFitnessTrendFromGoals(goals) {
+        if (!goals.length) return 'stable';
+        
+        const thisWeek = this.getThisWeekWorkoutsFromGoals(goals);
+        const lastWeek = this.getLastWeekWorkoutsFromGoals(goals);
+        
+        if (thisWeek > lastWeek) return 'up';
+        if (thisWeek < lastWeek) return 'down';
+        return 'stable';
+    }
+
+    /**
+     * Get last week's workout count from fitness goals
+     */
+    getLastWeekWorkoutsFromGoals(goals) {
+        const now = new Date();
+        const lastWeekEnd = new Date(now.setDate(now.getDate() - now.getDay() - 1));
+        const lastWeekStart = new Date(lastWeekEnd);
+        lastWeekStart.setDate(lastWeekStart.getDate() - 6);
+        lastWeekStart.setHours(0, 0, 0, 0);
+        lastWeekEnd.setHours(23, 59, 59, 999);
+        
+        let weekCount = 0;
+        
+        goals.forEach(goal => {
+            if (goal.history) {
+                goal.history.forEach(entry => {
+                    const entryDate = new Date(entry.fullDate || entry.date);
+                    if (entryDate >= lastWeekStart && entryDate <= lastWeekEnd && entry.amount > 0) {
+                        weekCount++;
+                    }
+                });
+            }
+        });
+        
+        return weekCount;
     }
 
     /**

@@ -98,7 +98,7 @@ class GlobalSearch {
      * Index a specific module
      */
     async indexModule(moduleKey, moduleConfig) {
-        const moduleData = StorageUtils.getModuleData(moduleKey);
+        const moduleData = window.StorageUtils.getModuleData(moduleKey);
         
         Object.entries(moduleData).forEach(([dataKey, items]) => {
             if (Array.isArray(items)) {
@@ -468,14 +468,14 @@ class GlobalSearch {
         }
         
         // Save to storage
-        StorageUtils.set('lifeos_search_history', this.searchHistory);
+        window.StorageUtils.set('lifeos_search_history', this.searchHistory);
     }
 
     /**
      * Load search history
      */
     loadSearchHistory() {
-        this.searchHistory = StorageUtils.get('lifeos_search_history', []);
+        this.searchHistory = window.StorageUtils.get('lifeos_search_history', []);
     }
 
     /**
@@ -1309,5 +1309,9 @@ class GlobalSearch {
     }
 }
 
-// Create global instance
-window.GlobalSearch = new GlobalSearch();
+// Create global instance when dependencies are ready
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.StorageUtils) {
+        window.GlobalSearch = new GlobalSearch();
+    }
+});

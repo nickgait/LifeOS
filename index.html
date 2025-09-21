@@ -17,8 +17,17 @@
 <body>
     <div class="container">
         <header>
-            <h1>LifeOS</h1>
-            <p>Your Personal Life Operating System</p>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>LifeOS</h1>
+                    <p>Your Personal Life Operating System</p>
+                </div>
+                <div class="header-actions">
+                    <button class="settings-btn" onclick="window.DataManagerUI.open()" title="Data Management">
+                        ⚙️
+                    </button>
+                </div>
+            </div>
         </header>
         
         <!-- Daily Quran Verse Section -->
@@ -65,6 +74,7 @@
     <script src="shared/dashboard-widgets.js"></script>
     <script src="shared/theme-manager.js"></script>
     <script src="shared/data-manager.js"></script>
+    <script src="shared/data-manager-ui.js"></script>
     <script src="shared/sw-manager.js"></script>
     <script src="shared/module-bridge.js"></script>
     <script src="shared/global-search.js"></script>

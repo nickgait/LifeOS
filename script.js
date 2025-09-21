@@ -390,9 +390,9 @@ function showWelcomeWithDashboard() {
     
     // Initialize and render dashboard widgets
     if (window.DashboardWidgets) {
-        DashboardWidgets.init();
-        DashboardWidgets.renderWidgets('dashboard-container');
-        DashboardWidgets.addWidgetClickHandlers();
+        window.DashboardWidgets.init();
+        window.DashboardWidgets.renderWidgets('dashboard-container');
+        window.DashboardWidgets.addWidgetClickHandlers();
     }
 }
 

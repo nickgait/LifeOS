@@ -77,11 +77,11 @@ class DataManager {
         };
 
         // Get all keys for this module
-        const keys = StorageUtils.getKeysWithPrefix(moduleName);
+        const keys = window.StorageUtils.getKeysWithPrefix(moduleName);
         
         keys.forEach(key => {
             const cleanKey = key.replace(`${moduleName}_`, '');
-            const value = StorageUtils.get(key);
+            const value = window.StorageUtils.get(key);
             if (value !== null) {
                 moduleData.data[cleanKey] = value;
             }
@@ -384,12 +384,12 @@ class DataManager {
                 // Import module data
                 Object.keys(moduleData.data).forEach(key => {
                     const fullKey = `${moduleName}_${key}`;
-                    const existingData = StorageUtils.get(fullKey);
+                    const existingData = window.StorageUtils.get(fullKey);
                     
                     if (existingData && !overwrite) {
                         results.skipped.push(`${moduleName}.${key}`);
                     } else {
-                        StorageUtils.set(fullKey, moduleData.data[key]);
+                        window.StorageUtils.set(fullKey, moduleData.data[key]);
                         results.success.push(`${moduleName}.${key}`);
                     }
                 });
@@ -410,7 +410,7 @@ class DataManager {
         
         // Store in localStorage with timestamp
         const backupKey = `lifeos_backup_${Date.now()}`;
-        StorageUtils.set(backupKey, backup);
+        window.StorageUtils.set(backupKey, backup);
         
         // Keep only last 5 backups
         this.cleanupOldBackups();
@@ -422,7 +422,7 @@ class DataManager {
      * Clean up old backups
      */
     cleanupOldBackups() {
-        const backupKeys = StorageUtils.getKeysWithPrefix('lifeos_backup_');
+        const backupKeys = window.StorageUtils.getKeysWithPrefix('lifeos_backup_');
         
         if (backupKeys.length > 5) {
             // Sort by timestamp and remove oldest
@@ -436,7 +436,7 @@ class DataManager {
      * Get available backups
      */
     getAvailableBackups() {
-        const backupKeys = StorageUtils.getKeysWithPrefix('lifeos_backup_');
+        const backupKeys = window.StorageUtils.getKeysWithPrefix('lifeos_backup_');
         
         return backupKeys.map(key => {
             const timestamp = key.replace('lifeos_backup_', '');
@@ -446,7 +446,7 @@ class DataManager {
                 key,
                 timestamp: parseInt(timestamp),
                 date: date.toLocaleString(),
-                size: JSON.stringify(StorageUtils.get(key)).length
+                size: JSON.stringify(window.StorageUtils.get(key)).length
             };
         }).sort((a, b) => b.timestamp - a.timestamp);
     }
@@ -456,7 +456,7 @@ class DataManager {
      * @param {string} backupKey - Backup key to restore
      */
     restoreFromBackup(backupKey) {
-        const backup = StorageUtils.get(backupKey);
+        const backup = window.StorageUtils.get(backupKey);
         if (!backup) {
             throw new Error('Backup not found');
         }
@@ -973,7 +973,7 @@ class DataManager {
      * Download backup as file
      */
     downloadBackup(backupKey) {
-        const backup = StorageUtils.get(backupKey);
+        const backup = window.StorageUtils.get(backupKey);
         if (backup) {
             const jsonString = JSON.stringify(backup, null, 2);
             this.downloadFile(

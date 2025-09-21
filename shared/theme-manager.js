@@ -134,7 +134,7 @@ class ThemeManager {
         this.updateWidgets(theme);
 
         // Save theme preference
-        StorageUtils.set('lifeos_theme', themeId);
+        window.StorageUtils.set('lifeos_theme', themeId);
         
         // Emit theme change event
         window.dispatchEvent(new CustomEvent('themeChanged', { 
@@ -553,8 +553,8 @@ class ThemeManager {
      * Load saved theme preference
      */
     loadSavedTheme() {
-        const savedTheme = StorageUtils.get('lifeos_theme', 'default');
-        const savedCustom = StorageUtils.get('lifeos_custom_theme');
+        const savedTheme = window.StorageUtils.get('lifeos_theme', 'default');
+        const savedCustom = window.StorageUtils.get('lifeos_custom_theme');
         
         if (savedCustom) {
             this.customTheme = savedCustom;
@@ -632,5 +632,9 @@ class ThemeManager {
     }
 }
 
-// Create global instance
-window.ThemeManager = new ThemeManager();
+// Create global instance when dependencies are ready
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.StorageUtils) {
+        window.ThemeManager = new ThemeManager();
+    }
+});
