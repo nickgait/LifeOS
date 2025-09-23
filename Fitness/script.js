@@ -1078,6 +1078,9 @@ const UI = {
         // Display achievements
         this.renderAchievements(goal);
 
+        // Show/hide pyramid calculator based on goal type
+        this.updatePyramidCalculatorVisibility(goal);
+
         // Display goal notes
         this.renderGoalNotes(goal);
 
@@ -1305,6 +1308,20 @@ const UI = {
         if (state.goals.length === 0) return;
 
         // Implementation would render summary cards and insights
+    },
+
+    updatePyramidCalculatorVisibility(goal) {
+        const pyramidButton = document.getElementById('pyramidToggleButton');
+        if (!pyramidButton) return;
+
+        // Show pyramid calculator for count, time, and distance goals
+        const shouldShow = pyramidCalculator.shouldShowForGoal(goal);
+        pyramidButton.style.display = shouldShow ? 'inline-flex' : 'none';
+
+        // Hide calculator if goal type doesn't support it
+        if (!shouldShow && pyramidCalculator.isVisible) {
+            pyramidCalculator.toggle();
+        }
     }
 };
 
@@ -2867,6 +2884,191 @@ function getUnitForBiometric(type) {
     return units[type] || '';
 }
 
+// Pyramid Calculator Class
+class PyramidCalculator {
+    constructor() {
+        this.isVisible = false;
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Toggle button
+        document.getElementById('pyramidToggleButton')?.addEventListener('click', () => {
+            this.toggle();
+        });
+
+        // Input change listeners
+        ['pyramidStart', 'pyramidPeak', 'pyramidEnd', 'doublePeak'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => {
+                this.calculatePyramid();
+            });
+            document.getElementById(id)?.addEventListener('change', () => {
+                this.calculatePyramid();
+            });
+        });
+
+        // Use pyramid button
+        document.getElementById('usePyramidButton')?.addEventListener('click', () => {
+            this.usePyramidAmount();
+        });
+    }
+
+    toggle() {
+        const calculator = document.getElementById('pyramidCalculator');
+        if (!calculator) return;
+
+        this.isVisible = !this.isVisible;
+        calculator.classList.toggle('hidden', !this.isVisible);
+        
+        // Update button text
+        const button = document.getElementById('pyramidToggleButton');
+        if (button) {
+            button.textContent = this.isVisible ? '✕ Close' : '🔺 Pyramid';
+        }
+
+        if (this.isVisible) {
+            this.calculatePyramid();
+        }
+    }
+
+    calculatePyramid() {
+        const start = parseInt(document.getElementById('pyramidStart')?.value) || 1;
+        const peak = parseInt(document.getElementById('pyramidPeak')?.value) || 12;
+        const end = parseInt(document.getElementById('pyramidEnd')?.value) || 1;
+        const doublePeak = document.getElementById('doublePeak')?.checked || false;
+
+        // Calculate pyramid totals
+        const upSum = this.sumRange(start, peak);
+        const downSum = this.sumRange(end, peak - 1);
+        const peakExtra = doublePeak ? peak : 0;
+        const total = upSum + downSum + peakExtra;
+
+        // Generate pattern string
+        const pattern = this.generatePattern(start, peak, end, doublePeak);
+
+        // Update UI
+        this.updateDisplay(total, pattern);
+        this.updateImpactAnalysis(total);
+    }
+
+    sumRange(start, end) {
+        if (start > end) return 0;
+        const n = end - start + 1;
+        return (n * (start + end)) / 2;
+    }
+
+    generatePattern(start, peak, end, doublePeak) {
+        const up = [];
+        const down = [];
+        
+        // Up sequence
+        for (let i = start; i <= peak; i++) {
+            up.push(i);
+        }
+        
+        // Down sequence (excluding peak to avoid duplication)
+        for (let i = peak - 1; i >= end; i--) {
+            down.push(i);
+        }
+
+        // Combine with double peak if enabled
+        if (doublePeak) {
+            return [...up, peak, ...down].join('→');
+        } else {
+            return [...up, ...down].join('→');
+        }
+    }
+
+    updateDisplay(total, pattern) {
+        // Update total
+        const totalElement = document.getElementById('pyramidTotal');
+        if (totalElement) {
+            totalElement.textContent = total.toLocaleString();
+        }
+
+        // Update pattern
+        const patternElement = document.getElementById('pyramidPattern');
+        if (patternElement) {
+            patternElement.textContent = pattern;
+        }
+    }
+
+    updateImpactAnalysis(pyramidTotal) {
+        const activeGoal = state.goals[state.activeGoalIndex];
+        if (!activeGoal) return;
+
+        const dailyTarget = activeGoal.dailyTarget || 50;
+        const totalTarget = activeGoal.target || 5000;
+        const unitName = Utils.getUnitName(activeGoal.type);
+
+        // Daily impact
+        const dailyDiff = pyramidTotal - dailyTarget;
+        const dailyImpactElement = document.getElementById('dailyImpact');
+        if (dailyImpactElement) {
+            if (dailyDiff > 0) {
+                dailyImpactElement.textContent = `+${dailyDiff} above target`;
+                dailyImpactElement.className = 'text-green-600 dark:text-green-400 font-medium';
+            } else if (dailyDiff < 0) {
+                dailyImpactElement.textContent = `${dailyDiff} below target`;
+                dailyImpactElement.className = 'text-red-600 dark:text-red-400 font-medium';
+            } else {
+                dailyImpactElement.textContent = 'Exactly on target';
+                dailyImpactElement.className = 'text-blue-600 dark:text-blue-400 font-medium';
+            }
+        }
+
+        // Goal percentage impact
+        const goalPercent = ((pyramidTotal / totalTarget) * 100).toFixed(1);
+        const goalImpactElement = document.getElementById('goalImpact');
+        if (goalImpactElement) {
+            goalImpactElement.textContent = `${goalPercent}% of total goal`;
+        }
+
+        // Completion time impact
+        const daysAhead = dailyDiff / dailyTarget;
+        const completionImpactElement = document.getElementById('completionImpact');
+        if (completionImpactElement) {
+            if (daysAhead > 0) {
+                completionImpactElement.textContent = `${daysAhead.toFixed(1)} days ahead`;
+                completionImpactElement.className = 'text-purple-600 dark:text-purple-400 font-medium';
+            } else if (daysAhead < 0) {
+                completionImpactElement.textContent = `${Math.abs(daysAhead).toFixed(1)} days behind`;
+                completionImpactElement.className = 'text-red-600 dark:text-red-400 font-medium';
+            } else {
+                completionImpactElement.textContent = 'On track';
+                completionImpactElement.className = 'text-blue-600 dark:text-blue-400 font-medium';
+            }
+        }
+    }
+
+    usePyramidAmount() {
+        const totalElement = document.getElementById('pyramidTotal');
+        const logInput = document.getElementById('logInput');
+        
+        if (totalElement && logInput) {
+            const amount = parseInt(totalElement.textContent.replace(/,/g, ''));
+            logInput.value = amount;
+            
+            // Hide calculator and trigger log
+            this.toggle();
+            
+            // Focus on log button for easy confirmation
+            document.getElementById('logButton')?.focus();
+            
+            // Show a helpful message
+            Utils.showMessage(`Pyramid total of ${amount.toLocaleString()} set! Click Log to save.`);
+        }
+    }
+
+    // Show calculator only for count-based goals
+    shouldShowForGoal(goal) {
+        return goal && ['count', 'time', 'distance'].includes(goal.type);
+    }
+}
+
+// Initialize pyramid calculator
+const pyramidCalculator = new PyramidCalculator();
+
 // Export for external access if needed
 window.FitnessTracker = {
     state,
@@ -2879,5 +3081,6 @@ window.FitnessTracker = {
     DeadlineManager,
     MultiGoalTracker,
     RestDayCalculator,
-    OfflineManager: offlineManager
+    OfflineManager: offlineManager,
+    PyramidCalculator: pyramidCalculator
 };

@@ -1,5 +1,11 @@
 # Fitness Tracker Enhancement Tasks
 
+## Recent Additions (2024)
+- [x] ~~Exercise Pyramid Calculator with double peak support~~
+- [x] ~~Real-time goal impact analysis for pyramid workouts~~
+- [x] ~~Visual pyramid pattern display~~
+- [x] ~~One-click pyramid total logging~~
+
 ## Code Quality & Architecture
 - [x] ~~Separate HTML, CSS, and JavaScript into different files~~
 - [x] ~~Implement proper state management pattern~~

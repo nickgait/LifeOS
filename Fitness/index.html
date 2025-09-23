@@ -176,12 +176,73 @@
                 <!-- Chart will be rendered here -->
             </div>
 
+            <!-- Pyramid Calculator -->
+            <div id="pyramidCalculator" class="pyramid-calculator mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900 dark:to-blue-900 rounded-lg hidden">
+                <h4 class="text-lg font-semibold mb-3 text-purple-800 dark:text-purple-200">🔺 Exercise Pyramid Calculator</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <div>
+                                <label for="pyramidStart" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Start</label>
+                                <input type="number" id="pyramidStart" value="1" min="1" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                            <div>
+                                <label for="pyramidPeak" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Peak</label>
+                                <input type="number" id="pyramidPeak" value="12" min="1" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                            <div>
+                                <label for="pyramidEnd" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">End</label>
+                                <input type="number" id="pyramidEnd" value="1" min="1" class="w-full border rounded px-2 py-1 text-sm">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" id="doublePeak" checked class="mr-2">
+                                <span class="text-gray-700 dark:text-gray-300">Double peak (do peak amount twice)</span>
+                            </label>
+                        </div>
+                        <div class="text-center">
+                            <div id="pyramidTotal" class="text-3xl font-bold text-purple-600 dark:text-purple-300 mb-1">156</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">Total Reps</div>
+                            <button id="usePyramidButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg w-full">
+                                📝 Use This Amount
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-sm mb-2">
+                            <div class="font-medium text-gray-700 dark:text-gray-300 mb-2">Pyramid Pattern:</div>
+                            <div id="pyramidPattern" class="text-xs text-gray-600 dark:text-gray-400 font-mono bg-white dark:bg-gray-800 p-2 rounded max-h-24 overflow-y-auto">
+                                1→2→3→4→5→6→7→8→9→10→11→12→12→11→10→9→8→7→6→5→4→3→2→1
+                            </div>
+                        </div>
+                        <div id="pyramidImpact" class="text-sm space-y-1">
+                            <div class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium">Daily Target Impact:</span>
+                                <div id="dailyImpact" class="text-green-600 dark:text-green-400 font-medium">+106 above target</div>
+                            </div>
+                            <div class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium">Goal Impact:</span>
+                                <div id="goalImpact" class="text-blue-600 dark:text-blue-400 font-medium">3.1% of total goal</div>
+                            </div>
+                            <div class="text-gray-600 dark:text-gray-400">
+                                <span class="font-medium">Completion Boost:</span>
+                                <div id="completionImpact" class="text-purple-600 dark:text-purple-400 font-medium">2.1 days ahead</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="log-input mt-4">
                 <label for="logInput" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log Progress Today</label>
                 <input type="number" id="logInput" placeholder="Enter amount completed" class="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="logHelp">
                 <div id="logHelp" class="sr-only">Enter the amount you completed today for this goal</div>
                 <div class="flex gap-2">
                     <button id="logButton" class="flex-1" aria-label="Log today's progress">Log</button>
+                    <button id="pyramidToggleButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Toggle pyramid calculator">
+                        🔺 Pyramid
+                    </button>
                     <button id="bulkAddButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Add multiple entries">
                         📝 Bulk Add
                     </button>
