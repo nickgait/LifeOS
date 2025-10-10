@@ -38,7 +38,8 @@
       "WebFetch(domain:www.alphavantage.co)",
       "WebFetch(domain:finviz.com)",
       "Bash(curl:*)",
-      "Read(//Users/mgaither/Documents/**)"
+      "Read(//Users/mgaither/Documents/**)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }

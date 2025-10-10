@@ -118,35 +118,34 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
             
             if (modules[module]) {
-                // Simulate loading delay for better UX
-                setTimeout(() => {
-                    moduleContent.innerHTML = modules[module].content;
-                    hideModuleLoading();
-                }, 300);
+                // Load module content immediately
+                moduleContent.innerHTML = modules[module].content;
+                hideModuleLoading();
             }
         });
     });
     
     // Set initial welcome content after loading
-    setTimeout(() => {
+    // Use requestAnimationFrame for smooth initialization
+    requestAnimationFrame(() => {
         showWelcomeWithDashboard();
         hideInitialLoading();
-        
+
         // Initialize theme manager
         if (window.ThemeManager) {
             ThemeManager.addThemeButton();
         }
-        
+
         // Add data management button
         if (window.DataManager) {
             addDataManagementButton();
         }
-        
+
         // Initialize service worker
         if (window.ServiceWorkerManager) {
             ServiceWorkerManager.init();
         }
-    }, 1000);
+    });
 });
 
 // Loading state functions
@@ -394,11 +393,9 @@ function attachNavListeners() {
             this.classList.add('active');
             
             if (modules[module]) {
-                // Simulate loading delay for better UX
-                setTimeout(() => {
-                    moduleContent.innerHTML = modules[module].content;
-                    hideModuleLoading();
-                }, 300);
+                // Load module content immediately
+                moduleContent.innerHTML = modules[module].content;
+                hideModuleLoading();
             }
         });
     });
