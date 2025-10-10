@@ -47,8 +47,13 @@ EOF
 cat > "$APP_DIR/Contents/MacOS/$APP_NAME" << 'EOF'
 #!/bin/bash
 
-# Get the directory where LifeOS project is located
-PROJECT_DIR="$(dirname "$(dirname "$(dirname "$0")")")"
+# Get the directory where LifeOS.app is located (same directory as the project)
+APP_PATH="$0"
+while [ -L "$APP_PATH" ]; do
+    APP_PATH=$(readlink "$APP_PATH")
+done
+APP_DIR="$(dirname "$APP_PATH")"
+PROJECT_DIR="$(cd "$APP_DIR/../../.." && pwd)"
 
 # Open Terminal and run the launcher
 osascript <<APPLESCRIPT
