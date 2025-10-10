@@ -20,7 +20,7 @@ class InvestmentDashboard {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
         this.renderWatchlist();
         this.updatePortfolioSummary();
@@ -30,8 +30,118 @@ class InvestmentDashboard {
         this.renderPerformanceChart();
         this.renderBenchmarkChart();
         this.renderDividendProjectionsChart();
-        this.refreshCurrentPrices();
+        
+        // Load sample dividend data for testing (commented out to test real data)
+        // this.addSampleExDividendDates();
+        
+        // Clear existing sample data to test with real API data
+        this.clearSampleDividendData();
+        
+        // Auto-refresh prices on startup with retry logic
+        await this.autoRefreshPricesOnStartup();
+        
+        // Auto-fetch dividend data for existing portfolio holdings
+        await this.autoFetchDividendDataForHoldings();
+        
         this.setDefaultDate();
+    }
+
+    async autoFetchDividendDataForHoldings() {
+        const holdings = this.calculateDetailedPortfolioStats().holdings;
+        const symbols = Object.keys(holdings).filter(symbol => holdings[symbol].shares > 0);
+        
+        if (symbols.length === 0) return;
+        
+        console.log(`🔍 Auto-fetching dividend data for ${symbols.length} portfolio holdings...`);
+        
+        for (const symbol of symbols) {
+            try {
+                // Check if we already have dividend data
+                const existingData = this.getFinvizData(symbol);
+                if (existingData && existingData.dividendPerShare) {
+                    console.log(`✅ ${symbol} already has dividend data`);
+                    continue;
+                }
+                
+                // Fetch fundamental data which includes dividend info
+                console.log(`📊 Fetching dividend data for ${symbol}...`);
+                const metrics = await this.fetchFundamentalMetrics(symbol);
+                
+                if (metrics && metrics.dividendPerShareAnnual) {
+                    // Store dividend data
+                    this.storeFinvizData(symbol, {
+                        dividendPerShare: metrics.dividendPerShareAnnual,
+                        frequency: 'annual',
+                        fetchedAt: new Date().toISOString()
+                    });
+                    console.log(`✅ Stored dividend data for ${symbol}: $${metrics.dividendPerShareAnnual}`);
+                }
+                
+                // Small delay to avoid API rate limits
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+            } catch (error) {
+                console.warn(`⚠️ Could not fetch dividend data for ${symbol}:`, error);
+            }
+        }
+        
+        // Refresh displays after fetching data
+        this.renderDividendReminders();
+        console.log(`✅ Completed dividend data fetch for portfolio holdings`);
+    }
+
+    async manualRefreshDividendData() {
+        const btn = document.getElementById('refreshDividendDataBtn');
+        const originalText = btn.textContent;
+        
+        try {
+            btn.textContent = '🔄 Refreshing...';
+            btn.disabled = true;
+            
+            await this.autoFetchDividendDataForHoldings();
+            
+            // Also refresh portfolio displays
+            this.updatePortfolioSummary();
+            this.renderDividendReminders();
+            
+            this.showMessage('Dividend data refreshed successfully', 'success');
+        } catch (error) {
+            console.error('Error refreshing dividend data:', error);
+            this.showMessage('Error refreshing dividend data', 'error');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async autoRefreshPricesOnStartup() {
+        const holdings = this.calculateDetailedPortfolioStats().holdings;
+        const symbols = Object.keys(holdings).filter(symbol => holdings[symbol].shares > 0);
+        
+        if (symbols.length === 0) {
+            return;
+        }
+
+        console.log('Auto-refreshing prices on startup for:', symbols);
+        
+        try {
+            // Try to refresh current prices
+            await this.refreshCurrentPrices();
+            
+            // Check if any prices were successfully fetched
+            const pricesFetched = symbols.some(symbol => this.currentPrices[symbol] > 0);
+            
+            if (!pricesFetched) {
+                console.warn('No prices fetched on startup, retrying in 2 seconds...');
+                setTimeout(() => this.refreshCurrentPrices(), 2000);
+            } else {
+                console.log('Successfully fetched prices for portfolio');
+            }
+        } catch (error) {
+            console.error('Error during startup price refresh:', error);
+            // Retry after 3 seconds if there was an error
+            setTimeout(() => this.refreshCurrentPrices(), 3000);
+        }
     }
 
     setupEventListeners() {
@@ -52,6 +162,7 @@ class InvestmentDashboard {
         const addToPortfolioBtn = document.getElementById('addToPortfolioButton');
         const managePortfolioBtn = document.getElementById('managePortfolioBtn');
         const addDividendReminderBtn = document.getElementById('addDividendReminderBtn');
+        const refreshDividendDataBtn = document.getElementById('refreshDividendDataBtn');
         const advanceOverdueBtn = document.getElementById('advanceOverdueBtn');
         const manageCashBtn = document.getElementById('manageCashBtn');
         const refreshPricesBtn = document.getElementById('refreshPricesBtn');
@@ -63,6 +174,7 @@ class InvestmentDashboard {
         addToPortfolioBtn.addEventListener('click', () => this.showPortfolioModal());
         managePortfolioBtn.addEventListener('click', () => this.showPortfolioDetails());
         addDividendReminderBtn.addEventListener('click', () => this.showDividendReminderModal());
+        refreshDividendDataBtn.addEventListener('click', () => this.manualRefreshDividendData());
         advanceOverdueBtn.addEventListener('click', () => this.advanceOverdueReminders());
         manageCashBtn.addEventListener('click', () => this.showCashManagementModal());
         refreshPricesBtn.addEventListener('click', () => this.refreshPortfolioPrices());
@@ -70,6 +182,19 @@ class InvestmentDashboard {
         performancePeriod.addEventListener('change', () => this.renderPerformanceChart());
         fetchBenchmarkBtn.addEventListener('click', () => this.fetchSP500Data());
         benchmarkPeriod.addEventListener('change', () => this.renderBenchmarkChart());
+        
+        // Dividend Calendar Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const dividendCalendarPeriod = document.getElementById('dividendCalendarPeriod');
+            const refreshDividendCalendar = document.getElementById('refreshDividendCalendar');
+            
+            if (dividendCalendarPeriod) {
+                dividendCalendarPeriod.addEventListener('change', () => this.renderDividendCalendar());
+            }
+            if (refreshDividendCalendar) {
+                refreshDividendCalendar.addEventListener('click', () => this.refreshDividendCalendarData());
+            }
+        });
         
         // Dividend projections controls
         const projectionPeriod = document.getElementById('projectionPeriod');
@@ -126,9 +251,11 @@ class InvestmentDashboard {
             let historicalData = await this.fetchHistoricalData(ticker);
             
             // If no historical data available, create mock data for demo purposes
+            let usingMockData = false;
             if (!historicalData) {
                 console.log('Creating mock historical data for technical analysis demo');
                 historicalData = this.generateMockHistoricalData(data.c, 200);
+                usingMockData = true;
             }
             
             return {
@@ -141,11 +268,48 @@ class InvestmentDashboard {
                 open: data.o,
                 previousClose: data.pc,
                 volume: await this.fetchVolume(ticker),
-                historicalData: historicalData
+                historicalData: historicalData,
+                usingMockData: usingMockData
             };
         } catch (error) {
             console.error('Error fetching stock data:', error);
             throw error;
+        }
+    }
+
+    async fetchCompanyProfile(ticker) {
+        try {
+            const response = await fetch(
+                `https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${this.apiKey}`
+            );
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch company profile');
+            }
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching company profile:', error);
+            return null;
+        }
+    }
+
+    async fetchFundamentalMetrics(ticker) {
+        try {
+            const response = await fetch(
+                `https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${this.apiKey}`
+            );
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch fundamental metrics');
+            }
+            
+            const data = await response.json();
+            return data.metric || {};
+        } catch (error) {
+            console.error('Error fetching fundamental metrics:', error);
+            return {};
         }
     }
 
@@ -327,12 +491,30 @@ class InvestmentDashboard {
             this.showSearchLoading(true);
             this.showMessage(`Fetching data for ${ticker}...`, 'warning');
             
-            const stockData = await this.fetchStockData(ticker);
+            // Fetch all data in parallel
+            const [stockData, companyProfile, fundamentalMetrics] = await Promise.all([
+                this.fetchStockData(ticker),
+                this.fetchCompanyProfile(ticker),
+                this.fetchFundamentalMetrics(ticker)
+            ]);
+            
             this.currentTicker = ticker;
             this.currentStockData = stockData;
+            this.currentCompanyProfile = companyProfile;
+            this.currentFundamentalMetrics = fundamentalMetrics;
+            
+            // Store stock data for portfolio dividend calculations
+            this.storeStockData(ticker, {
+                stockData: stockData,
+                companyProfile: companyProfile,
+                fundamentalMetrics: fundamentalMetrics,
+                timestamp: Date.now()
+            });
             
             this.updateDashboard(stockData);
             this.updateChart(stockData);
+            this.updateCompanyOverview(companyProfile);
+            await this.updateFundamentalMetrics(fundamentalMetrics, companyProfile);
             this.showMessage(`Successfully loaded ${ticker} data`, 'success');
             
         } catch (error) {
@@ -398,9 +580,25 @@ class InvestmentDashboard {
     }
 
     updateChart(stockData) {
-        if (!stockData.historicalData || !stockData.historicalData.closes) {
-            console.warn('No historical data available for chart');
+        const chartCard = document.querySelector('.chart-card');
+        
+        // Hide chart if using mock data or no historical data
+        if (!stockData.historicalData || !stockData.historicalData.closes || stockData.usingMockData) {
+            if (stockData.usingMockData) {
+                console.log('Hiding price chart - using mock data due to API limitations');
+            } else {
+                console.warn('No historical data available for chart');
+            }
+            
+            if (chartCard) {
+                chartCard.style.display = 'none';
+            }
             return;
+        }
+
+        // Show chart for real data
+        if (chartCard) {
+            chartCard.style.display = 'block';
         }
 
         const ctx = document.getElementById('priceChart').getContext('2d');
@@ -462,6 +660,783 @@ class InvestmentDashboard {
                 }
             }
         });
+    }
+
+    updateCompanyOverview(companyProfile) {
+        if (!companyProfile) {
+            console.warn('No company profile data available');
+            return;
+        }
+
+        try {
+            document.getElementById('companyName').textContent = companyProfile.name || '-';
+            document.getElementById('companyIndustry').textContent = companyProfile.finnhubIndustry || '-';
+            
+            // Format market cap
+            const marketCap = companyProfile.marketCapitalization;
+            if (marketCap) {
+                const marketCapFormatted = this.formatLargeNumber(marketCap * 1000000); // Convert from millions
+                document.getElementById('marketCap').textContent = marketCapFormatted;
+            } else {
+                document.getElementById('marketCap').textContent = '-';
+            }
+            
+            // Format shares outstanding
+            const sharesOutstanding = companyProfile.shareOutstanding;
+            if (sharesOutstanding) {
+                const sharesFormatted = this.formatLargeNumber(sharesOutstanding * 1000000); // Convert from millions
+                document.getElementById('sharesOutstanding').textContent = sharesFormatted;
+            } else {
+                document.getElementById('sharesOutstanding').textContent = '-';
+            }
+        } catch (error) {
+            console.error('Error updating company overview:', error);
+        }
+    }
+
+    async updateFundamentalMetrics(metrics, companyProfile) {
+        if (!metrics) {
+            console.warn('No fundamental metrics data available');
+            return;
+        }
+
+        try {
+            // Dividend Metrics
+            const dividendYield = metrics.currentDividendYieldTTM || metrics.dividendYieldIndicatedAnnual;
+            if (dividendYield) {
+                // Intelligent dividend yield detection
+                let yieldPercent;
+                if (dividendYield > 1) {
+                    // Already in percentage format
+                    yieldPercent = dividendYield;
+                } else if (dividendYield > 0.15) {
+                    // Likely already in decimal percentage (15%+ is high but possible)
+                    yieldPercent = dividendYield * 100;
+                } else {
+                    // For very low yields like NVDA (0.0226), treat as already being percentage
+                    // This handles cases where API returns 0.0226 meaning 0.0226%, not 2.26%
+                    yieldPercent = dividendYield;
+                }
+                
+                // Validate dividend yield in fundamental analysis
+                let displayText = `${yieldPercent.toFixed(2)}%`;
+                if (yieldPercent > 15) {
+                    console.warn(`⚠️ Suspicious dividend yield in fundamentals for ${this.currentTicker}: ${yieldPercent.toFixed(2)}%`);
+                    displayText += ' ⚠️';
+                }
+                if (yieldPercent > 50) {
+                    console.warn(`🚨 Extreme dividend yield in fundamentals for ${this.currentTicker}: ${yieldPercent.toFixed(2)}% (likely bad data)`);
+                    displayText = 'Data Error ⚠️';
+                }
+                
+                document.getElementById('dividendYield').textContent = displayText;
+            } else {
+                document.getElementById('dividendYield').textContent = '-';
+            }
+            
+            const payoutRatio = metrics.payoutRatioTTM || metrics.payoutRatioAnnual;
+            document.getElementById('payoutRatio').textContent = 
+                payoutRatio ? `${payoutRatio.toFixed(1)}%` : '-';
+            
+            const dividendPerShare = metrics.dividendPerShareTTM || metrics.dividendPerShareAnnual;
+            document.getElementById('annualDividend').textContent = 
+                dividendPerShare ? `$${dividendPerShare.toFixed(3)}` : '-';
+            
+            // Enhanced Dividend Information
+            await this.updateDividendInfo(metrics, dividendPerShare, payoutRatio);
+
+            // Profitability Metrics
+            const netMargin = metrics.netProfitMarginTTM || metrics.netMarginAnnual;
+            document.getElementById('profitMargin').textContent = 
+                netMargin ? `${netMargin.toFixed(1)}%` : '-';
+            
+            const roe = metrics.roeTTM || metrics.roeRfy;
+            document.getElementById('returnOnEquity').textContent = 
+                roe ? `${roe.toFixed(1)}%` : '-';
+            
+            const roic = metrics.roiTTM || metrics.roiAnnual;
+            document.getElementById('roic').textContent = 
+                roic ? `${roic.toFixed(1)}%` : '-';
+
+            // Growth Metrics
+            const epsGrowth5Y = metrics.epsGrowth5Y;
+            document.getElementById('epsGrowth5Y').textContent = 
+                epsGrowth5Y ? `${epsGrowth5Y.toFixed(1)}%` : '-';
+            
+            const revenueGrowth5Y = metrics.revenueGrowth5Y;
+            document.getElementById('revenueGrowth5Y').textContent = 
+                revenueGrowth5Y ? `${revenueGrowth5Y.toFixed(1)}%` : '-';
+            
+            const epsGrowthTTM = metrics.epsGrowthTTMYoy;
+            document.getElementById('epsGrowthTTM').textContent = 
+                epsGrowthTTM ? `${epsGrowthTTM.toFixed(1)}%` : '-';
+
+            // Valuation Metrics
+            const peRatio = metrics.peTTM || metrics.peAnnual;
+            document.getElementById('peRatio').textContent = 
+                peRatio ? peRatio.toFixed(1) : '-';
+            
+            const pbRatio = metrics.pbQuarterly || metrics.pbAnnual;
+            document.getElementById('pbRatio').textContent = 
+                pbRatio ? pbRatio.toFixed(1) : '-';
+            
+            // Calculate approximate Free Cash Flow
+            const fcfPerShare = metrics.cashFlowPerShareTTM;
+            const sharesOutstanding = companyProfile?.shareOutstanding;
+            let fcf = null;
+            if (fcfPerShare && sharesOutstanding) {
+                fcf = fcfPerShare * sharesOutstanding * 1000000; // Convert from millions
+                document.getElementById('freeCashFlow').textContent = this.formatLargeNumber(fcf);
+            } else {
+                document.getElementById('freeCashFlow').textContent = '-';
+            }
+
+            // Calculate estimated fair value using simple DCF
+            this.calculateFairValue(metrics, companyProfile, fcfPerShare);
+        } catch (error) {
+            console.error('Error updating fundamental metrics:', error);
+        }
+    }
+
+    calculateFairValue(metrics, companyProfile, fcfPerShare) {
+        try {
+            if (!companyProfile?.shareOutstanding) {
+                document.getElementById('fairValue').textContent = '-';
+                return;
+            }
+
+            // Detect business type and apply appropriate valuation model
+            const businessType = this.detectBusinessType(metrics, companyProfile);
+            let fairValuePerShare;
+
+            switch (businessType.type) {
+                case 'high_growth_saas':
+                    fairValuePerShare = this.calculateSaaSValuation(metrics, companyProfile);
+                    break;
+                case 'high_growth_tech':
+                    fairValuePerShare = this.calculateGrowthStockValuation(metrics, companyProfile, fcfPerShare);
+                    break;
+                case 'financial':
+                    fairValuePerShare = this.calculateFinancialValuation(metrics, companyProfile);
+                    break;
+                case 'mature_value':
+                default:
+                    fairValuePerShare = this.calculateTraditionalDCF(metrics, companyProfile, fcfPerShare);
+                    break;
+            }
+
+            console.log(`${this.currentTicker} classified as: ${businessType.type} (${businessType.reason})`);
+            console.log(`Fair value: $${fairValuePerShare?.toFixed(2) || 'N/A'}`);
+            
+            if (!fairValuePerShare || fairValuePerShare <= 0) {
+                document.getElementById('fairValue').textContent = '-';
+                return;
+            }
+            
+            // Add some styling to show if stock is undervalued or overvalued
+            const currentPrice = this.currentStockData?.currentPrice;
+            const fairValueElement = document.getElementById('fairValue');
+            const fairValueDiffElement = document.getElementById('fairValueDiff');
+            
+            if (fairValuePerShare > 0) {
+                fairValueElement.textContent = `$${fairValuePerShare.toFixed(2)}`;
+                
+                // Calculate and display percentage difference
+                if (currentPrice) {
+                    fairValueElement.classList.remove('undervalued', 'overvalued', 'fairly-valued');
+                    fairValueDiffElement.classList.remove('undervalued', 'overvalued', 'fairly-valued');
+                    
+                    const priceDiff = (fairValuePerShare - currentPrice) / currentPrice;
+                    const priceDiffPercent = priceDiff * 100;
+                    
+                    if (priceDiff > 0.1) { // Fair value 10%+ higher than current price (undervalued)
+                        fairValueElement.classList.add('undervalued');
+                        fairValueDiffElement.classList.add('undervalued');
+                        fairValueDiffElement.textContent = `+${priceDiffPercent.toFixed(1)}%`;
+                        fairValueElement.title = `Potentially undervalued by ${priceDiffPercent.toFixed(1)}%`;
+                    } else if (priceDiff < -0.1) { // Fair value 10%+ lower than current price (overvalued)
+                        fairValueElement.classList.add('overvalued');
+                        fairValueDiffElement.classList.add('overvalued');
+                        fairValueDiffElement.textContent = `${priceDiffPercent.toFixed(1)}%`;
+                        fairValueElement.title = `Potentially overvalued by ${Math.abs(priceDiffPercent).toFixed(1)}%`;
+                    } else { // Fairly valued (within 10%)
+                        fairValueElement.classList.add('fairly-valued');
+                        fairValueDiffElement.classList.add('fairly-valued');
+                        fairValueDiffElement.textContent = `${priceDiffPercent >= 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%`;
+                        fairValueElement.title = `Fairly valued (within 10% of estimate)`;
+                    }
+                } else {
+                    fairValueDiffElement.textContent = '-';
+                }
+            } else {
+                fairValueElement.textContent = '-';
+                fairValueDiffElement.textContent = '-';
+            }
+            
+        } catch (error) {
+            console.error('Error calculating fair value:', error);
+            document.getElementById('fairValue').textContent = '-';
+        }
+    }
+
+    detectBusinessType(metrics, companyProfile) {
+        const grossMargin = metrics.grossMarginTTM || metrics.grossMarginAnnual || 0;
+        const revenueGrowth5Y = metrics.revenueGrowth5Y || 0;
+        const revenueGrowthTTM = metrics.revenueGrowthTTMYoy || 0;
+        const operatingMargin = metrics.operatingMarginTTM || metrics.operatingMarginAnnual || 0;
+        const industry = companyProfile?.finnhubIndustry || '';
+        
+        // Financial sector detection
+        if (industry.toLowerCase().includes('bank') || 
+            industry.toLowerCase().includes('financial') ||
+            industry.toLowerCase().includes('insurance') ||
+            (metrics.totalDebtToEquityAnnual > 3 && operatingMargin > 0.15)) {
+            return { type: 'financial', reason: 'Financial sector or high leverage' };
+        }
+        
+        // High-growth SaaS detection (like CRM)
+        if (grossMargin > 0.60 && revenueGrowth5Y > 15 && 
+            (industry.toLowerCase().includes('software') || 
+             industry.toLowerCase().includes('technology') ||
+             operatingMargin > 0.15)) {
+            return { type: 'high_growth_saas', reason: 'High margins + growth + tech sector' };
+        }
+        
+        // High-growth tech (broader category)
+        if ((revenueGrowth5Y > 10 || revenueGrowthTTM > 10) && grossMargin > 0.40) {
+            return { type: 'high_growth_tech', reason: 'Strong growth + decent margins' };
+        }
+        
+        // Default to mature/value
+        return { type: 'mature_value', reason: 'Stable/mature business characteristics' };
+    }
+
+    calculateSaaSValuation(metrics, companyProfile) {
+        // SaaS companies: Use Revenue Multiple + FCF Multiple blended approach
+        const revenuePerShare = metrics.revenuePerShareTTM || metrics.revenuePerShareAnnual;
+        const fcfPerShare = metrics.cashFlowPerShareTTM;
+        const revenueGrowth = Math.max(metrics.revenueGrowth5Y || 0, metrics.revenueGrowthTTMYoy || 0);
+        
+        if (!revenuePerShare) return null;
+        
+        // SaaS multiples based on growth
+        let revenueMultiple;
+        if (revenueGrowth > 25) {
+            revenueMultiple = 12; // High-growth SaaS
+        } else if (revenueGrowth > 15) {
+            revenueMultiple = 8;  // Moderate growth
+        } else {
+            revenueMultiple = 5;  // Slower growth
+        }
+        
+        const revenueBasedValue = revenuePerShare * revenueMultiple;
+        
+        // If FCF is meaningful, blend it
+        if (fcfPerShare && fcfPerShare > 0) {
+            const fcfMultiple = revenueGrowth > 20 ? 35 : 25;
+            const fcfBasedValue = fcfPerShare * fcfMultiple;
+            
+            // Weighted average: 60% revenue multiple, 40% FCF multiple
+            return (revenueBasedValue * 0.6) + (fcfBasedValue * 0.4);
+        }
+        
+        return revenueBasedValue;
+    }
+
+    calculateGrowthStockValuation(metrics, companyProfile, fcfPerShare) {
+        // 2-stage DCF: High growth for 5 years, then normalize
+        if (!fcfPerShare || fcfPerShare <= 0) {
+            // Fallback to P/E multiple approach
+            const eps = metrics.epsTTM || metrics.epsAnnual;
+            const growth = Math.max(metrics.epsGrowth5Y || 0, metrics.revenueGrowth5Y || 0);
+            
+            if (eps && eps > 0) {
+                const pegRatio = growth > 20 ? 1.5 : (growth > 10 ? 1.8 : 2.2);
+                const peMultiple = Math.min(growth * pegRatio, 50); // Cap P/E at 50
+                return eps * peMultiple;
+            }
+            return null;
+        }
+
+        const growth5Y = Math.max(metrics.epsGrowth5Y || 0, metrics.revenueGrowth5Y || 0);
+        
+        // High growth phase (5 years)
+        const highGrowthRate = Math.min(growth5Y / 100, 0.30); // Cap at 30% for growth stocks
+        
+        // Mature phase growth
+        const matureGrowthRate = 0.04; // 4% long-term
+        
+        // Lower discount rate for growth stocks
+        const discountRate = 0.12; // 12% for growth (vs 10% for mature)
+        
+        // Phase 1: High growth (5 years)
+        let presentValue = 0;
+        let projectedFCF = fcfPerShare;
+        
+        for (let year = 1; year <= 5; year++) {
+            projectedFCF *= (1 + highGrowthRate);
+            presentValue += projectedFCF / Math.pow(1 + discountRate, year);
+        }
+        
+        // Phase 2: Terminal value with normalized growth
+        const terminalFCF = projectedFCF * (1 + matureGrowthRate);
+        const terminalValue = terminalFCF / (discountRate - matureGrowthRate);
+        const presentTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+        
+        return presentValue + presentTerminalValue;
+    }
+
+    calculateFinancialValuation(metrics, companyProfile) {
+        // For banks/financials: Book Value + ROE approach
+        const bookValue = metrics.bookValuePerShareQuarterly || metrics.bookValuePerShareAnnual;
+        const roe = metrics.roeTTM || metrics.roeRfy || 0;
+        const eps = metrics.epsTTM || metrics.epsAnnual;
+        
+        if (!bookValue) return null;
+        
+        // P/B multiple based on ROE
+        let pbMultiple;
+        if (roe > 15) {
+            pbMultiple = 1.8;
+        } else if (roe > 10) {
+            pbMultiple = 1.4;
+        } else {
+            pbMultiple = 1.0;
+        }
+        
+        const bookValueEstimate = bookValue * pbMultiple;
+        
+        // Also calculate P/E approach if EPS available
+        if (eps && eps > 0) {
+            const peMultiple = roe > 15 ? 12 : (roe > 10 ? 10 : 8);
+            const earningsEstimate = eps * peMultiple;
+            
+            // Average the two approaches
+            return (bookValueEstimate + earningsEstimate) / 2;
+        }
+        
+        return bookValueEstimate;
+    }
+
+    calculateTraditionalDCF(metrics, companyProfile, fcfPerShare) {
+        // Original conservative DCF for mature/value stocks
+        if (!fcfPerShare || fcfPerShare <= 0) return null;
+
+        const epsGrowth5Y = metrics.epsGrowth5Y;
+        const revenueGrowth5Y = metrics.revenueGrowth5Y;
+        
+        let growthRate = 0.03; // Conservative default
+        
+        if (epsGrowth5Y && epsGrowth5Y > 0 && epsGrowth5Y < 50) {
+            growthRate = Math.min(epsGrowth5Y / 100, 0.15);
+        } else if (revenueGrowth5Y && revenueGrowth5Y > 0 && revenueGrowth5Y < 50) {
+            growthRate = Math.min(revenueGrowth5Y / 100 * 0.8, 0.12);
+        }
+
+        const discountRate = 0.10;
+        const terminalGrowthRate = 0.025;
+        
+        let presentValue = 0;
+        let projectedFCF = fcfPerShare;
+        
+        for (let year = 1; year <= 5; year++) {
+            projectedFCF *= (1 + growthRate);
+            presentValue += projectedFCF / Math.pow(1 + discountRate, year);
+        }
+        
+        const terminalFCF = projectedFCF * (1 + terminalGrowthRate);
+        const terminalValue = terminalFCF / (discountRate - terminalGrowthRate);
+        const presentTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+        
+        return presentValue + presentTerminalValue;
+    }
+
+    async updateDividendInfo(metrics, dividendPerShare, payoutRatio) {
+        try {
+            // Get ex-dividend date from Finviz data or estimation
+            await this.calculateExDividendDate(metrics);
+            
+            // Determine dividend frequency
+            this.calculateDividendFrequency(metrics, dividendPerShare);
+            
+            // Assess dividend health
+            this.assessDividendHealth(metrics, payoutRatio, dividendPerShare);
+            
+        } catch (error) {
+            console.error('Error updating dividend info:', error);
+            document.getElementById('exDividendDate').textContent = '-';
+            document.getElementById('dividendFrequency').textContent = '-';
+            document.getElementById('dividendHealth').textContent = '-';
+        }
+    }
+
+    async calculateExDividendDate(metrics) {
+        const exDivElement = document.getElementById('exDividendDate');
+        
+        if (!metrics.dividendPerShareTTM || metrics.dividendPerShareTTM <= 0) {
+            exDivElement.textContent = 'No Dividend';
+            exDivElement.style.color = '#666';
+            return;
+        }
+
+        // Try to get ex-dividend date from stored data or Finviz
+        const exDivDate = await this.getExDividendDate(this.currentTicker);
+        
+        if (exDivDate) {
+            const daysUntil = this.calculateDaysUntilDate(exDivDate);
+            
+            if (daysUntil >= 0) {
+                exDivElement.textContent = `${exDivDate} (${daysUntil} days)`;
+                
+                // Color coding based on urgency
+                if (daysUntil <= 1) {
+                    exDivElement.style.color = '#dc3545'; // Red - urgent
+                } else if (daysUntil <= 7) {
+                    exDivElement.style.color = '#fd7e14'; // Orange - soon
+                } else if (daysUntil <= 30) {
+                    exDivElement.style.color = '#ffc107'; // Yellow - upcoming
+                } else {
+                    exDivElement.style.color = '#28a745'; // Green - future
+                }
+                
+                exDivElement.title = `Ex-dividend date: ${exDivDate}. Buy before this date to receive dividend.`;
+            } else {
+                exDivElement.textContent = `${exDivDate} (past)`;
+                exDivElement.style.color = '#6c757d';
+                exDivElement.title = 'This ex-dividend date has passed';
+            }
+        } else {
+            // Fallback to estimated date
+            const estimatedDate = this.estimateExDividendDate();
+            exDivElement.textContent = `~${estimatedDate}`;
+            exDivElement.style.color = '#888';
+            exDivElement.style.fontStyle = 'italic';
+            exDivElement.title = 'Estimated ex-dividend date (Finviz data pending)';
+            
+            // Queue for Finviz scraping
+            this.queueForFinvizScraping(this.currentTicker);
+        }
+    }
+
+    async getExDividendDate(symbol) {
+        try {
+            // Check local storage for cached Finviz data
+            const finvizData = this.getStoredFinvizData(symbol);
+            if (finvizData && finvizData.exDividendDate) {
+                return finvizData.exDividendDate;
+            }
+
+            // Try to scrape from Finviz (this would need backend implementation)
+            const scrapedDate = await this.scrapeFinvizExDividendDate(symbol);
+            if (scrapedDate) {
+                this.storeFinvizData(symbol, { exDividendDate: scrapedDate });
+                return scrapedDate;
+            }
+
+            return null;
+        } catch (error) {
+            console.warn('Error getting ex-dividend date for', symbol, error);
+            return null;
+        }
+    }
+
+    async scrapeFinvizExDividendDate(symbol) {
+        try {
+            // This would require a backend service due to CORS
+            // For now, return null and use estimation
+            
+            // In a real implementation, this would call:
+            // const response = await fetch(`/api/finviz-scrape?symbol=${symbol}`);
+            // const data = await response.json();
+            // return data.exDividendDate;
+            
+            console.log(`Finviz scraping needed for ${symbol} ex-dividend date`);
+            return null;
+        } catch (error) {
+            console.warn('Finviz scraping failed for', symbol, error);
+            return null;
+        }
+    }
+
+    getStoredFinvizData(symbol) {
+        try {
+            const key = `finvizData_${symbol}`;
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                const data = JSON.parse(stored);
+                // Check if data is recent (within 7 days)
+                if (data.timestamp && (Date.now() - data.timestamp) < 7 * 24 * 60 * 60 * 1000) {
+                    return data;
+                }
+            }
+        } catch (error) {
+            console.warn('Error reading stored Finviz data for', symbol);
+        }
+        return null;
+    }
+
+    storeFinvizData(symbol, data) {
+        try {
+            const key = `finvizData_${symbol}`;
+            const storeData = {
+                ...data,
+                timestamp: Date.now(),
+                symbol: symbol
+            };
+            localStorage.setItem(key, JSON.stringify(storeData));
+        } catch (error) {
+            console.warn('Error storing Finviz data for', symbol, error);
+        }
+    }
+
+    getFinvizData(symbol) {
+        try {
+            const key = `finvizData_${symbol}`;
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : null;
+        } catch (error) {
+            console.warn('Error retrieving Finviz data for', symbol, error);
+            return null;
+        }
+    }
+
+    queueForFinvizScraping(symbol) {
+        try {
+            // Maintain a queue of symbols that need Finviz scraping
+            const queue = JSON.parse(localStorage.getItem('finvizScrapingQueue') || '[]');
+            
+            if (!queue.includes(symbol)) {
+                queue.push(symbol);
+                localStorage.setItem('finvizScrapingQueue', JSON.stringify(queue));
+                console.log(`Queued ${symbol} for Finviz ex-dividend date scraping`);
+            }
+        } catch (error) {
+            console.warn('Error queuing symbol for Finviz scraping', error);
+        }
+    }
+
+    calculateDaysUntilDate(dateString) {
+        try {
+            const targetDate = new Date(dateString);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            const diffTime = targetDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        } catch (error) {
+            return -999; // Invalid date
+        }
+    }
+
+    estimateExDividendDate() {
+        // Estimate next ex-dividend date based on quarterly pattern
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        
+        // Most stocks go ex-dividend in: Jan, Apr, Jul, Oct (around mid-month)
+        const exDividendMonths = [0, 3, 6, 9]; // Jan, Apr, Jul, Oct
+        
+        // Find next ex-dividend month
+        let nextExMonth = exDividendMonths.find(month => month > currentMonth);
+        let year = today.getFullYear();
+        
+        if (!nextExMonth) {
+            nextExMonth = exDividendMonths[0]; // January of next year
+            year += 1;
+        }
+        
+        // Estimate mid-month (15th) as ex-dividend date
+        const estimatedDate = new Date(year, nextExMonth, 15);
+        return estimatedDate.toISOString().split('T')[0];
+    }
+
+    // Debug/Admin functions for Finviz data management
+    getFinvizScrapingQueue() {
+        try {
+            return JSON.parse(localStorage.getItem('finvizScrapingQueue') || '[]');
+        } catch (error) {
+            return [];
+        }
+    }
+
+    // Manual method to add sample ex-dividend dates for testing
+    addSampleExDividendDates() {
+        // Sample data for common dividend stocks with dividend per share info
+        // Note: dividendPerShare should be QUARTERLY amount, will be multiplied by 4 for annual
+        const sampleData = {
+            'AAPL': { exDividendDate: '2025-02-14', dividendPerShare: 0.24, frequency: 'quarterly' },
+            'MSFT': { exDividendDate: '2025-02-19', dividendPerShare: 0.83, frequency: 'quarterly' },
+            'JNJ': { exDividendDate: '2025-02-25', dividendPerShare: 1.19, frequency: 'quarterly' },
+            'KO': { exDividendDate: '2025-03-14', dividendPerShare: 0.485, frequency: 'quarterly' },
+            'PEP': { exDividendDate: '2025-03-07', dividendPerShare: 1.355, frequency: 'quarterly' },
+            'PG': { exDividendDate: '2025-01-17', dividendPerShare: 0.9133, frequency: 'quarterly' },
+            'T': { exDividendDate: '2025-01-09', dividendPerShare: 0.2775, frequency: 'quarterly' },
+            'VZ': { exDividendDate: '2025-01-08', dividendPerShare: 0.6775, frequency: 'quarterly' },
+            'WMT': { exDividendDate: '2025-01-03', dividendPerShare: 0.2075, frequency: 'quarterly' },
+            'HD': { exDividendDate: '2025-03-13', dividendPerShare: 2.09, frequency: 'quarterly' },
+            'NVDA': { exDividendDate: '2025-06-15', dividendPerShare: 0.01, frequency: 'annual' }
+        };
+
+        Object.entries(sampleData).forEach(([symbol, data]) => {
+            this.storeFinvizData(symbol, data);
+        });
+
+        console.log('✅ Added sample ex-dividend dates for common dividend stocks');
+        return Object.keys(sampleData);
+    }
+
+    // Clear all Finviz data and queue (for testing)
+    clearFinvizData() {
+        try {
+            const keys = Object.keys(localStorage).filter(key => 
+                key.startsWith('finvizData_') || key === 'finvizScrapingQueue'
+            );
+            keys.forEach(key => localStorage.removeItem(key));
+            console.log(`Cleared ${keys.length} Finviz data entries`);
+        } catch (error) {
+            console.warn('Error clearing Finviz data', error);
+        }
+    }
+
+    // Clear sample dividend data to test with real API data
+    clearSampleDividendData() {
+        try {
+            const sampleSymbols = ['AAPL', 'MSFT', 'JNJ', 'KO', 'PEP', 'PG', 'T', 'VZ', 'WMT', 'HD', 'NVDA'];
+            sampleSymbols.forEach(symbol => {
+                const key = `finvizData_${symbol}`;
+                localStorage.removeItem(key);
+            });
+            console.log('✅ Cleared sample dividend data - now using real API data');
+        } catch (error) {
+            console.warn('Error clearing sample dividend data', error);
+        }
+    }
+
+    calculateDividendFrequency(metrics, dividendPerShare) {
+        const freqElement = document.getElementById('dividendFrequency');
+        
+        if (!dividendPerShare || dividendPerShare <= 0) {
+            freqElement.textContent = 'None';
+            return;
+        }
+
+        // Estimate frequency based on typical patterns
+        // Most US stocks are quarterly, but we can make educated guesses
+        if (dividendPerShare < 0.50) {
+            freqElement.textContent = 'Quarterly';
+        } else if (dividendPerShare < 1.50) {
+            freqElement.textContent = 'Quarterly';
+        } else if (dividendPerShare < 4.00) {
+            freqElement.textContent = 'Quarterly';
+        } else {
+            freqElement.textContent = 'Monthly/Other';
+        }
+        
+        freqElement.title = 'Estimated based on dividend amount - exact frequency requires dividend API';
+    }
+
+    assessDividendHealth(metrics, payoutRatio, dividendPerShare) {
+        const healthElement = document.getElementById('dividendHealth');
+        
+        if (!dividendPerShare || dividendPerShare <= 0) {
+            healthElement.textContent = 'N/A';
+            healthElement.className = 'metric-value dividend-health';
+            return;
+        }
+
+        let score = 0;
+        let reasons = [];
+
+        // Payout ratio assessment (40% of score)
+        if (payoutRatio && payoutRatio <= 60) {
+            score += 40;
+            reasons.push('Sustainable payout ratio');
+        } else if (payoutRatio && payoutRatio <= 80) {
+            score += 25;
+            reasons.push('Moderate payout ratio');
+        } else if (payoutRatio && payoutRatio > 100) {
+            score -= 10;
+            reasons.push('High payout ratio risk');
+        }
+
+        // Cash flow coverage (30% of score)
+        const fcfPerShare = metrics.cashFlowPerShareTTM;
+        if (fcfPerShare && fcfPerShare > dividendPerShare * 1.5) {
+            score += 30;
+            reasons.push('Strong cash flow coverage');
+        } else if (fcfPerShare && fcfPerShare > dividendPerShare) {
+            score += 20;
+            reasons.push('Adequate cash flow coverage');
+        } else if (fcfPerShare && fcfPerShare < dividendPerShare) {
+            score -= 15;
+            reasons.push('Weak cash flow coverage');
+        }
+
+        // Debt levels (15% of score)
+        const debtToEquity = metrics.totalDebtToEquityAnnual;
+        if (debtToEquity && debtToEquity < 0.5) {
+            score += 15;
+            reasons.push('Low debt');
+        } else if (debtToEquity && debtToEquity < 1.0) {
+            score += 10;
+            reasons.push('Moderate debt');
+        } else if (debtToEquity && debtToEquity > 2.0) {
+            score -= 10;
+            reasons.push('High debt levels');
+        }
+
+        // Revenue/earnings growth (15% of score)
+        const revenueGrowth = metrics.revenueGrowth5Y;
+        const epsGrowth = metrics.epsGrowth5Y;
+        if ((revenueGrowth && revenueGrowth > 5) || (epsGrowth && epsGrowth > 5)) {
+            score += 15;
+            reasons.push('Growing business');
+        } else if ((revenueGrowth && revenueGrowth < -5) || (epsGrowth && epsGrowth < -5)) {
+            score -= 10;
+            reasons.push('Declining business');
+        }
+
+        // Determine health rating
+        let healthRating, healthClass;
+        if (score >= 70) {
+            healthRating = 'Excellent';
+            healthClass = 'dividend-health excellent';
+        } else if (score >= 50) {
+            healthRating = 'Good';
+            healthClass = 'dividend-health good';
+        } else if (score >= 30) {
+            healthRating = 'Fair';
+            healthClass = 'dividend-health fair';
+        } else if (score >= 10) {
+            healthRating = 'Poor';
+            healthClass = 'dividend-health poor';
+        } else {
+            healthRating = 'High Risk';
+            healthClass = 'dividend-health high-risk';
+        }
+
+        healthElement.textContent = healthRating;
+        healthElement.className = `metric-value ${healthClass}`;
+        healthElement.title = `Score: ${score}/100\n${reasons.join('\n')}`;
+    }
+
+    formatLargeNumber(number) {
+        if (!number) return '-';
+        
+        const absNum = Math.abs(number);
+        if (absNum >= 1e12) {
+            return `$${(number / 1e12).toFixed(2)}T`;
+        } else if (absNum >= 1e9) {
+            return `$${(number / 1e9).toFixed(2)}B`;
+        } else if (absNum >= 1e6) {
+            return `$${(number / 1e6).toFixed(2)}M`;
+        } else if (absNum >= 1e3) {
+            return `$${(number / 1e3).toFixed(2)}K`;
+        } else {
+            return `$${number.toFixed(2)}`;
+        }
     }
 
     // Watchlist Management
@@ -865,6 +1840,7 @@ class InvestmentDashboard {
             this.updatePortfolioSummary();
             this.renderAllocationChart();
             this.renderSectorAnalysis();
+            this.renderDividendReminders(); // Refresh auto-reminders when portfolio changes
             this.hidePortfolioModal();
             
             const action = transaction.type === 'buy' ? 'purchased' : 'sold';
@@ -927,6 +1903,12 @@ class InvestmentDashboard {
                 dayChangeElement.style.color = dayChange >= 0 ? '#28a745' : '#dc3545';
             }
             
+            // Calculate and update dividend income metrics
+            this.updateDividendMetrics();
+            
+            // Auto-refresh dividend data for portfolio holdings if needed
+            this.refreshPortfolioDividendData();
+            
         } catch (error) {
             console.error('Error updating portfolio summary:', error);
             document.getElementById('cashBalance').textContent = '$0.00';
@@ -960,6 +1942,222 @@ class InvestmentDashboard {
                 ? total + value 
                 : total - value;
         }, 0);
+    }
+
+    async updateDividendMetrics() {
+        try {
+            const dividendStats = this.calculateDividendStats();
+            
+            // Update Annual Dividend Income
+            const annualIncomeElement = document.getElementById('annualDividendIncome');
+            if (annualIncomeElement && dividendStats && typeof dividendStats.annualIncome === 'number') {
+                annualIncomeElement.textContent = `$${dividendStats.annualIncome.toFixed(2)}`;
+                if (dividendStats.annualIncome > 0) {
+                    annualIncomeElement.style.color = '#28a745'; // Green for positive income
+                }
+            } else if (annualIncomeElement) {
+                annualIncomeElement.textContent = '$0.00';
+            }
+            
+            // Update Next Dividend Payment
+            const nextPaymentElement = document.getElementById('nextDividendPayment');
+            if (nextPaymentElement) {
+                if (dividendStats.nextPayment) {
+                    const daysUntilNext = Math.ceil((new Date(dividendStats.nextPayment.date) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (daysUntilNext >= 0) {
+                        nextPaymentElement.textContent = `${dividendStats.nextPayment.symbol} in ${daysUntilNext} days`;
+                        if (daysUntilNext <= 7) {
+                            nextPaymentElement.style.color = '#28a745'; // Green for soon
+                        } else if (daysUntilNext <= 30) {
+                            nextPaymentElement.style.color = '#ffc107'; // Yellow for upcoming
+                        }
+                    } else {
+                        nextPaymentElement.textContent = 'API Required';
+                        nextPaymentElement.style.color = '#888';
+                        nextPaymentElement.style.fontStyle = 'italic';
+                    }
+                } else {
+                    nextPaymentElement.textContent = 'No dividends tracked';
+                    nextPaymentElement.style.color = '#666';
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error updating dividend metrics:', error);
+            // Set defaults on error
+            const annualIncomeElement = document.getElementById('annualDividendIncome');
+            if (annualIncomeElement) annualIncomeElement.textContent = '$0.00';
+            
+            const nextPaymentElement = document.getElementById('nextDividendPayment');
+            if (nextPaymentElement) nextPaymentElement.textContent = '-';
+        }
+    }
+
+    calculateDividendStats() {
+        const holdings = this.calculateDetailedPortfolioStats().holdings;
+        let totalAnnualIncome = 0;
+        let upcomingDividends = [];
+        
+        // Calculate based on current holdings and their dividend yields
+        Object.entries(holdings).forEach(([symbol, holding]) => {
+            if (holding.shares > 0) {
+                // Get dividend data from most recent stock searches or default estimation
+                const lastSearchData = this.getLastStockData(symbol);
+                if (lastSearchData && lastSearchData.fundamentalMetrics) {
+                    const metrics = lastSearchData.fundamentalMetrics;
+                    const dividendPerShare = metrics.dividendPerShareTTM || metrics.dividendPerShareAnnual;
+                    
+                    if (dividendPerShare && dividendPerShare > 0) {
+                        const annualDividendFromHolding = dividendPerShare * holding.shares;
+                        totalAnnualIncome += annualDividendFromHolding;
+                        
+                        // Estimate next dividend payment (quarterly assumption)
+                        const nextPaymentDate = this.estimateNextDividendDate(symbol);
+                        if (nextPaymentDate) {
+                            upcomingDividends.push({
+                                symbol: symbol,
+                                date: nextPaymentDate,
+                                estimatedAmount: dividendPerShare * holding.shares / 4, // Quarterly
+                                shares: holding.shares
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Also add recorded dividend transactions
+        const recordedDividends = this.portfolio.filter(t => t.type === 'dividend');
+        const currentYear = new Date().getFullYear();
+        const thisYearDividends = recordedDividends.filter(t => 
+            new Date(t.date).getFullYear() === currentYear
+        );
+        
+        const recordedThisYear = thisYearDividends.reduce((sum, t) => 
+            sum + (t.dividendAmount || 0), 0
+        );
+        
+        // Find next upcoming dividend
+        upcomingDividends.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const nextPayment = upcomingDividends.find(d => new Date(d.date) > new Date()) || null;
+        
+        return {
+            annualIncome: Math.max(totalAnnualIncome, recordedThisYear),
+            recordedThisYear: recordedThisYear,
+            projectedAnnual: totalAnnualIncome,
+            upcomingDividends: upcomingDividends,
+            nextPayment: nextPayment
+        };
+    }
+
+    getLastStockData(symbol) {
+        // Try to retrieve the last fetched data for this symbol
+        // This would be stored from recent stock searches
+        const key = `stockData_${symbol}`;
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
+                // Check if data is recent (within 24 hours)
+                if (data.timestamp && (Date.now() - data.timestamp) < 24 * 60 * 60 * 1000) {
+                    return data;
+                }
+            } catch (e) {
+                console.warn('Error parsing stored stock data for', symbol);
+            }
+        }
+        return null;
+    }
+
+    estimateNextDividendDate(symbol) {
+        // Placeholder for dividend date estimation
+        // In real implementation, this would use external API
+        const today = new Date();
+        const quarterEnds = [
+            new Date(today.getFullYear(), 2, 31), // Q1 end
+            new Date(today.getFullYear(), 5, 30), // Q2 end  
+            new Date(today.getFullYear(), 8, 30), // Q3 end
+            new Date(today.getFullYear(), 11, 31) // Q4 end
+        ];
+        
+        // Find next quarter end after today
+        const nextQuarterEnd = quarterEnds.find(date => date > today);
+        if (nextQuarterEnd) {
+            // Estimate dividend date as ~15 days after quarter end
+            const estimatedDate = new Date(nextQuarterEnd);
+            estimatedDate.setDate(estimatedDate.getDate() + 15);
+            return estimatedDate.toISOString().split('T')[0];
+        }
+        
+        // If we're past Q4, use Q1 of next year
+        const nextYear = today.getFullYear() + 1;
+        const q1NextYear = new Date(nextYear, 2, 31);
+        q1NextYear.setDate(q1NextYear.getDate() + 15);
+        return q1NextYear.toISOString().split('T')[0];
+    }
+
+    storeStockData(symbol, data) {
+        try {
+            const key = `stockData_${symbol}`;
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (error) {
+            console.warn('Error storing stock data for', symbol, error);
+        }
+    }
+
+    async refreshPortfolioDividendData() {
+        try {
+            const holdings = this.calculateDetailedPortfolioStats().holdings;
+            const symbolsNeedingData = [];
+            
+            // Check which holdings don't have recent dividend data
+            Object.keys(holdings).forEach(symbol => {
+                if (holdings[symbol].shares > 0) {
+                    const lastData = this.getLastStockData(symbol);
+                    if (!lastData) {
+                        symbolsNeedingData.push(symbol);
+                    }
+                }
+            });
+            
+            // Auto-fetch data for up to 3 holdings at a time (to avoid API limits)
+            if (symbolsNeedingData.length > 0) {
+                console.log(`Auto-fetching dividend data for portfolio holdings: ${symbolsNeedingData.slice(0, 3).join(', ')}`);
+                
+                for (const symbol of symbolsNeedingData.slice(0, 3)) {
+                    try {
+                        // Fetch data in background without updating the main dashboard
+                        const [stockData, companyProfile, fundamentalMetrics] = await Promise.all([
+                            this.fetchStockData(symbol),
+                            this.fetchCompanyProfile(symbol),
+                            this.fetchFundamentalMetrics(symbol)
+                        ]);
+                        
+                        // Store the data for dividend calculations
+                        this.storeStockData(symbol, {
+                            stockData: stockData,
+                            companyProfile: companyProfile,
+                            fundamentalMetrics: fundamentalMetrics,
+                            timestamp: Date.now()
+                        });
+                        
+                        console.log(`✅ Fetched dividend data for ${symbol}`);
+                        
+                        // Small delay to be nice to the API
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                    } catch (error) {
+                        console.warn(`Failed to fetch data for ${symbol}:`, error.message);
+                    }
+                }
+                
+                // Update dividend metrics after fetching new data
+                setTimeout(() => this.updateDividendMetrics(), 1000);
+            }
+            
+        } catch (error) {
+            console.error('Error refreshing portfolio dividend data:', error);
+        }
     }
 
     calculatePortfolioStats() {
@@ -1015,6 +2213,7 @@ class InvestmentDashboard {
             this.renderPortfolioSummary();
             this.renderCurrentHoldings();
             this.renderDividendIncomeSummary();
+            this.renderDividendCalendar();
             this.renderTransactionHistory();
         } catch (error) {
             console.error('Error rendering portfolio details:', error);
@@ -1111,12 +2310,26 @@ class InvestmentDashboard {
             
             // Get dividend yield data
             const dividendData = dividendYields[holding.symbol];
-            const yieldDisplay = dividendData && dividendData.yield > 0 
-                ? `${dividendData.yield.toFixed(2)}%` 
-                : 'N/A';
-            const annualDividendDisplay = dividendData && dividendData.projectedAnnualIncome > 0
-                ? `$${dividendData.projectedAnnualIncome.toFixed(2)}`
-                : 'N/A';
+            let yieldDisplay = 'N/A';
+            let annualDividendDisplay = 'N/A';
+            
+            if (dividendData && dividendData.yield > 0) {
+                yieldDisplay = `${dividendData.yield.toFixed(2)}%`;
+                // Add warning indicator for unreliable data
+                if (!dividendData.isReliable) {
+                    yieldDisplay += ' ⚠️';
+                }
+            }
+            
+            if (dividendData && dividendData.projectedAnnualIncome > 0) {
+                annualDividendDisplay = `$${dividendData.projectedAnnualIncome.toFixed(2)}`;
+                if (!dividendData.isReliable) {
+                    annualDividendDisplay += ' ⚠️';
+                }
+            }
+            
+            // Calculate yield-on-cost (dividend yield based on original purchase price)
+            const yieldOnCostDisplay = this.calculateYieldOnCost(holding.symbol, avgPrice);
             
             return `
                 <div class="holding-item">
@@ -1147,6 +2360,10 @@ class InvestmentDashboard {
                         <div class="holding-stat">
                             <span class="holding-stat-label">Annual Dividends</span>
                             <span class="holding-stat-value">${annualDividendDisplay}</span>
+                        </div>
+                        <div class="holding-stat">
+                            <span class="holding-stat-label">Yield on Cost</span>
+                            <span class="holding-stat-value yield-on-cost">${yieldOnCostDisplay}</span>
                         </div>
                     </div>
                 </div>
@@ -1322,6 +2539,164 @@ class InvestmentDashboard {
             this.renderPortfolioDetails();
             this.showToast('Transaction deleted successfully', 'success');
         }
+    }
+
+    // Dividend Calendar Methods
+    renderDividendCalendar() {
+        try {
+            const calendarContainer = document.getElementById('dividend-calendar-content');
+            if (!calendarContainer) return;
+
+            const dividendData = this.generateDividendCalendarData(90); // Next 90 days
+        
+        if (dividendData.events.length === 0) {
+            calendarContainer.innerHTML = `
+                <div class="no-dividends">
+                    <p>No upcoming dividend events in your portfolio</p>
+                    <small>Add dividend-paying stocks to see your dividend calendar</small>
+                </div>
+            `;
+            return;
+        }
+
+        const monthlyEvents = this.groupEventsByMonth(dividendData.events);
+        
+        calendarContainer.innerHTML = `
+            <div class="dividend-summary">
+                <div class="summary-stat">
+                    <label>Next 30 Days</label>
+                    <span class="value">$${dividendData.summary.next30Days.toFixed(2)}</span>
+                </div>
+                <div class="summary-stat">
+                    <label>Next 90 Days</label>
+                    <span class="value">$${dividendData.summary.next90Days.toFixed(2)}</span>
+                </div>
+                <div class="summary-stat">
+                    <label>Total Events</label>
+                    <span class="value">${dividendData.events.length}</span>
+                </div>
+            </div>
+            
+            <div class="calendar-timeline">
+                ${Object.entries(monthlyEvents).map(([month, events]) => `
+                    <div class="month-section">
+                        <h4 class="month-header">${month}</h4>
+                        <div class="events-list">
+                            ${events.map(event => `
+                                <div class="dividend-event ${event.urgency}">
+                                    <div class="event-symbol">${event.symbol}</div>
+                                    <div class="event-details">
+                                        <div class="event-type">${event.type}</div>
+                                        <div class="event-date">${event.date}</div>
+                                    </div>
+                                    <div class="event-amount">$${event.amount.toFixed(2)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        } catch (error) {
+            console.error('Error rendering dividend calendar:', error);
+            const calendarContainer = document.getElementById('dividend-calendar-content');
+            if (calendarContainer) {
+                calendarContainer.innerHTML = '<div class="error-state">Error loading dividend calendar</div>';
+            }
+        }
+    }
+
+    generateDividendCalendarData(periodDays = 90) {
+        try {
+            const events = [];
+            const summary = { next30Days: 0, next90Days: 0 };
+            const today = new Date();
+            const endDate = new Date(today.getTime() + (periodDays * 24 * 60 * 60 * 1000));
+
+            // Get unique symbols from portfolio
+            const holdings = this.getPortfolioHoldings();
+        
+        holdings.forEach(holding => {
+            // Try to get dividend data from our cache
+            const finvizData = this.getFinvizData(holding.symbol);
+            const exDivDate = finvizData?.exDividendDate;
+            
+            if (exDivDate) {
+                const exDate = new Date(exDivDate);
+                if (exDate >= today && exDate <= endDate) {
+                    // Estimate payment date (typically 2-4 weeks after ex-dividend date)
+                    const paymentDate = new Date(exDate.getTime() + (21 * 24 * 60 * 60 * 1000));
+                    
+                    // Calculate estimated dividend amount
+                    const estimatedAmount = holding.shares * (finvizData.dividendPerShare || 0);
+                    
+                    // Add ex-dividend event
+                    events.push({
+                        symbol: holding.symbol,
+                        type: 'Ex-Dividend',
+                        date: exDate.toLocaleDateString(),
+                        amount: estimatedAmount,
+                        urgency: this.getEventUrgency(exDate, today),
+                        timestamp: exDate.getTime()
+                    });
+                    
+                    // Add payment event if within period
+                    if (paymentDate <= endDate) {
+                        events.push({
+                            symbol: holding.symbol,
+                            type: 'Payment',
+                            date: paymentDate.toLocaleDateString(),
+                            amount: estimatedAmount,
+                            urgency: this.getEventUrgency(paymentDate, today),
+                            timestamp: paymentDate.getTime()
+                        });
+                        
+                        // Add to summary
+                        const daysUntilPayment = Math.ceil((paymentDate - today) / (24 * 60 * 60 * 1000));
+                        if (daysUntilPayment <= 30) {
+                            summary.next30Days += estimatedAmount;
+                        }
+                        if (daysUntilPayment <= 90) {
+                            summary.next90Days += estimatedAmount;
+                        }
+                    }
+                }
+            }
+        });
+
+            // Sort events by date
+            events.sort((a, b) => a.timestamp - b.timestamp);
+            
+            return { events, summary };
+        } catch (error) {
+            console.error('Error generating dividend calendar data:', error);
+            return { events: [], summary: { next30Days: 0, next90Days: 0 } };
+        }
+    }
+
+    groupEventsByMonth(events) {
+        const months = {};
+        
+        events.forEach(event => {
+            const date = new Date(event.timestamp);
+            const monthKey = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            if (!months[monthKey]) {
+                months[monthKey] = [];
+            }
+            months[monthKey].push(event);
+        });
+        
+        return months;
+    }
+
+    getEventUrgency(eventDate, today) {
+        const daysUntil = Math.ceil((eventDate - today) / (24 * 60 * 60 * 1000));
+        
+        if (daysUntil <= 1) return 'urgent';
+        if (daysUntil <= 7) return 'soon';
+        if (daysUntil <= 30) return 'upcoming';
+        return 'future';
     }
 
     // Data Management
@@ -1550,7 +2925,9 @@ class InvestmentDashboard {
 
         Object.entries(holdings).forEach(([symbol, holding]) => {
             if (holding.shares > 0) {
-                const currentPrice = this.currentPrices[symbol] || 0;
+                // Use current price if available, otherwise fall back to average cost basis
+                const avgCostPrice = holding.totalInvested / holding.shares;
+                const currentPrice = this.currentPrices[symbol] || avgCostPrice;
                 const previousClose = this.previousClosePrices[symbol] || currentPrice;
                 const costBasis = holding.totalInvested;
                 const currentValue = holding.shares * currentPrice;
@@ -1649,15 +3026,26 @@ class InvestmentDashboard {
             const watchlistSymbols = this.watchlist.map(item => item.ticker);
             const allSymbols = [...new Set([...portfolioSymbols, ...watchlistSymbols])];
             
+            if (allSymbols.length === 0) {
+                this.showMessage('No holdings to refresh', 'info');
+                return;
+            }
+            
+            // Track success/failure rates
+            let successCount = 0;
+            let failCount = 0;
+            
             // Fetch current prices for all symbols
             for (const symbol of allSymbols) {
                 try {
                     const priceData = await this.fetchStockPrice(symbol);
                     console.log(`Updated ${symbol}: $${priceData.current} (${priceData.changePercent >= 0 ? '+' : ''}${priceData.changePercent.toFixed(2)}%)`);
+                    successCount++;
                     // Small delay to respect API limits
                     await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (error) {
                     console.warn(`Failed to refresh price for ${symbol}:`, error);
+                    failCount++;
                 }
             }
             
@@ -1667,7 +3055,14 @@ class InvestmentDashboard {
             this.renderAllocationChart();
             this.renderSectorAnalysis();
             
-            this.showMessage('Portfolio prices refreshed successfully', 'success');
+            // Show appropriate message based on results
+            if (failCount === 0) {
+                this.showMessage(`Portfolio prices refreshed successfully (${successCount}/${allSymbols.length})`, 'success');
+            } else if (successCount > 0) {
+                this.showMessage(`Partially refreshed: ${successCount} successful, ${failCount} failed`, 'warning');
+            } else {
+                this.showMessage(`Failed to refresh any prices. Check internet connection.`, 'error');
+            }
             
         } catch (error) {
             console.error('Error refreshing portfolio prices:', error);
@@ -1680,7 +3075,7 @@ class InvestmentDashboard {
     }
 
     async fetchStockPrice(symbol) {
-        const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.API_KEY}`;
+        const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.apiKey}`;
         const response = await fetch(url);
         
         if (!response.ok) {
@@ -2600,17 +3995,44 @@ class InvestmentDashboard {
                     });
                     
                     // Calculate annualized dividend per share based on weighted average
-                    const annualDividendPerShare = totalDividendWeight > 0 ? 
+                    let annualDividendPerShare = totalDividendWeight > 0 ? 
                         weightedDividendPerShare / totalDividendWeight : 0;
                     
+                    // If no dividend transactions found, try to use Finviz data as fallback
+                    if (annualDividendPerShare === 0) {
+                        const finvizData = this.getFinvizData(symbol);
+                        if (finvizData && finvizData.dividendPerShare) {
+                            // Smart frequency detection - assume Finnhub dividendPerShare is ANNUAL
+                            // since multiplying by 4 often gives wrong results
+                            annualDividendPerShare = finvizData.dividendPerShare;
+                            
+                            // Log for debugging
+                            console.log(`Using annual dividend for ${symbol}: $${finvizData.dividendPerShare}`);
+                        }
+                    }
+                    
                     // Calculate dividend yield (annual dividend per share / current price)
-                    const dividendYield = currentPrice > 0 ? (annualDividendPerShare / currentPrice) * 100 : 0;
+                    let dividendYield = currentPrice > 0 ? (annualDividendPerShare / currentPrice) * 100 : 0;
+                    
+                    // Validate dividend yield - flag suspicious data
+                    let isReliable = true;
+                    if (dividendYield > 15) {
+                        console.warn(`⚠️ Suspicious dividend yield for ${symbol}: ${dividendYield.toFixed(2)}% (likely bad API data)`);
+                        isReliable = false;
+                    }
+                    if (dividendYield > 50) {
+                        console.warn(`🚨 Extreme dividend yield for ${symbol}: ${dividendYield.toFixed(2)}% (marking as unreliable)`);
+                        dividendYield = 0; // Zero out obviously wrong data
+                        annualDividendPerShare = 0;
+                        isReliable = false;
+                    }
                     
                     dividendYields[symbol] = {
                         yield: dividendYield,
                         annualDividendPerShare: annualDividendPerShare,
                         totalAnnualDividends: totalDividends,
-                        projectedAnnualIncome: holding.shares * annualDividendPerShare
+                        projectedAnnualIncome: holding.shares * annualDividendPerShare,
+                        isReliable: isReliable
                     };
                 }
             });
@@ -2668,6 +4090,46 @@ class InvestmentDashboard {
                 stocksWithDividends: 0,
                 dividendYields: {}
             };
+        }
+    }
+
+    // Calculate yield-on-cost (dividend yield based on original purchase price)
+    calculateYieldOnCost(symbol, avgPurchasePrice) {
+        try {
+            // Get current dividend data from Finnhub/Finviz
+            const finvizData = this.getFinvizData(symbol);
+            let annualDividendPerShare = 0;
+            
+            if (finvizData && finvizData.dividendPerShare) {
+                // Assume Finnhub dividendPerShare is ANNUAL (not quarterly)
+                annualDividendPerShare = finvizData.dividendPerShare;
+            }
+            
+            if (!annualDividendPerShare || annualDividendPerShare <= 0 || !avgPurchasePrice || avgPurchasePrice <= 0) {
+                return 'N/A';
+            }
+            
+            // Calculate annual dividend yield based on original purchase price
+            const yieldOnCost = (annualDividendPerShare / avgPurchasePrice) * 100;
+            
+            // Color code based on yield level
+            let colorClass = '';
+            if (yieldOnCost >= 8) {
+                colorClass = 'excellent'; // Green
+            } else if (yieldOnCost >= 5) {
+                colorClass = 'good'; // Light green
+            } else if (yieldOnCost >= 3) {
+                colorClass = 'fair'; // Yellow
+            } else if (yieldOnCost >= 1) {
+                colorClass = 'moderate'; // Orange
+            } else {
+                colorClass = 'low'; // Red
+            }
+            
+            return `<span class="yield-on-cost-value ${colorClass}">${yieldOnCost.toFixed(2)}%</span>`;
+        } catch (error) {
+            console.error('Error calculating yield-on-cost for', symbol, error);
+            return 'N/A';
         }
     }
 
@@ -2873,14 +4335,17 @@ class InvestmentDashboard {
         const container = document.getElementById('dividendReminders');
         const advanceBtn = document.getElementById('advanceOverdueBtn');
         
-        if (this.dividendReminders.length === 0) {
+        // Get complete reminders (auto + manual)
+        const allReminders = this.getCompleteDividendReminders();
+        
+        if (allReminders.length === 0) {
             container.innerHTML = '<p class="empty-state">No upcoming dividend payments</p>';
             advanceBtn.style.display = 'none';
             return;
         }
 
         // Sort by payment date
-        const sortedReminders = [...this.dividendReminders].sort((a, b) => 
+        const sortedReminders = [...allReminders].sort((a, b) => 
             new Date(a.payDate) - new Date(b.payDate)
         );
 
@@ -2908,19 +4373,27 @@ class InvestmentDashboard {
 
             // Calculate expected total based on holdings
             const holdings = this.getHoldingsForStock(reminder.symbol);
-            const expectedTotal = holdings * reminder.dividendPerShare;
+            const expectedTotal = reminder.amount || (holdings * reminder.dividendPerShare);
 
             // Format frequency display
             const frequencyDisplay = this.getFrequencyDisplay(reminder.frequency);
             const advancedText = reminder.timesAdvanced > 0 ? ` (advanced ${reminder.timesAdvanced}x)` : '';
+            
+            // Auto vs Manual indicator
+            const sourceText = reminder.isAutoGenerated ? 'Auto' : 'Manual';
+            const sourceClass = reminder.isAutoGenerated ? 'auto-reminder' : 'manual-reminder';
 
             return `
-                <div class="dividend-reminder-item ${statusClass}">
+                <div class="dividend-reminder-item ${statusClass} ${sourceClass}">
                     <div class="dividend-reminder-main">
-                        <div class="dividend-reminder-symbol">${reminder.symbol}</div>
+                        <div class="dividend-reminder-symbol">
+                            ${reminder.symbol}
+                            <span class="reminder-source-badge">${sourceText}</span>
+                        </div>
                         <div class="dividend-reminder-details">
                             $${reminder.dividendPerShare.toFixed(3)}/share • ${frequencyDisplay} • ${statusText}${advancedText}
                             ${reminder.notes ? ` • ${reminder.notes}` : ''}
+                            ${reminder.isAutoGenerated ? ` • ${reminder.shares} shares` : ''}
                         </div>
                     </div>
                     <div class="dividend-reminder-amount">
@@ -2933,8 +4406,14 @@ class InvestmentDashboard {
                         ${daysToPayment < 0 && reminder.frequency !== 'special' && reminder.autoReschedule ? 
                             `<button class="btn btn-sm" onclick="investmentDashboard.advanceSingleReminder('${reminder.id}')" style="background: #ffc107; color: #000; margin-right: 5px;">⏭</button>` : 
                             ''}
-                        <button class="btn btn-sm" onclick="investmentDashboard.editDividendReminder('${reminder.id}')" style="background: #667eea; color: white; margin-right: 5px;">✏️</button>
-                        <button class="dividend-reminder-delete" onclick="investmentDashboard.deleteDividendReminder('${reminder.id}')">×</button>
+                        ${reminder.isAutoGenerated ? 
+                            `<button class="btn btn-sm" onclick="investmentDashboard.overrideAutoReminder('${reminder.id}')" style="background: #28a745; color: white; margin-right: 5px;" title="Create Manual Override">📌</button>` :
+                            `<button class="btn btn-sm" onclick="investmentDashboard.editDividendReminder('${reminder.id}')" style="background: #667eea; color: white; margin-right: 5px;">✏️</button>`
+                        }
+                        ${!reminder.isAutoGenerated ? 
+                            `<button class="dividend-reminder-delete" onclick="investmentDashboard.deleteDividendReminder('${reminder.id}')">×</button>` :
+                            ''
+                        }
                     </div>
                 </div>
             `;
@@ -3234,6 +4713,114 @@ class InvestmentDashboard {
         } catch (error) {
             console.error('Error saving dividend reminders:', error);
         }
+    }
+
+    // Auto-generate dividend reminders from portfolio holdings
+    generateAutoDividendReminders() {
+        const holdings = this.getPortfolioHoldings();
+        const autoReminders = [];
+        const today = new Date();
+        const futureDate = new Date(today.getTime() + (90 * 24 * 60 * 60 * 1000)); // Next 90 days
+
+        holdings.forEach(holding => {
+            const finvizData = this.getFinvizData(holding.symbol);
+            if (finvizData && finvizData.exDividendDate) {
+                const exDate = new Date(finvizData.exDividendDate);
+                
+                // Only include upcoming ex-dividend dates within next 90 days
+                if (exDate >= today && exDate <= futureDate) {
+                    // Estimate payment date (typically 2-4 weeks after ex-dividend)
+                    const payDate = new Date(exDate.getTime() + (21 * 24 * 60 * 60 * 1000));
+                    
+                    // Calculate estimated dividend amount
+                    const estimatedAmount = holding.shares * (finvizData.dividendPerShare || 0);
+                    
+                    autoReminders.push({
+                        id: `auto_${holding.symbol}_${exDate.getTime()}`,
+                        symbol: holding.symbol,
+                        amount: estimatedAmount,
+                        exDate: exDate.toISOString().split('T')[0],
+                        payDate: payDate.toISOString().split('T')[0],
+                        shares: holding.shares,
+                        dividendPerShare: finvizData.dividendPerShare,
+                        isAutoGenerated: true,
+                        frequency: 'Quarterly' // Default assumption
+                    });
+                }
+            }
+        });
+
+        return autoReminders;
+    }
+
+    // Merge auto-generated and manual dividend reminders
+    getCompleteDividendReminders() {
+        const manualReminders = this.dividendReminders.filter(r => !r.isAutoGenerated);
+        const autoReminders = this.generateAutoDividendReminders();
+        
+        // Remove auto reminders that have been manually overridden
+        const filteredAutoReminders = autoReminders.filter(autoReminder => {
+            return !manualReminders.some(manual => 
+                manual.symbol === autoReminder.symbol && 
+                manual.exDate === autoReminder.exDate
+            );
+        });
+        
+        return [...manualReminders, ...filteredAutoReminders].sort((a, b) => 
+            new Date(a.exDate) - new Date(b.exDate)
+        );
+    }
+
+    // Get portfolio holdings in the format needed for dividend calculations
+    getPortfolioHoldings() {
+        const portfolioStats = this.calculateDetailedPortfolioStats();
+        const holdings = [];
+        
+        Object.entries(portfolioStats.holdings).forEach(([symbol, holding]) => {
+            if (holding.shares > 0) {
+                holdings.push({
+                    symbol: symbol,
+                    shares: holding.shares,
+                    totalInvested: holding.totalInvested,
+                    avgPrice: holding.totalInvested / holding.shares
+                });
+            }
+        });
+        
+        return holdings;
+    }
+
+    // Create manual override from auto-generated reminder
+    overrideAutoReminder(autoReminderId) {
+        const allReminders = this.getCompleteDividendReminders();
+        const autoReminder = allReminders.find(r => r.id === autoReminderId);
+        
+        if (!autoReminder || !autoReminder.isAutoGenerated) {
+            this.showMessage('Auto-reminder not found', 'error');
+            return;
+        }
+        
+        // Create manual reminder based on auto data
+        const manualReminder = {
+            id: Date.now().toString(),
+            symbol: autoReminder.symbol,
+            amount: autoReminder.amount,
+            dividendPerShare: autoReminder.dividendPerShare,
+            exDate: autoReminder.exDate,
+            payDate: autoReminder.payDate,
+            frequency: autoReminder.frequency,
+            isAutoGenerated: false,
+            notes: 'Overridden from auto-reminder',
+            timesAdvanced: 0,
+            autoReschedule: true
+        };
+        
+        // Add to manual reminders
+        this.dividendReminders.push(manualReminder);
+        this.saveDividendReminders();
+        this.renderDividendReminders();
+        
+        this.showMessage(`Created manual override for ${autoReminder.symbol}`, 'success');
     }
 
     loadCashBalance() {

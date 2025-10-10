@@ -69,6 +69,14 @@
                             <span class="stat-label">Lifetime Return</span>
                             <span class="stat-value" id="lifetimeReturn">+0.00%</span>
                         </div>
+                        <div class="portfolio-stat dividend-stat">
+                            <span class="stat-label">Annual Dividend Income</span>
+                            <span class="stat-value" id="annualDividendIncome">$0.00</span>
+                        </div>
+                        <div class="portfolio-stat dividend-stat">
+                            <span class="stat-label">Next Dividend Payment</span>
+                            <span class="stat-value dividend-date" id="nextDividendPayment">-</span>
+                        </div>
                         <button class="btn btn-secondary" id="managePortfolioBtn">View Details</button>
                         <button class="btn btn-sm" id="refreshPricesBtn" style="margin-left: 10px;">🔄 Refresh</button>
                     </div>
@@ -118,6 +126,7 @@
                     </div>
                     <div class="dividend-actions">
                         <button class="btn btn-secondary" id="addDividendReminderBtn">+ Add Reminder</button>
+                        <button class="btn btn-sm" id="refreshDividendDataBtn" title="Refresh dividend data for portfolio holdings">🔄 Refresh Data</button>
                         <button class="btn btn-sm" id="advanceOverdueBtn" style="display: none;">⏭ Advance Overdue</button>
                     </div>
                 </div>
@@ -165,6 +174,126 @@
                         <div class="metric-card">
                             <h3>MACD</h3>
                             <p id="macdValue" class="metric-value">0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Fair Value</h3>
+                            <p id="fairValue" class="metric-value fair-value">$0.00</p>
+                            <p id="fairValueDiff" class="fair-value-diff">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Company Overview -->
+                    <div class="card">
+                        <h3>🏢 Company Overview</h3>
+                        <div class="company-overview">
+                            <div class="company-info">
+                                <div class="company-detail">
+                                    <span class="detail-label">Company Name:</span>
+                                    <span id="companyName" class="detail-value">-</span>
+                                </div>
+                                <div class="company-detail">
+                                    <span class="detail-label">Industry:</span>
+                                    <span id="companyIndustry" class="detail-value">-</span>
+                                </div>
+                                <div class="company-detail">
+                                    <span class="detail-label">Market Cap:</span>
+                                    <span id="marketCap" class="detail-value">-</span>
+                                </div>
+                                <div class="company-detail">
+                                    <span class="detail-label">Shares Outstanding:</span>
+                                    <span id="sharesOutstanding" class="detail-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fundamental Metrics -->
+                    <div class="card">
+                        <h3>📊 Fundamental Analysis</h3>
+                        <div class="fundamentals-grid">
+                            <div class="fundamental-section">
+                                <h4>Dividend Metrics</h4>
+                                <div class="fundamental-metrics">
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Dividend Yield</span>
+                                        <span id="dividendYield" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Payout Ratio</span>
+                                        <span id="payoutRatio" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Annual Dividend</span>
+                                        <span id="annualDividend" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Ex-Dividend Date</span>
+                                        <span id="exDividendDate" class="metric-value dividend-date">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Dividend Frequency</span>
+                                        <span id="dividendFrequency" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Dividend Health</span>
+                                        <span id="dividendHealth" class="metric-value dividend-health">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fundamental-section">
+                                <h4>Profitability</h4>
+                                <div class="fundamental-metrics">
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Profit Margin</span>
+                                        <span id="profitMargin" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Return on Equity</span>
+                                        <span id="returnOnEquity" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">ROIC</span>
+                                        <span id="roic" class="metric-value">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fundamental-section">
+                                <h4>Growth Metrics</h4>
+                                <div class="fundamental-metrics">
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">EPS Growth (5Y)</span>
+                                        <span id="epsGrowth5Y" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Revenue Growth (5Y)</span>
+                                        <span id="revenueGrowth5Y" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">EPS Growth (TTM)</span>
+                                        <span id="epsGrowthTTM" class="metric-value">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="fundamental-section">
+                                <h4>Valuation</h4>
+                                <div class="fundamental-metrics">
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">P/E Ratio</span>
+                                        <span id="peRatio" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">P/B Ratio</span>
+                                        <span id="pbRatio" class="metric-value">-</span>
+                                    </div>
+                                    <div class="fundamental-metric">
+                                        <span class="metric-label">Free Cash Flow</span>
+                                        <span id="freeCashFlow" class="metric-value">-</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -414,6 +543,37 @@
                         </div>
                         <div id="dividendsByStock" class="dividend-breakdown">
                             <!-- Dividend breakdown by stock will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dividend Calendar -->
+                <div class="dividend-calendar-section">
+                    <h4>📅 Dividend Calendar</h4>
+                    <div class="dividend-calendar-controls">
+                        <select id="dividendCalendarPeriod" class="input">
+                            <option value="30">Next 30 Days</option>
+                            <option value="60">Next 60 Days</option>
+                            <option value="90" selected>Next 3 Months</option>
+                            <option value="180">Next 6 Months</option>
+                        </select>
+                        <button id="refreshDividendCalendar" class="btn btn-sm">🔄 Refresh</button>
+                    </div>
+                    <div id="dividendCalendar" class="dividend-calendar">
+                        <!-- Dividend calendar will be populated here -->
+                    </div>
+                    <div id="dividendCalendarSummary" class="dividend-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Period Expected:</span>
+                            <span id="totalExpectedDividends" class="summary-value">$0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Next Payment:</span>
+                            <span id="nextDividendDate" class="summary-value">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Ex-Dividend This Week:</span>
+                            <span id="exDividendThisWeek" class="summary-value">0 stocks</span>
                         </div>
                     </div>
                 </div>

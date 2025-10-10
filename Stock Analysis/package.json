@@ -1,0 +1,43 @@
+{
+  "name": "stock-dashboard",
+  "version": "1.0.0",
+  "description": "Technical Analysis Stock Dashboard",
+  "type": "module",
+  "main": "js/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "lint": "eslint js/**/*.js",
+    "lint:fix": "eslint js/**/*.js --fix",
+    "format": "prettier --write js/**/*.js css/**/*.css *.html",
+    "format:check": "prettier --check js/**/*.js css/**/*.css *.html"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "@eslint/js": "^9.0.0"
+  },
+  "keywords": [
+    "stock",
+    "technical-analysis",
+    "dashboard",
+    "firebase",
+    "chart.js"
+  ],
+  "author": "Stock Dashboard Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/stock-dashboard.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

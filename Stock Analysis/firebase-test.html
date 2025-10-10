@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #222; color: #fff; }
+        .test { margin: 10px 0; padding: 10px; border-left: 3px solid #0f0; }
+        .error { border-left-color: #f00; }
+        .warning { border-left-color: #ff0; }
+        button { padding: 10px; margin: 5px; font-size: 16px; background: #444; color: white; border: none; cursor: pointer; }
+        button:hover { background: #666; }
+    </style>
+</head>
+<body>
+    <h1>Firebase Connection Test</h1>
+    <div id="output"></div>
+    
+    <button onclick="testFirebaseConnection()">Test Firebase Connection</button>
+    <button onclick="testAuth()">Test Authentication</button>
+    <button onclick="testFirestore()">Test Firestore</button>
+
+    <script type="module">
+        // Set Firebase configuration
+        window.__firebase_config = JSON.stringify({
+            apiKey: "AIzaSyCGJD6K1bA-s2x_QBhjTrurPyfAyBjqLeE",
+            authDomain: "stock-dashboard-bbde3.firebaseapp.com",
+            projectId: "stock-dashboard-bbde3",
+            storageBucket: "stock-dashboard-bbde3.firebasestorage.app",
+            messagingSenderId: "741892410192",
+            appId: "1:741892410192:web:6eb8596c00293d8c52fa55"
+        });
+        window.__app_id = "stock-dashboard";
+
+        function log(message, type = 'success') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            document.getElementById('output').appendChild(div);
+            console.log(message);
+        }
+
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let app, auth, db, currentUser;
+
+        window.testFirebaseConnection = async function() {
+            log('Testing Firebase connection...', 'warning');
+            try {
+                const firebaseConfig = JSON.parse(window.__firebase_config);
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                log('✓ Firebase app initialized successfully!', 'success');
+            } catch (error) {
+                log(`✗ Firebase initialization failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.testAuth = async function() {
+            log('Testing anonymous authentication...', 'warning');
+            try {
+                if (!auth) {
+                    log('Firebase not initialized. Run connection test first.', 'error');
+                    return;
+                }
+
+                const userCredential = await signInAnonymously(auth);
+                currentUser = userCredential.user;
+                
+                log(`✓ Anonymous authentication successful! User ID: ${currentUser.uid}`, 'success');
+            } catch (error) {
+                log(`✗ Authentication failed: ${error.message}`, 'error');
+                if (error.code === 'auth/operation-not-allowed') {
+                    log('Anonymous authentication is not enabled. Please enable it in Firebase Console.', 'error');
+                }
+            }
+        };
+
+        window.testFirestore = async function() {
+            log('Testing Firestore database...', 'warning');
+            try {
+                if (!currentUser) {
+                    log('User not authenticated. Run auth test first.', 'error');
+                    return;
+                }
+
+                const watchlistPath = `artifacts/${window.__app_id}/users/${currentUser.uid}/watchlist`;
+                log(`Testing Firestore path: ${watchlistPath}`);
+
+                // Try to add a test document
+                const testDoc = {
+                    ticker: 'TEST',
+                    addedAt: new Date(),
+                    testDocument: true
+                };
+
+                const docRef = await addDoc(collection(db, watchlistPath), testDoc);
+                log(`✓ Test document added successfully! Doc ID: ${docRef.id}`, 'success');
+
+                // Try to read documents
+                const querySnapshot = await getDocs(collection(db, watchlistPath));
+                log(`✓ Successfully read ${querySnapshot.size} documents from watchlist`, 'success');
+
+                log('✓ Firestore is working correctly!', 'success');
+
+            } catch (error) {
+                log(`✗ Firestore test failed: ${error.message}`, 'error');
+                if (error.code === 'permission-denied') {
+                    log('Permission denied. Make sure Firestore is in test mode.', 'error');
+                }
+            }
+        };
+
+        // Auto-run connection test
+        log('Firebase test tool loaded');
+        setTimeout(() => testFirebaseConnection(), 1000);
+    </script>
+</body>
+</html>

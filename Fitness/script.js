@@ -644,6 +644,12 @@ class DeadlineManager {
         const timeInfo = this.calculateTimeToDeadline(goal.deadline);
         if (!timeInfo) return;
 
+        // Remove any existing countdown div to prevent duplicates
+        const existingCountdown = container.querySelector('.deadline-countdown');
+        if (existingCountdown) {
+            existingCountdown.remove();
+        }
+
         const countdownDiv = document.createElement('div');
         
         if (timeInfo.expired) {

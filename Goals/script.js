@@ -129,6 +129,7 @@ class GoalsTracker {
         document.getElementById('goal-description').value = goal.description || '';
         document.getElementById('goal-category').value = goal.category;
         document.getElementById('goal-target-date').value = goal.targetDate;
+        document.getElementById('goal-status').value = goal.status;
 
         // Clear existing milestones and add goal's milestones
         document.getElementById('milestones-container').innerHTML = '';
@@ -148,6 +149,7 @@ class GoalsTracker {
     cancelForm() {
         document.getElementById('goal-form-section').classList.remove('active');
         this.resetForm();
+        this.currentGoal = null; // Clear current goal reference
     }
 
     addMilestoneField(value = '') {
@@ -175,6 +177,7 @@ class GoalsTracker {
         const description = document.getElementById('goal-description').value.trim();
         const category = document.getElementById('goal-category').value;
         const targetDate = document.getElementById('goal-target-date').value;
+        const status = document.getElementById('goal-status').value;
 
         // Validation
         if (!title) {
@@ -202,29 +205,46 @@ class GoalsTracker {
         // Collect milestones
         const milestoneInputs = document.querySelectorAll('#milestones-container input[type="text"]');
         const milestones = Array.from(milestoneInputs)
-            .map(input => input.value.trim())
+            .map((input, index) => input.value.trim())
             .filter(title => title.length > 0)
-            .map(title => ({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            .map((title, index) => ({
+                id: `milestone_${Date.now()}_${index}`,
                 title,
                 completed: false,
                 completedDate: null
             }));
 
         try {
-            if (this.currentGoal) {
-                // Update existing goal
-                this.currentGoal.title = title;
-                this.currentGoal.description = description;
-                this.currentGoal.category = category;
-                this.currentGoal.targetDate = targetDate;
+            if (this.currentGoal && this.currentGoal.id) {
+                // Find and update the existing goal in the array
+                const goalIndex = this.goals.findIndex(g => g.id === this.currentGoal.id);
                 
-                // Keep existing milestones that are completed, add new ones
-                const existingCompleted = this.currentGoal.milestones.filter(m => m.completed);
-                this.currentGoal.milestones = [...existingCompleted, ...milestones];
-                
-                this.showToast('Goal updated successfully!', 'success');
-            } else {
+                if (goalIndex !== -1) {
+                    // Update the goal directly in the array
+                    this.goals[goalIndex].title = title;
+                    this.goals[goalIndex].description = description;
+                    this.goals[goalIndex].category = category;
+                    this.goals[goalIndex].targetDate = targetDate;
+                    this.goals[goalIndex].status = status;
+                    
+                    // Update milestones more carefully to avoid duplicates
+                    const existingCompleted = this.goals[goalIndex].milestones ? this.goals[goalIndex].milestones.filter(m => m.completed) : [];
+                    this.goals[goalIndex].milestones = [...existingCompleted, ...milestones];
+                    
+                    // Update last modified date
+                    this.goals[goalIndex].lastModified = new Date().toISOString();
+                    
+                    // Update the current goal reference
+                    this.currentGoal = this.goals[goalIndex];
+                    
+                    this.showToast('Goal updated successfully!', 'success');
+                } else {
+                    // Goal not found in array, treat as new goal
+                    this.currentGoal = null;
+                }
+            }
+            
+            if (!this.currentGoal) {
                 // Create new goal
                 const newGoal = {
                     id: Date.now().toString(),
@@ -233,7 +253,7 @@ class GoalsTracker {
                     category,
                     startDate: new Date().toISOString().split('T')[0],
                     targetDate,
-                    status: 'not-started',
+                    status: status,
                     progress: 0,
                     milestones,
                     createdDate: new Date().toISOString().split('T')[0],
@@ -257,7 +277,13 @@ class GoalsTracker {
             this.cancelForm();
         } catch (error) {
             console.error('Error saving goal:', error);
-            this.showToast('Failed to save goal. Please try again.', 'error');
+            if (error.name === 'QuotaExceededError') {
+                this.showToast('Storage full. Consider exporting and clearing old goals.', 'error');
+            } else if (error.message.includes('localStorage')) {
+                this.showToast('Storage not available. Check browser settings.', 'error');
+            } else {
+                this.showToast('Failed to save goal. Check your data and try again.', 'error');
+            }
         }
     }
 
@@ -450,19 +476,26 @@ class GoalsTracker {
     // Goal Rendering
     renderGoals() {
         const container = document.getElementById('goals-container');
-        const emptyState = document.getElementById('empty-state');
+        if (!container) {
+            console.error('Goals container not found');
+            return;
+        }
         
         const filteredGoals = this.getFilteredGoals();
         
         if (filteredGoals.length === 0) {
-            container.innerHTML = '';
-            container.appendChild(emptyState);
-            emptyState.style.display = 'block';
+            // Show empty state
+            container.innerHTML = `
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">🎯</div>
+                    <h3>No goals yet</h3>
+                    <p>Set your first goal and start your journey to success!</p>
+                </div>
+            `;
             return;
         }
         
-        emptyState.style.display = 'none';
-        
+        // Show goals
         const goalsHTML = filteredGoals.map(goal => this.renderGoalCard(goal)).join('');
         container.innerHTML = goalsHTML;
     }

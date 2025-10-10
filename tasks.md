@@ -63,8 +63,8 @@
 ### Dashboard Enhancements
 - [x] ~~Create overview widgets for each module~~
 - [x] ~~Add key metrics display on main page~~
-- [ ] Implement progress charts and graphs
-- [ ] Add quick action buttons
+- [x] ~~Implement progress charts and graphs~~
+- [x] ~~Add quick action buttons~~
 
 ### Search Functionality
 - [x] ~~Implement global search across modules~~

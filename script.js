@@ -45,6 +45,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `
         },
+        investments: {
+            title: 'Investment Dashboard',
+            content: `
+                <h2>Investment Dashboard</h2>
+                <div class="investments-module">
+                    <p>Analyze stocks, track your portfolio, and make informed investment decisions with technical analysis tools.</p>
+                    <div style="margin-top: 20px;">
+                        <button onclick="window.location.href='Investments/index.html'" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">Open Investment Dashboard</button>
+                    </div>
+                </div>
+            `
+        },
         habits: {
             title: 'Habit Tracker',
             content: `
@@ -202,6 +214,10 @@ function hideInitialLoading() {
             <h3>Finance</h3>
             <p>Budget and expense tracking</p>
         </div>
+        <div class="nav-item" data-module="investments">
+            <h3>Investments</h3>
+            <p>Stock analysis and portfolio tracking</p>
+        </div>
         <div class="nav-item" data-module="habits">
             <h3>Habits</h3>
             <p>Build and track daily habits</p>
@@ -305,6 +321,18 @@ function attachNavListeners() {
                 </div>
             `
         },
+        investments: {
+            title: 'Investment Dashboard',
+            content: `
+                <h2>Investment Dashboard</h2>
+                <div class="investments-module">
+                    <p>Analyze stocks, track your portfolio, and make informed investment decisions with technical analysis tools.</p>
+                    <div style="margin-top: 20px;">
+                        <button onclick="window.location.href='Investments/index.html'" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">Open Investment Dashboard</button>
+                    </div>
+                </div>
+            `
+        },
         habits: {
             title: 'Habit Tracker',
             content: `
@@ -393,6 +421,19 @@ function showWelcomeWithDashboard() {
         window.DashboardWidgets.init();
         window.DashboardWidgets.renderWidgets('dashboard-container');
         window.DashboardWidgets.addWidgetClickHandlers();
+    }
+    
+    // Initialize quick actions
+    if (window.QuickActions) {
+        window.QuickActions.init();
+    }
+    
+    // Initialize progress charts (hidden by default)
+    if (window.ProgressCharts) {
+        const chartsSection = document.getElementById('progress-charts-section');
+        if (chartsSection) {
+            chartsSection.style.display = 'none';
+        }
     }
 }
 

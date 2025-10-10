@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header and Search -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-5xl font-bold mb-2">Technical Analysis Dashboard</h1>
+            <p class="text-gray-400">Search for a stock ticker or add to your watchlist.</p>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column (Search & Watchlist) -->
+            <div class="col-span-1">
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+                    <h2 class="text-xl font-semibold mb-4">Stock Search</h2>
+                    <div class="flex flex-col gap-4">
+                        <input type="text" id="tickerInput" placeholder="Enter Ticker (e.g., AAPL)" class="w-full px-4 py-2 rounded-lg border border-gray-600 bg-gray-900 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="searchButton" class="w-full px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200">
+                            <span id="searchButtonText">Search</span>
+                            <div id="searchButtonSpinner" class="hidden inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin ml-2"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-xl font-semibold mb-4">My Watchlist</h2>
+                    <ul id="watchlist" class="divide-y divide-gray-700">
+                        <!-- Watchlist items will be rendered here dynamically -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Right Column (Dashboard & Charts) -->
+            <div class="col-span-1 lg:col-span-2">
+                <!-- User ID Display -->
+                <p id="userId" class="text-sm text-gray-500 text-right mb-4"></p>
+
+                <!-- Message Box -->
+                <div id="messageBox" class="hidden text-center p-4 rounded-lg mb-8">
+                    <p id="messageText" class="text-yellow-300"></p>
+                </div>
+
+                <!-- Main Dashboard Content -->
+                <div id="dashboard" class="hidden">
+                    <h2 id="stockNameDisplay" class="text-3xl font-bold mb-4"></h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 dashboard-grid">
+                        <!-- Data cards -->
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">Price</h3>
+                            <p id="priceValue" class="text-2xl font-bold text-green-400 mt-2">$0.00</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">Volume</h3>
+                            <p id="volumeValue" class="text-2xl font-bold text-white mt-2">0</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">50-Day MA</h3>
+                            <p id="ma50Value" class="text-2xl font-bold text-white mt-2">$0.00</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">200-Day MA</h3>
+                            <p id="ma200Value" class="text-2xl font-bold text-white mt-2">$0.00</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">RSI</h3>
+                            <p id="rsiValue" class="text-2xl font-bold text-white mt-2">0.00</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">MACD</h3>
+                            <p id="macdValue" class="text-2xl font-bold text-white mt-2">0.00</p>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            <h3 class="text-gray-400 text-sm font-medium">MACD Signal</h3>
+                            <p id="macdSignalValue" class="text-2xl font-bold text-white mt-2">0.00</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <button id="addToWatchlistButton" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200">
+                            Add to Watchlist
+                        </button>
+                        <button id="addToPortfolioButton" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200">
+                            Buy Stock
+                        </button>
+                    </div>
+
+                    <!-- Chart section -->
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4">Price Chart</h2>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load application modules -->
+    <script>
+        // Set Firebase configuration globally
+        window.__firebase_config = JSON.stringify({
+            apiKey: "AIzaSyCGJD6K1bA-s2x_QBhjTrurPyfAyBjqLeE",
+            authDomain: "stock-dashboard-bbde3.firebaseapp.com",
+            projectId: "stock-dashboard-bbde3",
+            storageBucket: "stock-dashboard-bbde3.firebasestorage.app",
+            messagingSenderId: "741892410192",
+            appId: "1:741892410192:web:6eb8596c00293d8c52fa55"
+        });
+        
+        // Set application ID for Firestore paths
+        window.__app_id = "stock-dashboard";
+        
+        // Set Finnhub API key
+        window.STOCK_API_KEY = 'd379vepr01qskrefa3u0d379vepr01qskrefa3ug';
+    </script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

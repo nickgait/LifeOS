@@ -1446,3 +1446,407 @@ body {
         gap: 8px;
     }
 }
+
+/* Company Overview Styles */
+.company-overview {
+    padding: 20px 0;
+}
+
+.company-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.company-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+/* Fundamental Analysis Styles */
+.fundamentals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.fundamental-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fundamental-section h4 {
+    color: #444;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.fundamental-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fundamental-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.fundamental-metric .metric-label {
+    font-weight: 500;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.fundamental-metric .metric-value {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+    text-align: right;
+}
+
+/* Responsive adjustments for new sections */
+@media (max-width: 768px) {
+    .company-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .fundamentals-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .fundamental-section {
+        padding: 15px;
+    }
+    
+    .company-detail,
+    .fundamental-metric {
+        padding: 10px 0;
+    }
+    
+    .company-detail {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* Fair Value Color Coding */
+.fair-value.undervalued {
+    color: #22c55e !important;
+    font-weight: 700;
+}
+
+.fair-value.overvalued {
+    color: #ef4444 !important;
+    font-weight: 700;
+}
+
+.fair-value.fairly-valued {
+    color: #f59e0b !important;
+    font-weight: 700;
+}
+
+/* Fair Value Percentage Difference */
+.fair-value-diff {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 2px;
+    text-align: center;
+}
+
+.fair-value-diff.undervalued {
+    color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.fair-value-diff.overvalued {
+    color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.fair-value-diff.fairly-valued {
+    color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+/* Dividend Health Indicators */
+.dividend-health.excellent {
+    color: #22c55e !important;
+    font-weight: 600;
+}
+
+.dividend-health.good {
+    color: #65a30d !important;
+    font-weight: 600;
+}
+
+.dividend-health.fair {
+    color: #f59e0b !important;
+    font-weight: 600;
+}
+
+.dividend-health.poor {
+    color: #f97316 !important;
+    font-weight: 600;
+}
+
+.dividend-health.high-risk {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+/* Dividend Date Styling */
+.dividend-date {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+/* Portfolio Dividend Stats */
+.dividend-stat {
+    border-left: 3px solid #28a745;
+    background: rgba(40, 167, 69, 0.05);
+}
+
+.dividend-stat .stat-label {
+    color: #155724;
+    font-weight: 600;
+}
+
+.dividend-stat .stat-value {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Dividend Calendar Styles */
+.dividend-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.summary-stat {
+    text-align: center;
+}
+
+.summary-stat label {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.summary-stat .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.calendar-timeline {
+    space-y: 1.5rem;
+}
+
+.month-section {
+    margin-bottom: 1.5rem;
+}
+
+.month-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dividend-event {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.2s ease;
+}
+
+.dividend-event:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateX(2px);
+}
+
+.dividend-event.urgent {
+    border-left-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.dividend-event.soon {
+    border-left-color: #f97316;
+    background: rgba(249, 115, 22, 0.05);
+}
+
+.dividend-event.upcoming {
+    border-left-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.dividend-event.future {
+    border-left-color: #22c55e;
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.event-symbol {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.event-details {
+    padding: 0 1rem;
+}
+
+.event-type {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.event-date {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.1rem;
+}
+
+.event-amount {
+    font-weight: 600;
+    color: #22c55e;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+.no-dividends {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.no-dividends p {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.no-dividends small {
+    color: #888;
+}
+
+/* Yield-on-Cost Color Coding */
+.yield-on-cost-value.excellent {
+    color: #22c55e !important;
+    font-weight: 600;
+}
+
+.yield-on-cost-value.good {
+    color: #65a30d !important;
+    font-weight: 600;
+}
+
+.yield-on-cost-value.fair {
+    color: #f59e0b !important;
+    font-weight: 600;
+}
+
+.yield-on-cost-value.moderate {
+    color: #f97316 !important;
+    font-weight: 600;
+}
+
+.yield-on-cost-value.low {
+    color: #ef4444 !important;
+    font-weight: 600;
+}
+
+.yield-on-cost {
+    font-family: 'Courier New', monospace;
+}
+
+/* Auto vs Manual Dividend Reminder Styling */
+.reminder-source-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.auto-reminder .reminder-source-badge {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.manual-reminder .reminder-source-badge {
+    background: rgba(102, 126, 234, 0.15);
+    color: #667eea;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.auto-reminder {
+    border-left: 3px solid #28a745;
+    background: rgba(40, 167, 69, 0.02);
+}
+
+.manual-reminder {
+    border-left: 3px solid #667eea;
+    background: rgba(102, 126, 234, 0.02);
+}
+
+.dividend-reminder-item {
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
