@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Get the directory where LifeOS project is located
+PROJECT_DIR="$(dirname "$(dirname "$(dirname "$0")")")"
+
+# Open Terminal and run the launcher
+osascript <<APPLESCRIPT
+tell application "Terminal"
+    activate
+    do script "cd '$PROJECT_DIR' && bash START_LIFEOS.command"
+end tell
+APPLESCRIPT

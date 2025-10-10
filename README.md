@@ -49,7 +49,30 @@
 
 - Node.js 18+ and npm/yarn/pnpm
 
-### Quick Start
+### 🚀 Quick Start (Easy Way)
+
+**The easiest way to start LifeOS:**
+
+#### macOS
+**Double-click `LifeOS.app`** (or `START_LIFEOS.command`)
+- Automatically installs dependencies
+- Opens browser to http://localhost:3000
+- Ready to use!
+
+#### Windows
+**Double-click `START_LIFEOS.bat`**
+- Automatically installs dependencies
+- Opens browser to http://localhost:3000
+- Ready to use!
+
+#### All Platforms
+```bash
+node start.js
+```
+
+See [LAUNCHER_GUIDE.md](LAUNCHER_GUIDE.md) for detailed launcher documentation.
+
+### 🛠️ Developer Setup (Manual)
 
 ```bash
 # Clone the repository
