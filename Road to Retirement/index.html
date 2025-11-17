@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road to Retirement - LifeOS</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🛣️ Road to Retirement</h1>
+                <p class="header-subtitle">Plan your path to financial freedom</p>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs retirement-nav">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('retirement401k')">401k Calculator</button>
+            <button class="nav-tab" onclick="switchTab('savings')">Savings Calculator</button>
+        </nav>
+
+        <main class="app-content">
+            <!-- DASHBOARD TAB -->
+            <div id="dashboard-tab" class="tab-content active">
+                <div class="retirement-dashboard">
+                    <h2>Retirement Overview</h2>
+
+                    <!-- Summary Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Projected 401k Balance</div>
+                            <div class="stat-value" id="dashboard-401k">$0.00</div>
+                            <div class="stat-subtitle">at retirement</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Projected Savings Balance</div>
+                            <div class="stat-value" id="dashboard-savings">$0.00</div>
+                            <div class="stat-subtitle">at retirement</div>
+                        </div>
+                        <div class="stat-card accent">
+                            <div class="stat-label">Total Retirement Funds</div>
+                            <div class="stat-value" id="dashboard-total">$0.00</div>
+                            <div class="stat-subtitle">combined</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Years to Retirement</div>
+                            <div class="stat-value" id="dashboard-years">0</div>
+                            <div class="stat-subtitle">years</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Container -->
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3>Retirement Savings Growth</h3>
+                            <canvas id="growthChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Savings Breakdown at Retirement</h3>
+                            <canvas id="breakdownChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- No Data Message -->
+                    <div id="dashboard-empty" class="empty-state" style="display: none;">
+                        <div class="empty-icon">📊</div>
+                        <p>No retirement plans created yet. Use the calculators to create your first plan!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 401K CALCULATOR TAB -->
+            <div id="retirement401k-tab" class="tab-content">
+                <div class="retirement-content">
+                    <h2>401k Retirement Calculator</h2>
+
+                    <div class="calculator-form">
+                        <form id="retirement401k-form" onsubmit="handleRetirement401kSubmit(event)">
+                            <!-- Primary Person Section -->
+                            <fieldset>
+                                <legend>Primary Person</legend>
+
+                                <div class="form-group">
+                                    <label for="primary-age">Current Age</label>
+                                    <input type="number" id="primary-age" name="primary-age" min="18" max="100" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="retirement-age">Retirement Age</label>
+                                    <input type="number" id="retirement-age" name="retirement-age" min="50" max="100" required onchange="autoFillYearsToRetirement()">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="primary-income">Annual Gross Income</label>
+                                    <input type="number" id="primary-income" name="primary-income" min="0" step="1000" placeholder="0" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="raise-percentage">Annual Raise Percentage (%)</label>
+                                    <input type="number" id="raise-percentage" name="raise-percentage" min="0" max="20" step="0.1" value="3" placeholder="3">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="primary-contribution">401k Contribution (%)</label>
+                                    <input type="number" id="primary-contribution" name="primary-contribution" min="0" max="100" step="0.1" value="10" placeholder="10" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="primary-match">Company Match (%)</label>
+                                    <input type="number" id="primary-match" name="primary-match" min="0" max="100" step="0.1" value="3" placeholder="3" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="current-401k">Current 401k Balance</label>
+                                    <input type="number" id="current-401k" name="current-401k" min="0" step="1000" value="0" placeholder="0" required>
+                                </div>
+                            </fieldset>
+
+                            <!-- Spouse Section -->
+                            <fieldset>
+                                <legend>Spouse Information (Optional)</legend>
+
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="include-spouse" name="include-spouse" onchange="toggleSpouseFields()">
+                                        Include Spouse in Retirement Plan
+                                    </label>
+                                </div>
+
+                                <div id="spouse-fields" style="display: none;">
+                                    <div class="form-group">
+                                        <label for="spouse-age">Spouse Current Age</label>
+                                        <input type="number" id="spouse-age" name="spouse-age" min="18" max="100">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="spouse-income">Spouse Annual Gross Income</label>
+                                        <input type="number" id="spouse-income" name="spouse-income" min="0" step="1000" placeholder="0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="spouse-contribution">Spouse 401k Contribution (%)</label>
+                                        <input type="number" id="spouse-contribution" name="spouse-contribution" min="0" max="100" step="0.1" value="10" placeholder="10">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="spouse-match">Spouse Company Match (%)</label>
+                                        <input type="number" id="spouse-match" name="spouse-match" min="0" max="100" step="0.1" value="3" placeholder="3">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="spouse-401k">Spouse Current 401k Balance</label>
+                                        <input type="number" id="spouse-401k" name="spouse-401k" min="0" step="1000" value="0" placeholder="0">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Tax & Investment Section -->
+                            <fieldset>
+                                <legend>Tax & Investment</legend>
+
+                                <div class="form-group">
+                                    <label for="tax-rate">Federal Tax Rate (%)</label>
+                                    <input type="number" id="tax-rate" name="tax-rate" min="0" max="50" step="0.1" value="22" placeholder="22">
+                                    <small>Look up your federal tax bracket for accuracy</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="annual-return">Projected Annual Return (%)</label>
+                                    <input type="number" id="annual-return" name="annual-return" min="0" max="30" step="0.1" value="7" placeholder="7" required>
+                                </div>
+                            </fieldset>
+
+                            <button type="submit" class="btn-primary">Calculate 401k Projection</button>
+                        </form>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="retirement401k-results" style="display: none;">
+                        <h3>Projection Results</h3>
+
+                        <div class="results-summary">
+                            <div class="summary-card">
+                                <div class="summary-label">Total at Retirement</div>
+                                <div class="summary-value" id="result-total-401k">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Total Contributions</div>
+                                <div class="summary-value" id="result-total-contributions">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Investment Growth</div>
+                                <div class="summary-value" id="result-investment-growth">$0.00</div>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="retirement401k-table" class="projection-table">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Age (Primary)</th>
+                                        <th>Annual Income</th>
+                                        <th>Annual Contribution</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; padding: 1.5rem 0;">
+                            <button type="button" onclick="clearRetirement401k()" class="btn-secondary">Clear Results</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAVINGS CALCULATOR TAB -->
+            <div id="savings-tab" class="tab-content">
+                <div class="retirement-content">
+                    <h2>Savings Account Calculator</h2>
+
+                    <div class="calculator-form">
+                        <form id="savings-form" onsubmit="handleSavingsSubmit(event)">
+                            <fieldset>
+                                <legend>Savings Details</legend>
+
+                                <div class="form-group">
+                                    <label for="savings-years">Years Until Retirement</label>
+                                    <input type="number" id="savings-years" name="savings-years" min="1" max="60" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="current-savings">Current Savings Balance</label>
+                                    <input type="number" id="current-savings" name="current-savings" min="0" step="100" value="0" placeholder="0" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="one-time-deposit">One-Time Deposit (Optional)</label>
+                                    <input type="number" id="one-time-deposit" name="one-time-deposit" min="0" step="100" value="0" placeholder="0">
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Monthly Contributions</legend>
+
+                                <div class="form-group">
+                                    <label for="contribution-frequency">Contribution Frequency</label>
+                                    <select id="contribution-frequency" name="contribution-frequency" onchange="updateContributionLabel()" required>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="biweekly">Bi-Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="contribution-amount" id="contribution-label">Weekly Contribution Amount</label>
+                                    <input type="number" id="contribution-amount" name="contribution-amount" min="0" step="10" placeholder="0" required>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Monthly Expenses (Optional)</legend>
+
+                                <div class="form-group">
+                                    <label for="monthly-expenses">Total Monthly Expenses</label>
+                                    <input type="number" id="monthly-expenses" name="monthly-expenses" min="0" step="100" value="0" placeholder="0">
+                                    <small>Leave at 0 if you don't want to factor in expenses</small>
+                                </div>
+
+                                <div id="expense-net-info" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(245, 87, 108, 0.1); border-left: 4px solid #f5576c; border-radius: 4px;">
+                                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">Monthly Net Savings</div>
+                                    <div style="font-size: 1.25rem; font-weight: 700; color: #f5576c;" id="net-savings-amount">$0.00</div>
+                                    <small style="color: #999;">Amount saved after monthly expenses</small>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Interest Rate (Optional)</legend>
+
+                                <div class="form-group">
+                                    <label for="savings-interest">Annual Interest Rate (%)</label>
+                                    <input type="number" id="savings-interest" name="savings-interest" min="0" max="5" step="0.01" value="0" placeholder="0">
+                                    <small>For savings accounts, CDs, or bonds (0.01% - 5%)</small>
+                                </div>
+                            </fieldset>
+
+                            <button type="submit" class="btn-primary">Calculate Savings Growth</button>
+                        </form>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="savings-results" style="display: none;">
+                        <h3>Savings Projection Results</h3>
+
+                        <div class="results-summary">
+                            <div class="summary-card">
+                                <div class="summary-label">Total Savings at Retirement</div>
+                                <div class="summary-value" id="result-total-savings">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Total Contributed</div>
+                                <div class="summary-value" id="result-total-saved">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Initial Balance</div>
+                                <div class="summary-value" id="result-initial-savings">$0.00</div>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="savings-table" class="projection-table">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Annual Contribution</th>
+                                        <th>Annual Expenses</th>
+                                        <th>Net Savings</th>
+                                        <th>Interest Earned</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; padding: 1.5rem 0;">
+                            <button type="button" onclick="clearSavings()" class="btn-secondary">Clear Results</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../shared/storage-utils.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

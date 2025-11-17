@@ -1,288 +1,149 @@
 /**
  * LifeOS Shared Storage Utilities
- * Centralized localStorage operations with error handling and validation
+ * Centralized data management for all LifeOS apps
  */
 
-class StorageUtils {
-    constructor() {
-        this.isAvailable = this.checkStorageAvailability();
+const StorageManager = {
+  // Namespace prefix for all LifeOS data
+  PREFIX: 'lifeos-',
+
+  /**
+   * Get data from localStorage with namespace
+   * @param {string} key - Data key
+   * @returns {any} Parsed data or null
+   */
+  get(key) {
+    try {
+      const data = localStorage.getItem(this.PREFIX + key);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error(`Error retrieving ${key}:`, error);
+      return null;
     }
+  },
 
-    /**
-     * Check if localStorage is available
-     */
-    checkStorageAvailability() {
-        try {
-            const test = '__storage_test__';
-            localStorage.setItem(test, test);
-            localStorage.removeItem(test);
-            return true;
-        } catch (e) {
-            console.warn('localStorage is not available:', e.message);
-            return false;
-        }
+  /**
+   * Set data in localStorage with namespace
+   * @param {string} key - Data key
+   * @param {any} value - Data to store
+   */
+  set(key, value) {
+    try {
+      localStorage.setItem(this.PREFIX + key, JSON.stringify(value));
+      // Dispatch event for cross-app communication
+      window.dispatchEvent(
+        new CustomEvent('lifeos-data-changed', {
+          detail: { key, value }
+        })
+      );
+    } catch (error) {
+      console.error(`Error storing ${key}:`, error);
     }
+  },
 
-    /**
-     * Get data from localStorage with error handling
-     * @param {string} key - Storage key
-     * @param {*} defaultValue - Default value if key doesn't exist
-     * @returns {*} Parsed data or default value
-     */
-    get(key, defaultValue = null) {
-        if (!this.isAvailable) {
-            console.warn('Storage not available, returning default value');
-            return defaultValue;
-        }
-
-        try {
-            const item = localStorage.getItem(key);
-            if (item === null) {
-                return defaultValue;
-            }
-            return JSON.parse(item);
-        } catch (error) {
-            console.error(`Error reading from localStorage key "${key}":`, error);
-            return defaultValue;
-        }
+  /**
+   * Remove data from localStorage
+   * @param {string} key - Data key
+   */
+  remove(key) {
+    try {
+      localStorage.removeItem(this.PREFIX + key);
+      window.dispatchEvent(
+        new CustomEvent('lifeos-data-removed', {
+          detail: { key }
+        })
+      );
+    } catch (error) {
+      console.error(`Error removing ${key}:`, error);
     }
+  },
 
-    /**
-     * Set data in localStorage with error handling
-     * @param {string} key - Storage key
-     * @param {*} value - Value to store
-     * @returns {boolean} Success status
-     */
-    set(key, value) {
-        if (!this.isAvailable) {
-            console.warn('Storage not available, cannot save data');
-            return false;
-        }
+  /**
+   * Check if key exists
+   * @param {string} key - Data key
+   * @returns {boolean}
+   */
+  has(key) {
+    return localStorage.getItem(this.PREFIX + key) !== null;
+  },
 
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-            return true;
-        } catch (error) {
-            console.error(`Error writing to localStorage key "${key}":`, error);
-            // Handle quota exceeded
-            if (error.name === 'QuotaExceededError') {
-                this.handleQuotaExceeded();
-            }
-            return false;
-        }
+  /**
+   * Get all keys matching a pattern
+   * @param {string} pattern - Pattern to match (e.g., 'fitness-*')
+   * @returns {string[]} Array of matching keys
+   */
+  getKeys(pattern) {
+    const regex = new RegExp(`^${this.PREFIX}${pattern.replace('*', '.*')}$`);
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (regex.test(key)) {
+        keys.push(key.replace(this.PREFIX, ''));
+      }
     }
+    return keys;
+  },
 
-    /**
-     * Remove item from localStorage
-     * @param {string} key - Storage key
-     * @returns {boolean} Success status
-     */
-    remove(key) {
-        if (!this.isAvailable) {
-            return false;
-        }
-
-        try {
-            localStorage.removeItem(key);
-            return true;
-        } catch (error) {
-            console.error(`Error removing from localStorage key "${key}":`, error);
-            return false;
-        }
+  /**
+   * Clear all LifeOS data
+   */
+  clearAll() {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(this.PREFIX)) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    window.dispatchEvent(new CustomEvent('lifeos-data-cleared'));
+  },
 
-    /**
-     * Clear all localStorage data
-     * @returns {boolean} Success status
-     */
-    clear() {
-        if (!this.isAvailable) {
-            return false;
-        }
-
-        try {
-            localStorage.clear();
-            return true;
-        } catch (error) {
-            console.error('Error clearing localStorage:', error);
-            return false;
-        }
+  /**
+   * Export all LifeOS data
+   * @returns {object} All LifeOS data
+   */
+  exportData() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(this.PREFIX)) {
+        const cleanKey = key.replace(this.PREFIX, '');
+        data[cleanKey] = this.get(cleanKey);
+      }
     }
+    return data;
+  },
 
-    /**
-     * Get all keys with a specific prefix
-     * @param {string} prefix - Key prefix to filter by
-     * @returns {string[]} Array of matching keys
-     */
-    getKeysWithPrefix(prefix) {
-        if (!this.isAvailable) {
-            return [];
-        }
-
-        const keys = [];
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(prefix)) {
-                    keys.push(key);
-                }
-            }
-        } catch (error) {
-            console.error('Error getting keys with prefix:', error);
-        }
-        return keys;
+  /**
+   * Import LifeOS data
+   * @param {object} data - Data to import
+   * @param {boolean} merge - If true, merge with existing; if false, replace
+   */
+  importData(data, merge = true) {
+    if (!merge) {
+      this.clearAll();
     }
+    Object.entries(data).forEach(([key, value]) => {
+      this.set(key, value);
+    });
+  },
 
-    /**
-     * Get all data for a specific module
-     * @param {string} moduleName - Name of the module
-     * @returns {Object} Object with all module data
-     */
-    getModuleData(moduleName) {
-        const keys = this.getKeysWithPrefix(moduleName);
-        const data = {};
-        
-        keys.forEach(key => {
-            const value = this.get(key);
-            if (value !== null) {
-                // Remove module prefix from key for cleaner object
-                const cleanKey = key.replace(`${moduleName}_`, '');
-                data[cleanKey] = value;
-            }
-        });
-        
-        return data;
-    }
+  /**
+   * Listen for data changes across the app
+   * @param {string} key - Key to watch (or '*' for all)
+   * @param {function} callback - Function to call when data changes
+   */
+  onChange(key, callback) {
+    const handler = (event) => {
+      if (key === '*' || event.detail.key === key) {
+        callback(event.detail);
+      }
+    };
+    window.addEventListener('lifeos-data-changed', handler);
+    return () => window.removeEventListener('lifeos-data-changed', handler);
+  }
+};
 
-    /**
-     * Export all LifeOS data
-     * @returns {Object} Complete data export
-     */
-    exportAllData() {
-        const exportData = {
-            timestamp: new Date().toISOString(),
-            version: '1.0',
-            modules: {}
-        };
-
-        const modules = ['todoList', 'fitness', 'finance', 'habits', 'goals', 'journal', 'poetry'];
-        
-        modules.forEach(module => {
-            exportData.modules[module] = this.getModuleData(module);
-        });
-
-        return exportData;
-    }
-
-    /**
-     * Import data from export
-     * @param {Object} importData - Data to import
-     * @param {boolean} overwrite - Whether to overwrite existing data
-     * @returns {boolean} Success status
-     */
-    importData(importData, overwrite = false) {
-        if (!importData || !importData.modules) {
-            console.error('Invalid import data format');
-            return false;
-        }
-
-        try {
-            Object.keys(importData.modules).forEach(moduleName => {
-                const moduleData = importData.modules[moduleName];
-                
-                Object.keys(moduleData).forEach(key => {
-                    const fullKey = `${moduleName}_${key}`;
-                    
-                    if (overwrite || this.get(fullKey) === null) {
-                        this.set(fullKey, moduleData[key]);
-                    }
-                });
-            });
-            
-            return true;
-        } catch (error) {
-            console.error('Error importing data:', error);
-            return false;
-        }
-    }
-
-    /**
-     * Handle storage quota exceeded
-     */
-    handleQuotaExceeded() {
-        console.warn('Storage quota exceeded. Consider cleaning old data.');
-        
-        // Emit custom event for UI to handle
-        window.dispatchEvent(new CustomEvent('storage-quota-exceeded', {
-            detail: { message: 'Storage space is full. Please export and clean old data.' }
-        }));
-    }
-
-    /**
-     * Get storage usage information
-     * @returns {Object} Storage usage stats
-     */
-    getStorageInfo() {
-        if (!this.isAvailable) {
-            return { available: false };
-        }
-
-        let totalSize = 0;
-        let itemCount = 0;
-        const modules = {};
-
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                
-                if (key && value) {
-                    const size = new Blob([value]).size;
-                    totalSize += size;
-                    itemCount++;
-
-                    // Group by module
-                    const moduleName = key.split('_')[0];
-                    if (!modules[moduleName]) {
-                        modules[moduleName] = { count: 0, size: 0 };
-                    }
-                    modules[moduleName].count++;
-                    modules[moduleName].size += size;
-                }
-            }
-        } catch (error) {
-            console.error('Error calculating storage info:', error);
-        }
-
-        return {
-            available: true,
-            totalSize,
-            itemCount,
-            modules,
-            formattedSize: this.formatBytes(totalSize)
-        };
-    }
-
-    /**
-     * Format bytes to human readable string
-     * @param {number} bytes - Number of bytes
-     * @returns {string} Formatted string
-     */
-    formatBytes(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-}
-
-// Create global instance
-window.StorageUtils = new StorageUtils();
-
-// Legacy support - export individual functions for backward compatibility
-window.getStoredData = (key, defaultValue) => window.StorageUtils.get(key, defaultValue);
-window.saveStoredData = (key, value) => window.StorageUtils.set(key, value);
-window.removeStoredData = (key) => window.StorageUtils.remove(key);
+// Make available globally
+window.StorageManager = StorageManager;

@@ -3,97 +3,569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LifeOS - Your Personal Life Operating System</title>
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#667eea">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="LifeOS">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    
-    <!-- Chart.js for progress visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>LifeOS - Personal Life Operating System</title>
+    <link rel="stylesheet" href="shared/styles.css">
+    <style>
+        .lifeos-header {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .lifeos-header h1 {
+            color: #667eea;
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .lifeos-header .tagline {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .header-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .apps-section {
+            margin-bottom: 40px;
+        }
+
+        .apps-section h2 {
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .app-card-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .app-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .app-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .app-subtitle {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .app-card-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .app-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .app-features li {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .app-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .app-button {
+            margin-top: auto;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .app-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+        }
+
+
+        .quick-actions {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .quick-actions h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: #f9fafb;
+            border: 2px solid #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .recent-activity {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .recent-activity h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-app {
+            display: inline-block;
+            background: #f9fafb;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #666;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .lifeos-header {
+                padding: 20px;
+            }
+
+            .lifeos-header h1 {
+                font-size: 28px;
+            }
+
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="header-text">
-                    <h1>LifeOS</h1>
-                    <p>Your Personal Life Operating System</p>
+    <div class="container" style="padding-top: 20px;">
+        <!-- Header -->
+        <div class="lifeos-header">
+            <h1>🌍 LifeOS</h1>
+            <div class="tagline">Your Personal Life Operating System</div>
+
+            <div class="header-stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-goals">0</div>
+                    <div class="stat-label">Active Goals</div>
                 </div>
-                <div class="header-actions">
-                    <button class="settings-btn" onclick="window.DataManagerUI.open()" title="Data Management">
-                        ⚙️
-                    </button>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-activities">0</div>
+                    <div class="stat-label">Activities</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-expenses">0</div>
+                    <div class="stat-label">Transactions</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-journal">0</div>
+                    <div class="stat-label">Journal Entries</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-tasks">0</div>
+                    <div class="stat-label">Active Tasks</div>
                 </div>
             </div>
-        </header>
-        
-        <!-- Daily Quran Verse Section -->
-        <div id="daily-verse-container"></div>
-        
-        <nav class="main-nav">
-            <div class="nav-item" data-module="fitness">
-                <h3>Fitness</h3>
-                <p>Track workouts and health metrics</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3>⚡ Quick Actions</h3>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="navigateToApp('Fitness')">Log Workout</button>
+                <button class="action-btn" onclick="navigateToApp('Journal')">Write Entry</button>
+                <button class="action-btn" onclick="navigateToApp('Finance')">Log Expense</button>
+                <button class="action-btn" onclick="navigateToApp('Goals')">View Goals</button>
+                <button class="action-btn" onclick="navigateToApp('TodoList')">Create Task</button>
             </div>
-            <div class="nav-item" data-module="todo">
-                <h3>To-Do List</h3>
-                <p>Manage tasks and projects</p>
+        </div>
+
+        <!-- Apps Section -->
+        <div class="apps-section">
+            <h2>📱 Apps</h2>
+
+            <div class="apps-grid">
+                <!-- Fitness App -->
+                <a href="Fitness/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">🏃‍♂️</div>
+                        <div class="app-name">Fitness</div>
+                        <div class="app-subtitle">Track your workouts</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Monitor your fitness goals, log activities, and earn badges for consistency and achievement.
+                        </div>
+                        <ul class="app-features">
+                            <li>Goal tracking</li>
+                            <li>Activity logging</li>
+                            <li>Badge system</li>
+                            <li>Progress charts</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Goals App -->
+                <a href="Goals/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">🎯</div>
+                        <div class="app-name">Goals</div>
+                        <div class="app-subtitle">Life goals & planning</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Set and track personal, professional, and health goals across multiple categories.
+                        </div>
+                        <ul class="app-features">
+                            <li>Multi-category goals</li>
+                            <li>Timeline tracking</li>
+                            <li>Progress monitoring</li>
+                            <li>Milestone celebrations</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Finance App -->
+                <a href="Finance/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">💰</div>
+                        <div class="app-name">Finance</div>
+                        <div class="app-subtitle">Track expenses & budgets</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Manage expenses, create budgets, and gain insights into your spending habits.
+                        </div>
+                        <ul class="app-features">
+                            <li>Expense tracking</li>
+                            <li>Budget management</li>
+                            <li>Category analysis</li>
+                            <li>Financial reports</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Journal App -->
+                <a href="Journal/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">📔</div>
+                        <div class="app-name">Journal</div>
+                        <div class="app-subtitle">Daily reflections</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Write daily journal entries, track your thoughts, and reflect on your personal journey.
+                        </div>
+                        <ul class="app-features">
+                            <li>Daily entries</li>
+                            <li>Search & tagging</li>
+                            <li>Writing analytics</li>
+                            <li>Mood tracking</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Investments App -->
+                <a href="Investments/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">📈</div>
+                        <div class="app-name">Investments</div>
+                        <div class="app-subtitle">Portfolio & research</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Track your investment portfolio, record dividends, and research stocks and ETFs.
+                        </div>
+                        <ul class="app-features">
+                            <li>Portfolio tracking</li>
+                            <li>Dividend recording</li>
+                            <li>Gain/loss calculation</li>
+                            <li>Research database</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Todo List App -->
+                <a href="TodoList/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">📋</div>
+                        <div class="app-name">Todo List</div>
+                        <div class="app-subtitle">Tasks & reminders</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Manage daily tasks with subtasks and set up recurring reminders to stay on track.
+                        </div>
+                        <ul class="app-features">
+                            <li>Task management</li>
+                            <li>Subtasks & tracking</li>
+                            <li>Recurring patterns</li>
+                            <li>Priority levels</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
+
+                <!-- Road to Retirement App -->
+                <a href="Road to Retirement/index.html" class="app-card">
+                    <div class="app-card-header">
+                        <div class="app-icon">🛣️</div>
+                        <div class="app-name">Road to Retirement</div>
+                        <div class="app-subtitle">Retirement planning</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Plan your path to financial freedom with comprehensive retirement and savings calculators.
+                        </div>
+                        <ul class="app-features">
+                            <li>401k projections</li>
+                            <li>Savings calculator</li>
+                            <li>Retirement overview</li>
+                            <li>Growth visualization</li>
+                        </ul>
+                        <div class="app-button">Open App →</div>
+                    </div>
+                </a>
             </div>
-            <div class="nav-item" data-module="finance">
-                <h3>Finance</h3>
-                <p>Budget and expense tracking</p>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity">
+            <h3>📊 Recent Activity</h3>
+            <div id="recent-items">
+                <p style="text-align: center; color: #999;">Get started by opening an app and creating your first entry!</p>
             </div>
-            <div class="nav-item" data-module="investments">
-                <h3>Investments</h3>
-                <p>Stock analysis and portfolio tracking</p>
-            </div>
-            <div class="nav-item" data-module="habits">
-                <h3>Habits</h3>
-                <p>Build and track daily habits</p>
-            </div>
-            <div class="nav-item" data-module="goals">
-                <h3>Goals</h3>
-                <p>Set and achieve life goals</p>
-            </div>
-            <div class="nav-item" data-module="journal">
-                <h3>Journal</h3>
-                <p>Daily reflection and notes</p>
-            </div>
-            <div class="nav-item" data-module="poetry">
-                <h3>Poetry</h3>
-                <p>Dark and introspective poetry collection</p>
-            </div>
-        </nav>
-        
-        <!-- Quick Actions Bar -->
-        <div id="quick-actions-bar"></div>
-        
-        <!-- Progress Charts Section -->
-        <div id="progress-charts-section"></div>
-        
-        <div id="module-content">
-            <p>Select a module above to get started</p>
         </div>
     </div>
-    
-    <script src="shared/error-handler.js"></script>
+
     <script src="shared/storage-utils.js"></script>
-    <script src="shared/dashboard-widgets.js"></script>
     <script src="shared/theme-manager.js"></script>
     <script src="shared/data-manager.js"></script>
-    <script src="shared/data-manager-ui.js"></script>
-    <script src="shared/sw-manager.js"></script>
-    <script src="shared/module-bridge.js"></script>
-    <script src="shared/global-search.js"></script>
-    <script src="shared/progress-charts.js"></script>
-    <script src="shared/quick-actions.js"></script>
-    <script src="quran-component.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // Update dashboard stats on page load
+        function updateDashboardStats() {
+            const stats = DataManager.getDashboardStats();
+
+            document.getElementById('stat-goals').textContent = stats.goals.active;
+            document.getElementById('stat-activities').textContent = stats.fitness.totalActivities;
+            document.getElementById('stat-expenses').textContent = stats.finance.totalExpenses;
+            document.getElementById('stat-journal').textContent = stats.journal.totalEntries;
+
+            // Get active tasks count
+            const tasks = StorageManager.get('todolist-tasks') || [];
+            const activeTasks = tasks.filter(t => !t.completed).length;
+            document.getElementById('stat-tasks').textContent = activeTasks;
+
+            // Load recent activity
+            const recentActivity = DataManager.getRecentActivity(5);
+            const recentItemsDiv = document.getElementById('recent-items');
+
+            if (recentActivity.length === 0) {
+                recentItemsDiv.innerHTML = '<p style="text-align: center; color: #999;">Get started by opening an app and creating your first entry!</p>';
+            } else {
+                recentItemsDiv.innerHTML = recentActivity.map(item => {
+                    let label = '';
+                    let detail = '';
+
+                    if (item.app === 'fitness' && item.type === 'activity') {
+                        const activityLabels = {
+                            'pushups': 'Push-ups',
+                            'planks': 'Planks',
+                            'crunches': 'Crunches',
+                            'bike': 'Stationary Bike',
+                            'jog': 'Jogging',
+                            'walk': 'Walking',
+                            'weights': 'Weight Lifting'
+                        };
+                        label = `${activityLabels[item.type] || item.type}: ${item.amount}`;
+                    } else if (item.app === 'journal' && item.type === 'entry') {
+                        label = item.title || 'Journal Entry';
+                    } else if (item.app === 'finance' && item.type === 'expense') {
+                        label = `${item.description}: $${item.amount}`;
+                    }
+
+                    return `
+                        <div class="activity-item">
+                            <div>
+                                ${label}
+                                <span class="activity-app">${item.app.charAt(0).toUpperCase() + item.app.slice(1)}</span>
+                            </div>
+                            <div class="activity-time">${formatDate(item.date || new Date(item.timestamp).toISOString().split('T')[0])}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        }
+
+        function navigateToApp(appName) {
+            DataManager.recordAppLaunch(appName);
+            window.location.href = `${appName}/index.html`;
+        }
+
+        // Initialize
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateDashboardStats);
+        } else {
+            updateDashboardStats();
+        }
+
+        // Update stats when data changes
+        StorageManager.onChange('*', updateDashboardStats);
+    </script>
 </body>
 </html>
