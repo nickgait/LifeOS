@@ -2,187 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-    <title>Journal - LifeOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeOS - Journal</title>
+    <link rel="stylesheet" href="../shared/styles.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <button class="back-btn" onclick="window.location.href='../index.html'">← Back to LifeOS</button>
-                <h1>Journal</h1>
-                <div class="date-display" id="current-date"></div>
+    <div class="container journal-page">
+        <div class="journal-header">
+            <div>
+                <h1>📔 LifeOS Journal</h1>
+                <div class="subtitle">Daily reflections and personal thoughts</div>
             </div>
-        </header>
-        
-        <!-- Daily Quran Verse Section -->
-        <div id="daily-verse-container"></div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('entries')">All Entries</button>
+            </div>
+        </div>
 
-        <main>
-            <!-- Quick Entry Section -->
-            <section class="quick-entry-section">
-                <div class="quick-entry-card">
-                    <div class="quick-header">
-                        <h2>Today's Entry</h2>
-                        <div class="mood-selector">
-                            <span class="mood-label">How are you feeling?</span>
-                            <div class="mood-options">
-                                <button class="mood-btn" data-mood="terrible" title="Terrible">😞</button>
-                                <button class="mood-btn" data-mood="bad" title="Bad">😕</button>
-                                <button class="mood-btn" data-mood="okay" title="Okay">😐</button>
-                                <button class="mood-btn" data-mood="good" title="Good">🙂</button>
-                                <button class="mood-btn" data-mood="great" title="Great">😄</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="entry-form">
-                        <input type="text" id="entry-title" class="entry-title-input" placeholder="What's on your mind today?" maxlength="100">
-                        
-                        <div class="editor-toolbar">
-                            <button type="button" class="format-btn" data-format="bold" title="Bold">B</button>
-                            <button type="button" class="format-btn" data-format="italic" title="Italic">I</button>
-                            <button type="button" class="format-btn" data-format="insertUnorderedList" title="Bullet List">•</button>
-                            <div class="toolbar-divider"></div>
-                            <span class="word-count" id="word-count">0 words</span>
-                        </div>
-
-                        <div class="editor-container">
-                            <div id="entry-editor" class="entry-editor" contenteditable="true" placeholder="Start writing..."></div>
-                        </div>
-
-                        <div class="tags-section">
-                            <div class="tags-input-container">
-                                <input type="text" id="tags-input" class="tags-input" placeholder="Add tags (press Enter to add)">
-                                <div class="tags-list" id="current-tags"></div>
-                            </div>
-                        </div>
-
-                        <div class="entry-actions">
-                            <button type="button" class="save-btn" id="save-entry-btn">Save Entry</button>
-                            <span class="auto-save-indicator" id="auto-save-indicator"></span>
-                        </div>
-                    </div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-entries">0</div>
+                    <div class="stat-label">Total Entries</div>
                 </div>
-            </section>
-
-            <!-- Navigation & Stats -->
-            <section class="nav-stats-section">
-                <div class="nav-stats-grid">
-                    <div class="stats-card">
-                        <h3>Writing Stats</h3>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-number" id="total-entries">0</div>
-                                <div class="stat-label">Total Entries</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="writing-streak">0</div>
-                                <div class="stat-label">Day Streak</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="total-words">0</div>
-                                <div class="stat-label">Total Words</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="avg-mood">😐</div>
-                                <div class="stat-label">Avg Mood</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="navigation-card">
-                        <h3>Quick Navigation</h3>
-                        <div class="nav-buttons">
-                            <button class="nav-btn" id="view-entries-btn">📖 View All Entries</button>
-                            <button class="nav-btn" id="calendar-btn">📅 Calendar View</button>
-                            <button class="nav-btn" id="search-btn">🔍 Search Entries</button>
-                            <button class="nav-btn" id="export-btn">📤 Export Data</button>
-                        </div>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="month-entries">0</div>
+                    <div class="stat-label">This Month</div>
                 </div>
-            </section>
-
-            <!-- Entries List View -->
-            <section class="entries-section" id="entries-section" style="display: none;">
-                <div class="entries-header">
-                    <h2>Journal Entries</h2>
-                    <div class="entries-controls">
-                        <input type="text" id="search-input" class="search-input" placeholder="Search entries...">
-                        <select id="mood-filter" class="filter-select">
-                            <option value="all">All Moods</option>
-                            <option value="great">😄 Great</option>
-                            <option value="good">🙂 Good</option>
-                            <option value="okay">😐 Okay</option>
-                            <option value="bad">😕 Bad</option>
-                            <option value="terrible">😞 Terrible</option>
-                        </select>
-                        <button class="close-entries-btn" id="close-entries-btn">✕ Close</button>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-words">0</div>
+                    <div class="stat-label">Total Words</div>
                 </div>
-
-                <div class="entries-container" id="entries-container">
-                    <div class="empty-entries-state" id="empty-entries-state">
-                        <div class="empty-icon">📝</div>
-                        <h3>No entries yet</h3>
-                        <p>Start writing your first journal entry above!</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Calendar View -->
-            <section class="calendar-section" id="calendar-section" style="display: none;">
-                <div class="calendar-header">
-                    <h2>Calendar View</h2>
-                    <div class="calendar-controls">
-                        <button class="calendar-nav-btn" id="prev-month">‹ Previous</button>
-                        <span class="current-month" id="current-month-year"></span>
-                        <button class="calendar-nav-btn" id="next-month">Next ›</button>
-                        <button class="close-calendar-btn" id="close-calendar-btn">✕ Close</button>
-                    </div>
-                </div>
-
-                <div class="calendar-grid" id="calendar-grid">
-                    <!-- Calendar will be generated here -->
-                </div>
-            </section>
-
-            <!-- Entry Detail Modal -->
-            <div class="entry-modal" id="entry-modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 id="modal-entry-date"></h2>
-                        <button class="close-modal-btn" onclick="journalApp.closeEntryModal()">✕</button>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <div class="modal-entry-header">
-                            <h3 id="modal-entry-title"></h3>
-                            <div class="modal-entry-meta">
-                                <span class="modal-mood" id="modal-mood"></span>
-                                <span class="modal-word-count" id="modal-word-count"></span>
-                            </div>
-                        </div>
-                        
-                        <div class="modal-entry-content" id="modal-entry-content"></div>
-                        
-                        <div class="modal-entry-tags" id="modal-entry-tags"></div>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button class="edit-entry-btn" onclick="journalApp.editEntry()">Edit Entry</button>
-                        <button class="delete-entry-btn" onclick="journalApp.deleteEntry()">Delete Entry</button>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="frequent-mood">😐</div>
+                    <div class="stat-label">Most Common Mood</div>
                 </div>
             </div>
 
-            <!-- Import File Input -->
-            <input type="file" id="import-file" accept=".json" style="display: none;">
-        </main>
+            <div class="journal-content">
+                <div class="journal-card">
+                    <h2>📝 Recent Entries</h2>
+                    <div id="recent-entries"></div>
+                </div>
+
+                <div class="journal-card">
+                    <h2>😊 Mood Patterns</h2>
+                    <div id="mood-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entries Tab -->
+        <div id="entries-tab" class="tab-content">
+            <div class="journal-content full-width" style="grid-template-columns: 1fr;">
+                <div class="journal-card">
+                    <h2>✏️ New Entry</h2>
+                    <form id="entry-form">
+                        <div class="form-group">
+                            <label>How are you feeling?</label>
+                            <div class="mood-selector">
+                                <div class="mood-option" data-mood="amazing">😄 Amazing</div>
+                                <div class="mood-option" data-mood="good">🙂 Good</div>
+                                <div class="mood-option selected" data-mood="okay">😐 Okay</div>
+                                <div class="mood-option" data-mood="bad">😔 Bad</div>
+                                <div class="mood-option" data-mood="terrible">😢 Terrible</div>
+                            </div>
+                            <input type="hidden" id="entry-mood" value="okay">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="entry-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Title (Optional)</label>
+                            <input type="text" id="entry-title" placeholder="Give your entry a title...">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Your Thoughts</label>
+                            <textarea id="entry-content" placeholder="Write what's on your mind..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tags (Optional)</label>
+                            <input type="text" id="entry-tags" placeholder="e.g., reflection, gratitude, goals (comma separated)">
+                        </div>
+
+                        <button type="submit" class="journal-btn">Save Entry</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="journal-content">
+                <div class="journal-card full-width">
+                    <h2>📚 Your Entries</h2>
+
+                    <div class="search-box">
+                        <input type="text" id="journal-search" placeholder="🔍 Search entries...">
+                    </div>
+
+                    <div class="entries-list" id="entries-list"></div>
+                </div>
+
+                <div class="journal-card" id="entry-detail" style="grid-column: 1 / -1;">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📖</div>
+                        <p>Select an entry to view details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="../quran-component.js"></script>
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/theme-manager.js"></script>
+    <script src="../shared/data-manager.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

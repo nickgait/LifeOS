@@ -3,697 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📈 Investments - LifeOS</title>
+    <title>LifeOS - Investment Portfolio</title>
+    <link rel="stylesheet" href="../shared/styles.css">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>📈 Investment Dashboard</h1>
-            <div class="header-actions">
-                <button class="back-btn" onclick="window.location.href='../index.html'">← Back to LifeOS</button>
+    <div class="container investment-page">
+        <div class="investment-header">
+            <div>
+                <h1>📈 LifeOS Investments</h1>
+                <div class="subtitle">Track portfolio and research opportunities</div>
             </div>
-        </header>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('portfolio')">Portfolio</button>
+                <button class="nav-tab" onclick="switchTab('dividends')">Dividends</button>
+                <button class="nav-tab" onclick="switchTab('cash')">Cash & Interest</button>
+                <button class="nav-tab" onclick="switchTab('research')">Research</button>
+            </div>
+        </div>
 
-        <div class="main-grid">
-            <!-- Left Panel: Search & Watchlist -->
-            <div class="left-panel">
-                <div class="card">
-                    <h2>Stock Search</h2>
-                    <div class="search-form">
-                        <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., AAPL)" class="input">
-                        <button id="searchButton" class="btn btn-primary">
-                            <span id="searchButtonText">Search</span>
-                            <div id="searchButtonSpinner" class="spinner hidden"></div>
-                        </button>
-                    </div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="portfolio-value">$0.00</div>
+                    <div class="stat-label">Portfolio Value</div>
                 </div>
-
-                <div class="card">
-                    <h2>📋 My Watchlist</h2>
-                    <div id="watchlist" class="watchlist">
-                        <p class="empty-state">Your watchlist is empty. Search for stocks to add them here.</p>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="unrealized-gain">$0.00</div>
+                    <div class="stat-label">Unrealized Gain/Loss</div>
                 </div>
-
-                <div class="card">
-                    <h2>💼 Portfolio Performance</h2>
-                    <div id="portfolioSummary" class="portfolio-summary">
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Cash Balance</span>
-                            <span class="stat-value" id="cashBalance">$0.00</span>
-                            <button class="btn btn-sm" id="manageCashBtn" style="margin-top: 5px;">Manage</button>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Holdings Value</span>
-                            <span class="stat-value" id="holdingsValue">$0.00</span>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Total Portfolio</span>
-                            <span class="stat-value" id="totalPortfolioValue">$0.00</span>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Today's Change</span>
-                            <span class="stat-value" id="todaysChange">$0.00 (0.00%)</span>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Total Gain/Loss</span>
-                            <span class="stat-value" id="totalGainLoss">$0.00</span>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">YTD Performance</span>
-                            <span class="stat-value" id="ytdPerformance">+0.00%</span>
-                        </div>
-                        <div class="portfolio-stat">
-                            <span class="stat-label">Lifetime Return</span>
-                            <span class="stat-value" id="lifetimeReturn">+0.00%</span>
-                        </div>
-                        <div class="portfolio-stat dividend-stat">
-                            <span class="stat-label">Annual Dividend Income</span>
-                            <span class="stat-value" id="annualDividendIncome">$0.00</span>
-                        </div>
-                        <div class="portfolio-stat dividend-stat">
-                            <span class="stat-label">Next Dividend Payment</span>
-                            <span class="stat-value dividend-date" id="nextDividendPayment">-</span>
-                        </div>
-                        <button class="btn btn-secondary" id="managePortfolioBtn">View Details</button>
-                        <button class="btn btn-sm" id="refreshPricesBtn" style="margin-left: 10px;">🔄 Refresh</button>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="realized-gain">$0.00</div>
+                    <div class="stat-label">Realized Gain/Loss</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-dividends">$0.00</div>
+                    <div class="stat-label">Total Dividends</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-interest">$0.00</div>
+                    <div class="stat-label">Total Interest</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="cash-balance">$0.00</div>
+                    <div class="stat-label">Cash Balance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="holdings-count">0</div>
+                    <div class="stat-label">Unique Symbols</div>
+                </div>
+            </div>
 
-                <div class="card">
+            <div class="investment-content">
+                <div class="investment-card">
                     <h2>📊 Portfolio Allocation</h2>
-                    <div id="portfolioAllocation" class="portfolio-allocation">
-                        <div class="allocation-chart-container">
-                            <canvas id="allocationChart" width="300" height="300"></canvas>
-                        </div>
-                        <div id="allocationLegend" class="allocation-legend">
-                            <p class="empty-state">No portfolio holdings to display</p>
-                        </div>
-                        <div id="riskWarnings" class="risk-warnings" style="display: none;">
-                            <!-- Risk concentration warnings will appear here -->
-                        </div>
-                    </div>
+                    <div id="allocation"></div>
                 </div>
 
-                <div class="card">
-                    <h2>🏭 Sector Analysis</h2>
-                    <div id="sectorAnalysis" class="sector-analysis">
-                        <div class="sector-chart-container">
-                            <canvas id="sectorChart" width="280" height="280"></canvas>
-                        </div>
-                        <div id="sectorBreakdown" class="sector-breakdown">
-                            <p class="empty-state">No sector data available</p>
-                        </div>
-                        <div id="sectorMetrics" class="sector-metrics">
-                            <div class="sector-metric">
-                                <span class="metric-label">Diversification Score</span>
-                                <span class="metric-value" id="diversificationScore">0/100</span>
-                            </div>
-                            <div class="sector-metric">
-                                <span class="metric-label">Sectors Represented</span>
-                                <span class="metric-value" id="sectorsCount">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h2>💰 Dividend Reminders</h2>
-                    <div id="dividendReminders" class="dividend-reminders">
-                        <p class="empty-state">No upcoming dividend payments</p>
-                    </div>
-                    <div class="dividend-actions">
-                        <button class="btn btn-secondary" id="addDividendReminderBtn">+ Add Reminder</button>
-                        <button class="btn btn-sm" id="refreshDividendDataBtn" title="Refresh dividend data for portfolio holdings">🔄 Refresh Data</button>
-                        <button class="btn btn-sm" id="advanceOverdueBtn" style="display: none;">⏭ Advance Overdue</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel: Dashboard & Analysis -->
-            <div class="right-panel">
-                <!-- Message Box -->
-                <div id="messageBox" class="message-box hidden">
-                    <p id="messageText"></p>
-                </div>
-
-                <!-- Stock Dashboard -->
-                <div id="dashboard" class="dashboard hidden">
-                    <div class="stock-header">
-                        <h2 id="stockNameDisplay" class="stock-name"></h2>
-                        <div class="stock-actions">
-                            <button id="addToWatchlistButton" class="btn btn-secondary">Add to Watchlist</button>
-                            <button id="addToPortfolioButton" class="btn btn-primary">Buy Stock</button>
-                        </div>
-                    </div>
-
-                    <!-- Key Metrics -->
-                    <div class="metrics-grid">
-                        <div class="metric-card">
-                            <h3>Price</h3>
-                            <p id="priceValue" class="metric-value price">$0.00</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Volume</h3>
-                            <p id="volumeValue" class="metric-value">0</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>50-Day MA</h3>
-                            <p id="ma50Value" class="metric-value">$0.00</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>200-Day MA</h3>
-                            <p id="ma200Value" class="metric-value">$0.00</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>RSI</h3>
-                            <p id="rsiValue" class="metric-value">0.00</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>MACD</h3>
-                            <p id="macdValue" class="metric-value">0.00</p>
-                        </div>
-                        <div class="metric-card">
-                            <h3>Fair Value</h3>
-                            <p id="fairValue" class="metric-value fair-value">$0.00</p>
-                            <p id="fairValueDiff" class="fair-value-diff">-</p>
-                        </div>
-                    </div>
-
-                    <!-- Company Overview -->
-                    <div class="card">
-                        <h3>🏢 Company Overview</h3>
-                        <div class="company-overview">
-                            <div class="company-info">
-                                <div class="company-detail">
-                                    <span class="detail-label">Company Name:</span>
-                                    <span id="companyName" class="detail-value">-</span>
-                                </div>
-                                <div class="company-detail">
-                                    <span class="detail-label">Industry:</span>
-                                    <span id="companyIndustry" class="detail-value">-</span>
-                                </div>
-                                <div class="company-detail">
-                                    <span class="detail-label">Market Cap:</span>
-                                    <span id="marketCap" class="detail-value">-</span>
-                                </div>
-                                <div class="company-detail">
-                                    <span class="detail-label">Shares Outstanding:</span>
-                                    <span id="sharesOutstanding" class="detail-value">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fundamental Metrics -->
-                    <div class="card">
-                        <h3>📊 Fundamental Analysis</h3>
-                        <div class="fundamentals-grid">
-                            <div class="fundamental-section">
-                                <h4>Dividend Metrics</h4>
-                                <div class="fundamental-metrics">
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Dividend Yield</span>
-                                        <span id="dividendYield" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Payout Ratio</span>
-                                        <span id="payoutRatio" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Annual Dividend</span>
-                                        <span id="annualDividend" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Ex-Dividend Date</span>
-                                        <span id="exDividendDate" class="metric-value dividend-date">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Dividend Frequency</span>
-                                        <span id="dividendFrequency" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Dividend Health</span>
-                                        <span id="dividendHealth" class="metric-value dividend-health">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="fundamental-section">
-                                <h4>Profitability</h4>
-                                <div class="fundamental-metrics">
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Profit Margin</span>
-                                        <span id="profitMargin" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Return on Equity</span>
-                                        <span id="returnOnEquity" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">ROIC</span>
-                                        <span id="roic" class="metric-value">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="fundamental-section">
-                                <h4>Growth Metrics</h4>
-                                <div class="fundamental-metrics">
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">EPS Growth (5Y)</span>
-                                        <span id="epsGrowth5Y" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Revenue Growth (5Y)</span>
-                                        <span id="revenueGrowth5Y" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">EPS Growth (TTM)</span>
-                                        <span id="epsGrowthTTM" class="metric-value">-</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="fundamental-section">
-                                <h4>Valuation</h4>
-                                <div class="fundamental-metrics">
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">P/E Ratio</span>
-                                        <span id="peRatio" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">P/B Ratio</span>
-                                        <span id="pbRatio" class="metric-value">-</span>
-                                    </div>
-                                    <div class="fundamental-metric">
-                                        <span class="metric-label">Free Cash Flow</span>
-                                        <span id="freeCashFlow" class="metric-value">-</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chart Section -->
-                    <div class="card chart-card">
-                        <h3>📊 Price Chart with Moving Averages</h3>
-                        <canvas id="priceChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Portfolio Performance History -->
-                <div class="card chart-card">
-                    <h3>📈 Portfolio Performance History</h3>
-                    <div class="performance-controls">
-                        <select id="performancePeriod" class="input">
-                            <option value="7">Last 7 Days</option>
-                            <option value="30" selected>Last 30 Days</option>
-                            <option value="90">Last 3 Months</option>
-                            <option value="365">Last Year</option>
-                            <option value="all">All Time</option>
-                        </select>
-                        <button id="takeSnapshotBtn" class="btn btn-sm">📸 Take Snapshot</button>
-                    </div>
-                    <canvas id="performanceChart"></canvas>
-                    <div id="performanceMetrics" class="performance-metrics">
-                        <div class="metric-item">
-                            <span class="metric-label">Period Return</span>
-                            <span class="metric-value" id="periodReturn">+0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Best Day</span>
-                            <span class="metric-value" id="bestDay">+0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Worst Day</span>
-                            <span class="metric-value" id="worstDay">-0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Volatility</span>
-                            <span class="metric-value" id="volatility">0.00%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Benchmark Comparison -->
-                <div class="card chart-card">
-                    <h3>📊 Benchmark Comparison (vs S&P 500)</h3>
-                    <div class="benchmark-controls">
-                        <select id="benchmarkPeriod" class="input">
-                            <option value="30" selected>Last 30 Days</option>
-                            <option value="90">Last 3 Months</option>
-                            <option value="365">Last Year</option>
-                            <option value="all">All Time</option>
-                        </select>
-                        <button id="fetchBenchmarkBtn" class="btn btn-sm">🔄 Update S&P 500</button>
-                    </div>
-                    <canvas id="benchmarkChart"></canvas>
-                    <div id="benchmarkMetrics" class="benchmark-metrics">
-                        <div class="metric-item">
-                            <span class="metric-label">Portfolio Return</span>
-                            <span class="metric-value" id="portfolioBenchmarkReturn">+0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">S&P 500 Return</span>
-                            <span class="metric-value" id="sp500Return">+0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Alpha (Excess Return)</span>
-                            <span class="metric-value" id="alphaValue">+0.00%</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Beta (Market Risk)</span>
-                            <span class="metric-value" id="betaValue">1.00</span>
-                        </div>
-                    </div>
-                    <div id="benchmarkInsights" class="benchmark-insights">
-                        <!-- Performance insights will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Dividend Income Projections -->
-                <div class="card chart-card">
-                    <h3>💰 Forward Dividend Income Projections</h3>
-                    <div class="dividend-projections-controls">
-                        <select id="projectionPeriod" class="input">
-                            <option value="3" selected>Next 3 Months</option>
-                            <option value="6">Next 6 Months</option>
-                            <option value="12">Next 12 Months</option>
-                            <option value="24">Next 24 Months</option>
-                        </select>
-                        <button id="updateProjectionsBtn" class="btn btn-sm">🔄 Update Projections</button>
-                    </div>
-                    <canvas id="dividendProjectionsChart"></canvas>
-                    <div id="dividendProjectionsMetrics" class="dividend-projections-metrics">
-                        <div class="metric-item">
-                            <span class="metric-label">Expected Income (Period)</span>
-                            <span class="metric-value" id="expectedPeriodIncome">$0.00</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Annualized Income</span>
-                            <span class="metric-value" id="annualizedIncome">$0.00</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Avg Quarterly Payment</span>
-                            <span class="metric-value" id="avgQuarterlyPayment">$0.00</span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-label">Portfolio Yield</span>
-                            <span class="metric-value" id="portfolioYield">0.00%</span>
-                        </div>
-                    </div>
-                    <div id="dividendProjectionsDetails" class="dividend-projections-details">
-                        <h4>Dividend Calendar</h4>
-                        <div id="dividendCalendar" class="dividend-calendar">
-                            <!-- Upcoming dividend payments will be populated here -->
-                        </div>
-                    </div>
-                </div>
+                <div class="investment-card">
+                    <h2>📝 Recent Activity</h2>
+                    <div id="recent-activity"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Portfolio Modal -->
-    <div id="portfolioModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="portfolioModalTitle">Buy Stock</h3>
-                <button class="modal-close" id="closePortfolioModal">&times;</button>
-            </div>
-            <form id="portfolioForm">
-                <div class="form-group">
-                    <label for="transactionSymbol">Stock Symbol</label>
-                    <input type="text" id="transactionSymbol" class="input" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="transactionType">Transaction Type</label>
-                    <select id="transactionType" class="input" onchange="investmentDashboard.handleTransactionTypeChange()">
-                        <option value="buy">Buy</option>
-                        <option value="sell">Sell</option>
-                        <option value="dividend">Dividend Payment</option>
-                    </select>
-                </div>
-                <div class="form-group" id="sharesGroup">
-                    <label for="transactionShares">Number of Shares</label>
-                    <input type="number" id="transactionShares" step="0.001" min="0" class="input" required>
-                </div>
-                <div class="form-group" id="priceGroup">
-                    <label for="transactionPrice" id="priceLabel">Price per Share</label>
-                    <input type="number" id="transactionPrice" step="0.01" min="0" class="input" required>
-                </div>
-                <div class="form-group" id="dividendGroup" style="display: none;">
-                    <label for="dividendAmount">Total Dividend Amount</label>
-                    <input type="number" id="dividendAmount" step="0.01" min="0" class="input">
-                </div>
-                <div class="form-group" id="reinvestmentGroup" style="display: none;">
-                    <label>
-                        <input type="checkbox" id="dividendReinvested"> Dividend Reinvested (DRIP)
-                    </label>
-                </div>
-                <div class="form-group" id="reinvestmentDetailsGroup" style="display: none;">
-                    <label for="reinvestmentShares">Shares Purchased with Dividend</label>
-                    <input type="number" id="reinvestmentShares" step="0.001" min="0" class="input">
-                    <label for="reinvestmentPrice">Price per Share</label>
-                    <input type="number" id="reinvestmentPrice" step="0.01" min="0" class="input">
-                </div>
-                <div class="form-group">
-                    <label for="transactionDate">Date</label>
-                    <input type="date" id="transactionDate" class="input" required>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelPortfolio">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add to Portfolio</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Portfolio Details Modal -->
-    <div id="portfolioDetailsModal" class="modal">
-        <div class="modal-content portfolio-details-modal">
-            <div class="modal-header">
-                <h3>📊 Portfolio Details</h3>
-                <button class="modal-close" id="closePortfolioDetailsModal">&times;</button>
-            </div>
-            <div class="portfolio-details-content">
-                <!-- Portfolio Summary -->
-                <div class="portfolio-summary-section">
-                    <h4>Portfolio Summary</h4>
-                    <div class="portfolio-stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-label">Total Invested</div>
-                            <div class="stat-value" id="totalInvested">$0.00</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Shares</div>
-                            <div class="stat-value" id="totalShares">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Total Transactions</div>
-                            <div class="stat-value" id="totalTransactions">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Unique Stocks</div>
-                            <div class="stat-value" id="uniqueStocks">0</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Avg Dividend Yield</div>
-                            <div class="stat-value" id="avgDividendYield">0.00%</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Annual Dividend Income</div>
-                            <div class="stat-value" id="annualDividendIncome">$0.00</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Holdings by Stock -->
-                <div class="holdings-section">
-                    <h4>Current Holdings</h4>
-                    <div id="holdingsList" class="holdings-list">
-                        <!-- Holdings will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Dividend Income Summary -->
-                <div class="dividend-income-section">
-                    <h4>💰 Dividend Income Summary</h4>
-                    <div class="dividend-income-stats">
-                        <div class="dividend-stat-grid">
-                            <div class="stat-card">
-                                <div class="stat-label">Total Dividends Received</div>
-                                <div class="stat-value" id="totalDividendsReceived">$0.00</div>
+        <!-- Portfolio Tab -->
+        <div id="portfolio-tab" class="tab-content">
+            <div class="investment-content full-width" style="grid-template-columns: 1fr;">
+                <div class="investment-card">
+                    <h2>➕ Add Holding</h2>
+                    <form id="holding-form">
+                        <div class="form-group">
+                            <label>Symbol (e.g., AAPL, SPY)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="holding-symbol" placeholder="Stock/ETF symbol" required style="flex: 1;">
+                                <button type="button" id="lookup-btn" class="investment-btn" style="width: auto; margin: 0; padding: 10px 20px;">Lookup</button>
                             </div>
-                            <div class="stat-card">
-                                <div class="stat-label">Dividends Reinvested</div>
-                                <div class="stat-value" id="totalDividendsReinvested">$0.00</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-label">Cash Dividends</div>
-                                <div class="stat-value" id="totalCashDividends">$0.00</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-label">This Year</div>
-                                <div class="stat-value" id="dividendsThisYear">$0.00</div>
-                            </div>
+                            <div id="lookup-status" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
                         </div>
-                        <div id="dividendsByStock" class="dividend-breakdown">
-                            <!-- Dividend breakdown by stock will be populated here -->
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Dividend Calendar -->
-                <div class="dividend-calendar-section">
-                    <h4>📅 Dividend Calendar</h4>
-                    <div class="dividend-calendar-controls">
-                        <select id="dividendCalendarPeriod" class="input">
-                            <option value="30">Next 30 Days</option>
-                            <option value="60">Next 60 Days</option>
-                            <option value="90" selected>Next 3 Months</option>
-                            <option value="180">Next 6 Months</option>
-                        </select>
-                        <button id="refreshDividendCalendar" class="btn btn-sm">🔄 Refresh</button>
-                    </div>
-                    <div id="dividendCalendar" class="dividend-calendar">
-                        <!-- Dividend calendar will be populated here -->
-                    </div>
-                    <div id="dividendCalendarSummary" class="dividend-summary">
-                        <div class="summary-item">
-                            <span class="summary-label">Period Expected:</span>
-                            <span id="totalExpectedDividends" class="summary-value">$0.00</span>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="holding-name" placeholder="Company or Fund name" required>
                         </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Next Payment:</span>
-                            <span id="nextDividendDate" class="summary-value">-</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-label">Ex-Dividend This Week:</span>
-                            <span id="exDividendThisWeek" class="summary-value">0 stocks</span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Transaction History -->
-                <div class="transactions-section">
-                    <div class="section-header">
-                        <h4>Transaction History</h4>
-                        <div class="transaction-filters">
-                            <select id="transactionFilter" class="filter-select">
-                                <option value="all">All Transactions</option>
-                                <option value="buy">Buy Orders</option>
-                                <option value="sell">Sell Orders</option>
-                                <option value="dividend">Dividend Payments</option>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="holding-type" required>
+                                <option value="Stock">Stock</option>
+                                <option value="ETF">ETF</option>
+                                <option value="Mutual Fund">Mutual Fund</option>
+                                <option value="Bond">Bond</option>
+                                <option value="Crypto">Cryptocurrency</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
+
+                        <div class="form-group">
+                            <label>Lot Type</label>
+                            <select id="lot-type" required>
+                                <option value="Purchase">Purchase</option>
+                                <option value="DRIP">DRIP (Dividend Reinvestment)</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Quantity (Shares/Units)</label>
+                            <input type="number" id="holding-quantity" placeholder="Number of shares/units" required min="0.01" step="0.0001">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Purchase/Acquisition Price per Share</label>
+                            <input type="number" id="purchase-price" placeholder="0.00" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Current Price per Share</label>
+                            <input type="number" id="current-price" placeholder="0.00" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Acquisition Date</label>
+                            <input type="date" id="purchase-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Sold Shares (for realized gains)</label>
+                            <input type="number" id="sold-shares" placeholder="0" min="0" step="0.0001" value="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Sold Price per Share (if sold)</label>
+                            <input type="number" id="sold-price" placeholder="0.00" min="0" step="0.01" value="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="holding-notes" placeholder="Any notes about this holding..."></textarea>
+                        </div>
+
+                        <button type="submit" class="investment-btn">Add Holding</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="investment-content">
+                <div class="investment-card full-width">
+                    <h2>💼 Your Holdings</h2>
+                    <div class="portfolio-list" id="portfolio-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dividends Tab -->
+        <div id="dividends-tab" class="tab-content">
+            <div class="investment-content full-width" style="grid-template-columns: 1fr;">
+                <div class="investment-card">
+                    <h2>💰 Record Dividend</h2>
+                    <form id="dividend-form">
+                        <div class="form-group">
+                            <label>Symbol</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="dividend-symbol" placeholder="e.g., AAPL" required style="flex: 1;">
+                                <button type="button" id="dividend-lookup-btn" class="investment-btn" style="width: auto; margin: 0; padding: 10px 20px;">Lookup</button>
+                            </div>
+                            <div id="dividend-lookup-status" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Dividend Amount Received</label>
+                            <input type="number" id="dividend-amount" placeholder="Total amount received" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Dividend Per Share</label>
+                            <input type="number" id="dividend-per-share" placeholder="0.0000" required min="0" step="0.0001">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Payment Date</label>
+                            <input type="date" id="dividend-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="dividend-notes" placeholder="Dividend type, record date, etc..."></textarea>
+                        </div>
+
+                        <button type="submit" class="investment-btn">Record Dividend</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="investment-content">
+                <div class="investment-card">
+                    <h2>📊 Monthly Dividend Summary</h2>
+                    <div id="monthly-dividends"></div>
+                </div>
+
+                <div class="investment-card">
+                    <h2>💵 Shares Received from Dividends</h2>
+                    <div id="drip-summary"></div>
+                </div>
+            </div>
+
+            <div class="investment-content">
+                <div class="investment-card full-width">
+                    <h2>📋 Dividend History</h2>
+                    <div id="dividends-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cash & Interest Tab -->
+        <div id="cash-tab" class="tab-content">
+            <div class="investment-content full-width" style="grid-template-columns: 1fr;">
+                <div class="investment-card">
+                    <h2>💰 Manage Cash Position</h2>
+                    <form id="cash-form">
+                        <div class="form-group">
+                            <label>Cash Balance</label>
+                            <input type="number" id="cash-amount" placeholder="0.00" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="cash-notes" placeholder="e.g., Savings account, money market, etc..."></textarea>
+                        </div>
+
+                        <button type="submit" class="investment-btn">Update Cash Balance</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="investment-content full-width" style="grid-template-columns: 1fr;">
+                <div class="investment-card">
+                    <h2>🏦 Record Interest Income</h2>
+                    <form id="interest-form">
+                        <div class="form-group">
+                            <label>Interest Amount</label>
+                            <input type="number" id="interest-amount" placeholder="0.00" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Source</label>
+                            <input type="text" id="interest-source" placeholder="e.g., Savings Account, CD, Bonds" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date Received</label>
+                            <input type="date" id="interest-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="interest-notes" placeholder="Additional details..."></textarea>
+                        </div>
+
+                        <button type="submit" class="investment-btn">Record Interest</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="investment-content">
+                <div class="investment-card full-width">
+                    <h2>📊 Interest History</h2>
+                    <div id="interest-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Research Tab -->
+        <div id="research-tab" class="tab-content">
+            <div class="investment-content full-width" style="grid-template-columns: 1fr;">
+                <div class="investment-card">
+                    <h2>🔬 Add Research Entry</h2>
+                    <form id="research-form">
+                        <div class="form-group">
+                            <label>Symbol</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="research-symbol" placeholder="e.g., AAPL, SPY" required style="flex: 1;">
+                                <button type="button" id="research-lookup-btn" class="investment-btn" style="width: auto; margin: 0; padding: 10px 20px;">Lookup</button>
+                            </div>
+                            <div id="research-lookup-status" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="research-name" placeholder="Company or Fund name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="research-type" required>
+                                <option value="Stock">Stock</option>
+                                <option value="ETF">ETF</option>
+                                <option value="Mutual Fund">Mutual Fund</option>
+                                <option value="Bond">Bond</option>
+                                <option value="Crypto">Cryptocurrency</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Sector</label>
+                            <input type="text" id="research-sector" placeholder="e.g., Technology, Healthcare" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Rating/Grade</label>
+                            <select id="research-rating">
+                                <option value="">Not Rated</option>
+                                <option value="Buy">Buy</option>
+                                <option value="Hold">Hold</option>
+                                <option value="Sell">Sell</option>
+                                <option value="Strong Buy">Strong Buy</option>
+                                <option value="Strong Sell">Strong Sell</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Research Notes</label>
+                            <textarea id="research-notes" placeholder="Key findings, analysis, pros/cons..."></textarea>
+                        </div>
+
+                        <button type="submit" class="investment-btn">Save Research</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="investment-content">
+                <div class="investment-card full-width">
+                    <h2>📚 Research Database</h2>
+
+                    <div class="tabs-row">
+                        <button class="tab-button active" data-tab="all">All</button>
+                        <button class="tab-button" data-tab="Stock">Stocks</button>
+                        <button class="tab-button" data-tab="ETF">ETFs</button>
+                        <button class="tab-button" data-tab="Mutual Fund">Funds</button>
+                        <button class="tab-button" data-tab="Crypto">Crypto</button>
                     </div>
-                    <div id="transactionHistory" class="transaction-history">
-                        <!-- Transaction history will be populated here -->
-                    </div>
+
+                    <div id="research-list"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Dividend Reminder Modal -->
-    <div id="dividendReminderModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>💰 Add Dividend Reminder</h3>
-                <button class="modal-close" id="closeDividendReminderModal">&times;</button>
-            </div>
-            <form id="dividendReminderForm">
-                <div class="form-group">
-                    <label for="dividendSymbol">Stock Symbol</label>
-                    <input type="text" id="dividendSymbol" class="input" placeholder="e.g., AAPL" required>
-                </div>
-                <div class="form-group">
-                    <label for="dividendExDate">Ex-Dividend Date</label>
-                    <input type="date" id="dividendExDate" class="input" required>
-                </div>
-                <div class="form-group">
-                    <label for="dividendPayDate">Payment Date</label>
-                    <input type="date" id="dividendPayDate" class="input" required>
-                </div>
-                <div class="form-group">
-                    <label for="dividendPerShare">Expected Dividend per Share</label>
-                    <input type="number" id="dividendPerShare" step="0.001" min="0" class="input" placeholder="0.50" required>
-                </div>
-                <div class="form-group">
-                    <label for="dividendFrequency">Dividend Frequency</label>
-                    <select id="dividendFrequency" class="input" required>
-                        <option value="">Select frequency...</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                        <option value="semi-annually">Semi-Annually</option>
-                        <option value="annually">Annually</option>
-                        <option value="special">Special/One-time</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="autoReschedule" checked> Auto-reschedule after payment date
-                    </label>
-                    <small style="color: #666; font-size: 0.9rem;">Automatically create next reminder based on frequency</small>
-                </div>
-                <div class="form-group">
-                    <label for="dividendNotes">Additional Notes (Optional)</label>
-                    <input type="text" id="dividendNotes" class="input" placeholder="e.g., Usually increases 5% annually">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelDividendReminder">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Reminder</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Cash Management Modal -->
-    <div id="cashManagementModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>💰 Cash Management</h3>
-                <button class="modal-close" id="closeCashManagementModal">&times;</button>
-            </div>
-            <div class="cash-management-content">
-                <div class="current-balance">
-                    <h4>Current Cash Balance: <span id="currentCashDisplay">$0.00</span></h4>
-                </div>
-                
-                <form id="cashTransactionForm">
-                    <div class="form-group">
-                        <label for="cashTransactionType">Transaction Type</label>
-                        <select id="cashTransactionType" class="input" required>
-                            <option value="deposit">Deposit Cash</option>
-                            <option value="withdrawal">Withdraw Cash</option>
-                            <option value="set">Set Balance</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="cashAmount">Amount</label>
-                        <input type="number" id="cashAmount" step="0.01" min="0" class="input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="cashNote">Note (Optional)</label>
-                        <input type="text" id="cashNote" class="input" placeholder="e.g., Initial deposit">
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelCashTransaction">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Cash</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="toast-container"></div>
-
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/theme-manager.js"></script>
+    <script src="../shared/data-manager.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

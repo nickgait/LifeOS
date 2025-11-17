@@ -1,356 +1,369 @@
-# LifeOS - Your Personal Life Operating System
+# LifeOS - Personal Life Operating System
 
-![LifeOS](https://img.shields.io/badge/version-1.0.0-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-Ready-green)
-![PWA](https://img.shields.io/badge/PWA-Enabled-purple)
-![License](https://img.shields.io/badge/license-MIT-orange)
+A modular, integrated productivity suite built with vanilla HTML, CSS, and JavaScript. LifeOS provides a unified platform to manage fitness, goals, finances, and journaling with seamless data sharing across all apps.
 
-**LifeOS** is a comprehensive personal life management system built as a Progressive Web App (PWA). It provides a modular, integrated platform for managing different aspects of your personal productivity and life organization.
+## 🎯 Overview
 
-## ✨ Features
+LifeOS is designed to help you organize all aspects of your personal life in one place. Each app is fully modular, sharing a centralized data layer while maintaining its own specialized functionality.
 
-### 🎯 Core Modules
+### Features
 
-- **📝 To-Do List** - Priority-weighted task management with smart completion tracking
-- **💪 Fitness Tracker** - Goal-based workout tracking with progress visualization
-- **💰 Finance Manager** - Budget tracking, expense management, and financial insights
-- **📊 Investment Dashboard** - Stock analysis, portfolio tracking, and market data
-- **🔄 Habit Tracker** - Daily habit formation with streak tracking
-- **🎯 Goal Setting** - Milestone-based goal tracking with progress analytics
-- **📔 Daily Journal** - Personal reflection with mood tracking
-- **🖋️ Poetry Collection** - Creative writing and poetry management
+- **📱 Modular Architecture** - Each app runs independently but shares data seamlessly
+- **💾 Centralized Storage** - All data stored in localStorage with a unified namespace
+- **📊 Cross-App Analytics** - View aggregate data from all apps on the main dashboard
+- **🎨 Unified Theme** - Consistent purple/blue gradient design across all apps
+- **📱 Fully Responsive** - Works perfectly on mobile, tablet, and desktop
+- **⚡ Real-time Sync** - Event-based system for instant data updates across apps
+- **📤 Export/Import** - Backup and restore all your data
 
-### 🚀 Advanced Features
+## 🚀 Quick Start
 
-- **📱 Progressive Web App** - Install as native app on any device
-- **💾 Data Management** - Export, import, and backup your data
-- **📈 Dashboard Widgets** - Live metrics from all modules at a glance
-- **🎨 Theme Customization** - 7 preset themes + custom gradient builder
-- **🔍 Global Search** - Search across all modules instantly
-- **📊 Progress Charts** - Visualize your progress with Chart.js
-- **⚡ Quick Actions** - Fast access to common tasks
-- **🌙 Dark Mode** - Eye-friendly theme for night usage
-- **📴 Offline Support** - Works without internet connection
-- **🔒 Data Privacy** - All data stored locally on your device
+Open `index.html` in your browser to launch LifeOS. You'll see the main dashboard with access to all five apps.
 
-## 🛠️ Tech Stack
+## 📱 Apps
 
-- **Frontend**: Vanilla TypeScript, HTML5, CSS3
-- **Build Tool**: Vite
-- **Testing**: Vitest (unit) + Playwright (E2E)
-- **Charts**: Chart.js
-- **PWA**: Service Worker with caching strategies
-- **Storage**: LocalStorage with encryption support
-- **Styling**: Custom CSS with modern features (Grid, Flexbox, CSS Variables)
+### 1. **Fitness Tracker** 🏃
+Track your fitness journey and achieve your health goals.
 
-## 📦 Installation
+**Features:**
+- Create and track fitness goals with target dates
+- Log various activities (push-ups, jogging, weight lifting, etc.)
+- Badge system with achievement milestones
+- Progress visualization with goal pacing
+- Activity history with notes
+- Dashboard with stats and recent activities
 
-### Prerequisites
+**Files:**
+- `Fitness/index.html`
+- `Fitness/script.js`
+- `Fitness/styles.css`
 
-- Node.js 18+ and npm/yarn/pnpm
+---
 
-### 🚀 Quick Start (Easy Way)
+### 2. **Goals Tracker** 🎯
+Set and track personal, professional, and financial goals across multiple categories.
 
-**The easiest way to start LifeOS:**
+**Features:**
+- Multi-category goal tracking (Health, Career, Personal, Financial, Education, Other)
+- Set target dates and track progress
+- Filter goals by category
+- Mark goals as complete
+- Dashboard with progress by category
+- Goal statistics and insights
 
-#### macOS
-**Double-click `LifeOS.app`** (or `START_LIFEOS.command`)
-- Automatically installs dependencies
-- Opens browser to http://localhost:3000
-- Ready to use!
+**Files:**
+- `Goals/index.html`
+- `Goals/script.js`
+- `Goals/styles.css`
 
-#### Windows
-**Double-click `START_LIFEOS.bat`**
-- Automatically installs dependencies
-- Opens browser to http://localhost:3000
-- Ready to use!
+---
 
-#### All Platforms
-```bash
-node start.js
-```
+### 3. **Finance Tracker** 💰
+Manage expenses and create budgets to take control of your spending.
 
-See [LAUNCHER_GUIDE.md](LAUNCHER_GUIDE.md) for detailed launcher documentation.
+**Features:**
+- Log expenses with categories and descriptions
+- 8 expense categories with icons
+- Create monthly budgets with spending limits
+- Visual progress indicators for budget status
+- Monthly and all-time expense analytics
+- Category-based spending breakdown
+- Budget warnings when approaching limits
 
-### 🛠️ Developer Setup (Manual)
+**Files:**
+- `Finance/index.html`
+- `Finance/script.js`
+- `Finance/styles.css`
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd LifeOS
+---
 
-# Install dependencies
-npm install
+### 4. **Journal** 📔
+Write daily entries, track your mood, and reflect on your personal journey.
 
-# Start development server
-npm run dev
+**Features:**
+- Daily journal entries with mood tracking (5 mood levels)
+- Optional titles and tags for organization
+- Search functionality across entries
+- Word count statistics
+- Mood pattern analytics and visualization
+- Recent entries quick access
+- Entry details view
 
-# Open http://localhost:3000 in your browser
-```
+**Files:**
+- `Journal/index.html`
+- `Journal/script.js`
+- `Journal/styles.css`
 
-### Build for Production
+---
 
-```bash
-# Type check
-npm run type-check
+### 5. **Investments** 📈
+Track your investment portfolio, record dividends, and research stocks and ETFs.
 
-# Build optimized bundle
-npm run build
+**Features:**
+- Portfolio tracking (stocks, ETFs, funds, bonds, crypto)
+- Automatic gain/loss calculation
+- Return percentage tracking
+- Portfolio allocation visualization
+- Dividend payment recording and history
+- Investment research database with ratings
+- Sector and type filtering
+- Google search links for research
 
-# Preview production build
-npm run preview
-```
+**Files:**
+- `Investments/index.html`
+- `Investments/script.js`
+- `Investments/styles.css`
+- `Investments/README.md` (Detailed guide)
 
-## 🧪 Testing
+---
 
-```bash
-# Run unit tests
-npm test
+## 🏗️ Architecture
 
-# Run tests with UI
-npm run test:ui
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
-
-# Run E2E tests with UI
-npm run test:e2e:ui
-```
-
-## 📁 Project Structure
+### Directory Structure
 
 ```
 LifeOS/
-├── shared/                    # Shared utilities and components
-│   ├── storage-utils.js      # LocalStorage abstraction
-│   ├── data-manager.js       # Export/import/backup system
-│   ├── dashboard-widgets.js  # Dashboard widget system
-│   ├── theme-manager.js      # Theme customization
-│   ├── error-handler.js      # Global error handling
-│   └── ...
-├── ToDoList/                 # Task management module
-│   ├── index.html
-│   ├── script.js
-│   └── styles.css
-├── Fitness/                  # Fitness tracking module
-├── Finance/                  # Budget & expense module
-├── Investments/              # Stock analysis module
-├── Habits/                   # Habit tracking module
-├── Goals/                    # Goal setting module
-├── Journal/                  # Daily journal module
-├── Poetry/                   # Poetry collection module
-├── types/                    # TypeScript type definitions
-│   └── index.ts
-├── tests/                    # Test files
-│   ├── setup.ts
-│   ├── shared/               # Unit tests
-│   └── e2e/                  # End-to-end tests
-├── index.html                # Main hub/launcher
-├── manifest.json             # PWA manifest
-├── sw.js                     # Service worker
-├── vite.config.ts            # Vite configuration
-├── tsconfig.json             # TypeScript configuration
-├── playwright.config.ts      # Playwright configuration
-└── package.json              # Dependencies and scripts
+├── index.html                 # Main launcher & dashboard
+├── shared/                    # Shared utilities
+│   ├── storage-utils.js      # Centralized data storage
+│   ├── data-manager.js       # Cross-app data coordination
+│   ├── theme-manager.js      # Unified styling system
+│   └── styles.css            # Shared CSS components
+├── Fitness/                   # Fitness app
+├── Goals/                     # Goals app
+├── Finance/                   # Finance app
+├── Journal/                   # Journal app
+└── Investments/               # Investments app
 ```
-
-## 🎨 Module Architecture
-
-Each module follows a consistent pattern:
-
-- **Independent Operation**: Modules work standalone
-- **Shared Design**: Common gradient theme (#667eea → #764ba2)
-- **LocalStorage**: Module-specific data persistence
-- **Responsive**: Mobile-first design
-- **Accessible**: ARIA labels and keyboard navigation
 
 ### Data Flow
 
 ```
-User Input → Module Logic → StorageUtils → LocalStorage
-                ↓
-          Dashboard Widgets ← Data Manager → Export/Backup
+┌─────────────────────────────────────────────┐
+│        LifeOS Main Launcher (index.html)   │
+│         Dashboard & App Navigation          │
+└──────────────────┬──────────────────────────┘
+                   │
+        ┌──────────┼──────────┐
+        │          │          │
+    ┌───▼──┐   ┌──▼───┐   ┌─▼────┐
+    │Fitness│  │ Goals │  │Finance│  etc.
+    └───┬──┘   └──┬───┘   └─┬────┘
+        │         │         │
+        └─────────┼─────────┘
+                  │
+        ┌─────────▼──────────┐
+        │  StorageManager    │ (centralized storage with events)
+        │   DataManager      │ (cross-app coordination)
+        │  ThemeManager      │ (unified styling)
+        └────────────────────┘
+                  │
+        ┌─────────▼──────────┐
+        │  localStorage      │
+        │  (namespaced)      │
+        └────────────────────┘
 ```
 
-## 🔑 Key Configuration Files
+### Core Modules
 
-### TypeScript Configuration (`tsconfig.json`)
+#### **storage-utils.js**
+- `StorageManager.get(key)` - Retrieve data
+- `StorageManager.set(key, value)` - Store data
+- `StorageManager.onChange(key, callback)` - Listen for changes
+- Namespaced localStorage with event broadcasting
 
-Strict type checking enabled for maximum type safety:
-- `strict: true`
-- `noImplicitAny: true`
-- Path aliases for cleaner imports
+#### **data-manager.js**
+- `DataManager.init()` - Initialize all app data
+- `DataManager.getDashboardStats()` - Get aggregate stats
+- `DataManager.getRecentActivity()` - Get cross-app activity
+- `DataManager.exportData()` - Export all data
+- `DataManager.importData()` - Import data
 
-### Vite Configuration (`vite.config.ts`)
+#### **theme-manager.js**
+- Unified color palette
+- Button/card/input styling helpers
+- CSS variables management
+- Gradient definitions
 
-- Multi-page build configuration
-- Code splitting for optimal loading
-- Asset optimization and minification
-- Development server with HMR
+## 💾 Data Storage
 
-### ESLint Configuration (`.eslintrc.json`)
+All data is stored in localStorage using namespaced keys:
 
-- TypeScript-aware linting
-- Prettier integration
-- Recommended rules for code quality
+```javascript
+// Fitness
+lifeos-fitness-goals
+lifeos-fitness-activities
+lifeos-fitness-badges
 
-## 📊 Performance
+// Goals
+lifeos-goals-all
 
-### Before Optimizations
-- Initial Load: ~1.3s (with artificial delays)
-- Module Switch: 300ms (artificial delay)
+// Finance
+lifeos-finance-expenses
+lifeos-finance-budgets
+lifeos-finance-categories
 
-### After Optimizations
-- Initial Load: ~300ms ⚡ **70% faster**
-- Module Switch: Instant ⚡ **100% faster**
-- Build Size: < 500KB (gzipped)
+// Journal
+lifeos-journal-entries
 
-## 🔐 Security & Privacy
-
-- **Local-First**: All data stored on your device
-- **No Tracking**: Zero analytics or tracking
-- **Encryption Ready**: Support for data encryption
-- **Export Security**: Password-protected backups available
-
-## 🌐 Browser Support
-
-- ✅ Chrome/Edge 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
-
-## 📱 PWA Features
-
-- **Installable**: Add to home screen
-- **Offline**: Works without internet
-- **Fast**: Cached assets for instant loading
-- **Responsive**: Adapts to any screen size
-- **App-like**: Native app experience
-
-## 🔧 Development
-
-### Code Style
-
-```bash
-# Format code
-npm run format
-
-# Check formatting
-npm run format:check
-
-# Lint code
-npm run lint
-
-# Auto-fix linting issues
-npm run lint:fix
+// Metadata
+lifeos-app-metadata
+lifeos-app-launch-history
 ```
 
-### Adding a New Module
+## 🎨 Design
 
-1. Create module directory: `mkdir NewModule`
-2. Add `index.html`, `script.js`, `styles.css`
-3. Follow existing module patterns
-4. Update `script.js` module registry
-5. Add to navigation in `index.html`
-6. Update service worker cache list
+- **Primary Color:** #667eea (Purple)
+- **Secondary Color:** #764ba2 (Dark Purple)
+- **Gradient:** linear-gradient(135deg, #667eea, #764ba2)
+- **Font:** System fonts (-apple-system, BlinkMacSystemFont, Segoe UI, Roboto)
+- **Max Width:** 1200px centered layout
 
-### Data Storage Best Practices
+## 📱 Responsive Design
 
-- Use `StorageUtils` for all localStorage operations
-- Prefix keys with `lifeos_modulename_`
-- Validate data before storing
-- Handle storage quota errors gracefully
+All apps are fully responsive:
+- **Desktop:** 2-column grid layouts
+- **Tablet:** 1-2 column adaptive layouts
+- **Mobile:** Single column, touch-friendly interfaces
 
-## 🐛 Known Issues & Limitations
+## 🔄 Cross-App Integration
 
-- LocalStorage has ~5-10MB limit per domain
-- No real-time sync across devices (local-only)
-- Stocks API requires API key (free tier available)
-- Service worker requires HTTPS in production
+Apps can access data from other apps:
 
-## 🗺️ Roadmap
+```javascript
+// From any app, access:
+const stats = DataManager.getDashboardStats();
+const recent = DataManager.getRecentActivity(5);
+const allGoals = DataManager.getAllActiveGoals();
+```
 
-### v1.1 (Q1 2026)
-- [ ] Cloud sync with Firebase/Supabase
-- [ ] Notification system for reminders
-- [ ] Calendar integration
-- [ ] Global keyboard shortcuts
+Real-time sync via events:
 
-### v1.2 (Q2 2026)
-- [ ] Collaboration features
-- [ ] Advanced analytics dashboard
-- [ ] Mobile native app (Capacitor)
-- [ ] Data encryption
+```javascript
+// Listen to any data changes
+StorageManager.onChange('*', (data) => {
+  // Handle updates
+});
+```
 
-### v2.0 (Q3 2026)
-- [ ] AI-powered insights
-- [ ] Voice commands
-- [ ] Widget system for customization
-- [ ] Plugin architecture
+## 🚀 How to Use
 
-## 📖 Documentation
+### Opening an App
+1. Open `index.html` in a web browser
+2. Click on an app card to launch it
+3. Or use the Quick Actions buttons
 
-- [CLAUDE.md](CLAUDE.md) - Project architecture and guidelines
-- [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md) - Detailed improvement analysis
-- [tasks.md](tasks.md) - Development task tracking
-- Module-specific CLAUDE.md files in each module directory
+### Fitness App
+1. Create fitness goals with targets and deadlines
+2. Log activities as you complete them
+3. Watch goals auto-complete when targets are met
+4. Earn badges for milestones
 
-## 🤝 Contributing
+### Goals App
+1. Switch between categories using filters
+2. Create goals across any category
+3. Mark goals complete when finished
+4. Track progress by category
 
-Contributions are welcome! Please follow these steps:
+### Finance App
+1. Log expenses with categories
+2. Create budgets for monthly limits
+3. Watch budget progress with visual indicators
+4. Review spending by category
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Run tests and linting
-6. Commit with conventional commits format
-7. Push to your fork
-8. Open a Pull Request
+### Journal App
+1. Select your mood for the day
+2. Write your entry
+3. Add tags for organization
+4. Search past entries by content or tags
 
-### Commit Convention
+## 📊 Dashboard
+
+The main dashboard shows:
+- Total active goals across all apps
+- Total fitness activities logged
+- Total expense transactions
+- Total journal entries
+- Recent activity feed from all apps
+- Quick launch buttons for each app
+
+## 🛠️ Development
+
+Each app follows the same pattern:
 
 ```
-feat: Add new feature
-fix: Bug fix
-docs: Documentation changes
-style: Code style changes (formatting)
-refactor: Code refactoring
-test: Adding or updating tests
-chore: Maintenance tasks
+AppName/
+├── index.html      # HTML structure
+├── script.js       # App logic
+└── styles.css      # App-specific styles
 ```
+
+To add a new app:
+1. Create a new folder with the app name
+2. Create `index.html`, `script.js`, `styles.css`
+3. Import shared modules in HTML
+4. Follow the existing class-based structure
+5. Use StorageManager for data persistence
+
+## 📝 Example: Adding a New Feature
+
+```javascript
+// In app script.js
+class MyApp {
+  constructor() {
+    // Get data from shared storage
+    this.data = StorageManager.get('myapp-data') || [];
+  }
+
+  saveData() {
+    StorageManager.set('myapp-data', this.data);
+  }
+
+  init() {
+    // Listen for changes from other apps
+    StorageManager.onChange('fitness-*', () => {
+      this.updateStats();
+    });
+  }
+}
+```
+
+## 🔒 Privacy & Security
+
+- All data stored locally in browser (localStorage)
+- No data sent to servers
+- No external API calls
+- Data persists between sessions
+- Browser developer tools can access/modify data
+
+## ⚠️ Limitations
+
+- Data limited to localStorage size (~5-10MB)
+- Not synced across devices
+- No real-time collaboration
+- No encryption (data stored as plain text in localStorage)
+
+## 🎓 Learning Resources
+
+- **JavaScript:** Vanilla JS (no frameworks)
+- **Storage:** localStorage API
+- **Styling:** CSS Grid, Flexbox, CSS Variables
+- **Architecture:** Event-driven modular design
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+Feel free to use, modify, and distribute as needed.
 
-## 🙏 Acknowledgments
+## 🤝 Contributing
 
-- Chart.js for data visualization
-- Service Worker API for offline functionality
-- The open-source community
-
-## 📧 Support
-
-For questions, issues, or suggestions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md) for known issues
-
-## 🎯 Project Goals
-
-1. **Privacy-First**: Your data stays on your device
-2. **Simplicity**: No complex setup or configuration
-3. **Modularity**: Use only the modules you need
-4. **Extensibility**: Easy to add new modules
-5. **Performance**: Fast, responsive, and efficient
-6. **Accessibility**: Usable by everyone
+This is a personal project, but improvements are welcome! Some ideas:
+- Add more app categories
+- Enhance analytics and reporting
+- Implement data backup/sync
+- Add dark mode
+- Add more badge types
+- Create goal dependencies
 
 ---
 
-**Built with ❤️ for better life organization**
-
-*Last updated: October 10, 2025*
+**Made with ❤️ for personal productivity and self-improvement**

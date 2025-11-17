@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeOS - Fitness Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            background: #e0e0e0;
+        }
+
+        .nav-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .goal-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .goal-item h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .goal-item .goal-details {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-container {
+            background: #e0e0e0;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+
+        .status-on-pace {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-behind {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-ahead {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-entry .log-info {
+            flex: 1;
+        }
+
+        .log-entry .log-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .log-entry .log-activity {
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .log-entry .log-amount {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .badges-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .badge {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f9fafb;
+            transition: all 0.3s;
+        }
+
+        .badge.earned {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            box-shadow: 0 5px 15px rgba(251,191,36,0.3);
+        }
+
+        .badge.locked {
+            opacity: 0.4;
+        }
+
+        .badge-icon {
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+
+        .badge-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .badge.earned .badge-name {
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .goal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🏃‍♂️ LifeOS Fitness Tracker</h1>
+                <div class="subtitle">Track your fitness journey, achieve your goals</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('goals')">Goals</button>
+                <button class="nav-tab" onclick="switchTab('log')">Log Activity</button>
+                <button class="nav-tab" onclick="switchTab('badges')">Badges</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="active-goals-count">0</div>
+                    <div class="stat-label">Active Goals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-activities-count">0</div>
+                    <div class="stat-label">Activities Logged</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="badges-earned-count">0</div>
+                    <div class="stat-label">Badges Earned</div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="card full-width">
+                    <h2>📊 Active Goals</h2>
+                    <div id="active-goals-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>📝 Recent Activity</h2>
+                    <div class="activity-log" id="recent-activity-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>🏅 Latest Badges</h2>
+                    <div class="badges-container" id="dashboard-badges"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Tab -->
+        <div id="goals-tab" class="tab-content">
+            <div class="content">
+                <div class="card">
+                    <h2>➕ Create New Goal</h2>
+                    <form id="goal-form">
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="goal-activity" required>
+                                <option value="">Select Activity</option>
+                                <option value="pushups">Push-ups</option>
+                                <option value="planks">Planks (seconds)</option>
+                                <option value="crunches">Crunches</option>
+                                <option value="bike">Stationary Bike (minutes)</option>
+                                <option value="jog">Jogging (miles)</option>
+                                <option value="walk">Walking (miles)</option>
+                                <option value="weights">Weight Lifting (lbs)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Goal Name</label>
+                            <input type="text" id="goal-name" placeholder="e.g., 100 Push-ups Challenge" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Target Amount</label>
+                            <input type="number" id="goal-target" placeholder="e.g., 100" required min="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Target Date</label>
+                            <input type="date" id="goal-date" required>
+                        </div>
+
+                        <button type="submit" class="btn">Create Goal</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>🎯 Your Goals</h2>
+                    <div id="goals-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Activity Tab -->
+        <div id="log-tab" class="tab-content">
+            <div class="content">
+                <div class="card">
+                    <h2>📝 Log Today's Activity</h2>
+                    <form id="activity-form">
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="activity-type" required>
+                                <option value="">Select Activity</option>
+                                <option value="pushups">Push-ups</option>
+                                <option value="planks">Planks (seconds)</option>
+                                <option value="crunches">Crunches</option>
+                                <option value="bike">Stationary Bike (minutes)</option>
+                                <option value="jog">Jogging (miles)</option>
+                                <option value="walk">Walking (miles)</option>
+                                <option value="weights">Weight Lifting (lbs)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input type="number" id="activity-amount" placeholder="How much did you do?" required min="0" step="0.1">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="activity-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="activity-notes" rows="3" placeholder="How did it feel? Any observations?"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn">Log Activity</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>📋 Activity History</h2>
+                    <div class="activity-log" id="activity-history"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges Tab -->
+        <div id="badges-tab" class="tab-content">
+            <div class="card full-width">
+                <h2>🏅 Your Badges</h2>
+                <div class="badges-container" id="all-badges"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let goals = JSON.parse(localStorage.getItem('lifeos-goals')) || [];
+        let activities = JSON.parse(localStorage.getItem('lifeos-activities')) || [];
+        let badges = JSON.parse(localStorage.getItem('lifeos-badges')) || initializeBadges();
+
+        function initializeBadges() {
+            return [
+                { id: 'first-log', name: 'First Step', icon: '👟', earned: false, requirement: 'Log your first activity' },
+                { id: 'week-streak', name: 'Week Warrior', icon: '🔥', earned: false, requirement: 'Log activities for 7 days straight' },
+                { id: 'first-goal', name: 'Goal Setter', icon: '🎯', earned: false, requirement: 'Create your first goal' },
+                { id: 'goal-complete', name: 'Achiever', icon: '⭐', earned: false, requirement: 'Complete your first goal' },
+                { id: 'ten-activities', name: 'Dedicated', icon: '💪', earned: false, requirement: 'Log 10 activities' },
+                { id: 'fifty-activities', name: 'Committed', icon: '🏆', earned: false, requirement: 'Log 50 activities' },
+                { id: 'hundred-pushups', name: 'Push-up Pro', icon: '💥', earned: false, requirement: 'Complete 100 push-ups in one session' },
+                { id: 'five-mile', name: 'Distance Runner', icon: '🏃', earned: false, requirement: 'Run 5 miles in one session' },
+                { id: 'consistency', name: 'Consistent', icon: '📅', earned: false, requirement: 'Log activities for 30 days' }
+            ];
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'goals') renderGoals();
+            if (tabName === 'log') renderActivityHistory();
+            if (tabName === 'badges') renderAllBadges();
+        }
+
+        // Goal form submission
+        document.getElementById('goal-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const goal = {
+                id: Date.now(),
+                name: document.getElementById('goal-name').value,
+                activity: document.getElementById('goal-activity').value,
+                target: parseFloat(document.getElementById('goal-target').value),
+                current: 0,
+                targetDate: document.getElementById('goal-date').value,
+                createdDate: new Date().toISOString().split('T')[0],
+                status: 'active'
+            };
+
+            goals.push(goal);
+            localStorage.setItem('lifeos-goals', JSON.stringify(goals));
+            
+            checkBadge('first-goal');
+            
+            e.target.reset();
+            alert('Goal created successfully!');
+            renderGoals();
+            updateDashboard();
+        });
+
+        // Activity form submission
+        document.getElementById('activity-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const activity = {
+                id: Date.now(),
+                type: document.getElementById('activity-type').value,
+                amount: parseFloat(document.getElementById('activity-amount').value),
+                date: document.getElementById('activity-date').value,
+                notes: document.getElementById('activity-notes').value
+            };
+
+            activities.push(activity);
+            localStorage.setItem('lifeos-activities', JSON.stringify(activities));
+            
+            // Update related goals
+            updateGoalProgress(activity.type, activity.amount);
+            
+            // Check badges
+            checkBadge('first-log');
+            checkBadge('ten-activities');
+            checkBadge('fifty-activities');
+            checkActivityBadges(activity);
+            checkStreakBadge();
+            
+            e.target.reset();
+            document.getElementById('activity-date').value = new Date().toISOString().split('T')[0];
+            alert('Activity logged successfully!');
+            renderActivityHistory();
+            updateDashboard();
+        });
+
+        function updateGoalProgress(activityType, amount) {
+            let updated = false;
+            goals = goals.map(goal => {
+                if (goal.activity === activityType && goal.status === 'active') {
+                    goal.current += amount;
+                    if (goal.current >= goal.target) {
+                        goal.status = 'completed';
+                        goal.completedDate = new Date().toISOString().split('T')[0];
+                        checkBadge('goal-complete');
+                    }
+                    updated = true;
+                }
+                return goal;
+            });
+            
+            if (updated) {
+                localStorage.setItem('lifeos-goals', JSON.stringify(goals));
+            }
+        }
+
+        function checkActivityBadges(activity) {
+            if (activity.type === 'pushups' && activity.amount >= 100) {
+                checkBadge('hundred-pushups');
+            }
+            if (activity.type === 'jog' && activity.amount >= 5) {
+                checkBadge('five-mile');
+            }
+        }
+
+        function checkStreakBadge() {
+            const sortedActivities = activities
+                .map(a => a.date)
+                .sort()
+                .filter((date, index, arr) => arr.indexOf(date) === index);
+            
+            let streak = 1;
+            for (let i = 1; i < sortedActivities.length; i++) {
+                const date1 = new Date(sortedActivities[i - 1]);
+                const date2 = new Date(sortedActivities[i]);
+                const diffDays = Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 1) {
+                    streak++;
+                } else if (diffDays > 1) {
+                    streak = 1;
+                }
+            }
+            
+            if (streak >= 7) checkBadge('week-streak');
+            if (sortedActivities.length >= 30) checkBadge('consistency');
+        }
+
+        function checkBadge(badgeId) {
+            const badge = badges.find(b => b.id === badgeId);
+            if (badge && !badge.earned) {
+                if (badgeId === 'first-log' && activities.length >= 1) {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'first-goal' && goals.length >= 1) {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'goal-complete' && goals.some(g => g.status === 'completed')) {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'ten-activities' && activities.length >= 10) {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'fifty-activities' && activities.length >= 50) {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'hundred-pushups' || badgeId === 'five-mile') {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                } else if (badgeId === 'week-streak' || badgeId === 'consistency') {
+                    badge.earned = true;
+                    showBadgeNotification(badge);
+                }
+                
+                localStorage.setItem('lifeos-badges', JSON.stringify(badges));
+            }
+        }
+
+        function showBadgeNotification(badge) {
+            alert(`🎉 Badge Earned: ${badge.icon} ${badge.name}!\n${badge.requirement}`);
+        }
+
+        function renderGoals() {
+            const goalsList = document.getElementById('goals-list');
+            
+            if (goals.length === 0) {
+                goalsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <p>No goals yet. Create your first goal to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            goalsList.innerHTML = goals.map(goal => {
+                const progress = (goal.current / goal.target * 100).toFixed(1);
+                const daysLeft = Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+                const daysTotal = Math.ceil((new Date(goal.targetDate) - new Date(goal.createdDate)) / (1000 * 60 * 60 * 24));
+                const expectedProgress = ((daysTotal - daysLeft) / daysTotal * 100).toFixed(1);
+                
+                let status = 'on-pace';
+                let statusText = 'On Pace';
+                
+                if (goal.status === 'completed') {
+                    status = 'ahead';
+                    statusText = 'Completed!';
+                } else if (progress < expectedProgress) {
+                    status = 'behind';
+                    statusText = 'Behind Pace';
+                } else if (progress > expectedProgress) {
+                    status = 'ahead';
+                    statusText = 'Ahead of Pace';
+                }
+
+                return `
+                    <div class="goal-item">
+                        <h3>${goal.name}</h3>
+                        <div class="goal-details">
+                            ${getActivityLabel(goal.activity)} • Target: ${goal.target} • Due: ${goal.targetDate}
+                            ${goal.status === 'active' ? `<br>Days remaining: ${daysLeft}` : ''}
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${Math.min(progress, 100)}%">
+                                ${progress}%
+                            </div>
+                        </div>
+                        <div>
+                            Current: ${goal.current.toFixed(1)} / ${goal.target}
+                            <span class="status-badge status-${status}">${statusText}</span>
+                        </div>
+                        ${goal.status === 'active' ? `
+                            <div class="goal-actions">
+                                <button class="btn btn-small btn-danger" onclick="deleteGoal(${goal.id})">Delete Goal</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteGoal(goalId) {
+            if (confirm('Are you sure you want to delete this goal?')) {
+                goals = goals.filter(g => g.id !== goalId);
+                localStorage.setItem('lifeos-goals', JSON.stringify(goals));
+                renderGoals();
+                updateDashboard();
+            }
+        }
+
+        function renderActivityHistory() {
+            const historyDiv = document.getElementById('activity-history');
+            
+            if (activities.length === 0) {
+                historyDiv.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No activities logged yet. Start logging your workouts!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedActivities = [...activities].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            historyDiv.innerHTML = sortedActivities.map(activity => `
+                <div class="log-entry">
+                    <div class="log-info">
+                        <div class="log-activity">${getActivityLabel(activity.type)}</div>
+                        <div class="log-date">${activity.date}</div>
+                        ${activity.notes ? `<div style="font-size: 12px; color: #666; margin-top: 4px;">${activity.notes}</div>` : ''}
+                    </div>
+                    <div class="log-amount">${activity.amount} ${getActivityUnit(activity.type)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderAllBadges() {
+            const badgesDiv = document.getElementById('all-badges');
+            
+            badgesDiv.innerHTML = badges.map(badge => `
+                <div class="badge ${badge.earned ? 'earned' : 'locked'}">
+                    <div class="badge-icon">${badge.icon}</div>
+                    <div class="badge-name">${badge.name}</div>
+                    <div style="font-size: 10px; color: #666; margin-top: 5px;">${badge.requirement}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateDashboard() {
+            // Update stats
+            document.getElementById('active-goals-count').textContent = goals.filter(g => g.status === 'active').length;
+            document.getElementById('total-activities-count').textContent = activities.length;
+            document.getElementById('badges-earned-count').textContent = badges.filter(b => b.earned).length;
+
+            // Render active goals
+            const activeGoalsList = document.getElementById('active-goals-list');
+            const activeGoals = goals.filter(g => g.status === 'active').slice(0, 3);
+            
+            if (activeGoals.length === 0) {
+                activeGoalsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎯</div>
+                        <p>No active goals. Create a goal to start tracking!</p>
+                    </div>
+                `;
+            } else {
+                activeGoalsList.innerHTML = activeGoals.map(goal => {
+                    const progress = (goal.current / goal.target * 100).toFixed(1);
+                    const daysLeft = Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    
+                    return `
+                        <div class="goal-item">
+                            <h3>${goal.name}</h3>
+                            <div class="goal-details">
+                                ${getActivityLabel(goal.activity)} • ${daysLeft} days left
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${Math.min(progress, 100)}%">
+                                    ${progress}%
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render recent activities
+            const recentList = document.getElementById('recent-activity-list');
+            const recentActivities = [...activities].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+            
+            if (recentActivities.length === 0) {
+                recentList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No activities yet. Log your first workout!</p>
+                    </div>
+                `;
+            } else {
+                recentList.innerHTML = recentActivities.map(activity => `
+                    <div class="log-entry">
+                        <div class="log-info">
+                            <div class="log-activity">${getActivityLabel(activity.type)}</div>
+                            <div class="log-date">${activity.date}</div>
+                        </div>
+                        <div class="log-amount">${activity.amount} ${getActivityUnit(activity.type)}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Render latest badges
+            const dashboardBadges = document.getElementById('dashboard-badges');
+            const earnedBadges = badges.filter(b => b.earned).slice(-4);
+            
+            if (earnedBadges.length === 0) {
+                dashboardBadges.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="empty-state-icon">🏅</div>
+                        <p>No badges earned yet. Keep working out!</p>
+                    </div>
+                `;
+            } else {
+                dashboardBadges.innerHTML = earnedBadges.map(badge => `
+                    <div class="badge earned">
+                        <div class="badge-icon">${badge.icon}</div>
+                        <div class="badge-name">${badge.name}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getActivityLabel(type) {
+            const labels = {
+                'pushups': 'Push-ups',
+                'planks': 'Planks',
+                'crunches': 'Crunches',
+                'bike': 'Stationary Bike',
+                'jog': 'Jogging',
+                'walk': 'Walking',
+                'weights': 'Weight Lifting'
+            };
+            return labels[type] || type;
+        }
+
+        function getActivityUnit(type) {
+            const units = {
+                'pushups': 'reps',
+                'planks': 'sec',
+                'crunches': 'reps',
+                'bike': 'min',
+                'jog': 'mi',
+                'walk': 'mi',
+                'weights': 'lbs'
+            };
+            return units[type] || '';
+        }
+
+        // Initialize
+        document.getElementById('activity-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('goal-date').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        updateDashboard();
+    </script>
+</body>
+</html>

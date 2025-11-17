@@ -39,7 +39,8 @@
       "WebFetch(domain:finviz.com)",
       "Bash(curl:*)",
       "Read(//Users/mgaither/Documents/**)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git ls-tree -r HEAD --name-only)"
     ],
     "deny": []
   }

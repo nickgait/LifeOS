@@ -3,856 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Fitness Tracker</title>
-    <meta name="description" content="Track your fitness goals and build healthy habits with streaks and achievements">
-    <meta name="theme-color" content="#0ea5e9">
-    <link rel="manifest" id="manifest-placeholder">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
+    <title>LifeOS - Fitness Tracker</title>
+    <link rel="stylesheet" href="../shared/styles.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="text-center">
-            <div class="flex justify-between items-center mb-4">
-                <div></div>
-                <div>
-                    <h1 class="text-4xl font-extrabold text-gray-800 dark:text-white">Fitness Tracker</h1>
-                </div>
-                <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors" aria-label="Toggle dark mode">
-                    <span id="themeIcon">🌙</span>
-                </button>
+    <div class="container fitness-page">
+        <div class="fitness-header">
+            <div>
+                <h1>🏃‍♂️ LifeOS Fitness Tracker</h1>
+                <div class="subtitle">Track your fitness journey, achieve your goals</div>
             </div>
-            <p class="mt-2 text-lg text-gray-500 dark:text-gray-400">Log your progress and stay on track with your goals!</p>
-        </div>
-
-        <!-- Daily Quran Verse Section -->
-        <div id="daily-verse-container"></div>
-
-        <div class="goal-header">
-            <h2 class="text-2xl font-bold text-gray-700 dark:text-gray-200">My Goals</h2>
-            <div class="flex gap-2 flex-wrap">
-                <button id="exportButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Export all goals data">
-                    Export Data
-                </button>
-                <button id="importButton" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Import goals data from file">
-                    Import Data
-                </button>
-                <button id="editGoalButton" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hidden" aria-label="Edit current goal">
-                    Edit Goal
-                </button>
-                <button id="deleteGoalButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hidden" aria-label="Delete current goal">
-                    Delete Goal
-                </button>
-                <button id="addGoalButton" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Add new goal">
-                    + Add Goal
-                </button>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('goals')">Goals</button>
+                <button class="nav-tab" onclick="switchTab('log')">Log Activity</button>
+                <button class="nav-tab" onclick="switchTab('badges')">Badges</button>
             </div>
         </div>
 
-        <div id="categoryFilter" class="w-full mb-4 hidden">
-            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Category:</h3>
-            <div id="categoryButtons" class="flex flex-wrap gap-2 justify-center">
-                <!-- Category filter buttons will be injected here -->
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="active-goals-count">0</div>
+                    <div class="stat-label">Active Goals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-activities-count">0</div>
+                    <div class="stat-label">Activities Logged</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="badges-earned-count">0</div>
+                    <div class="stat-label">Badges Earned</div>
+                </div>
             </div>
-        </div>
 
-        <div id="goalButtons" class="goal-selection">
-            <!-- Goal buttons will be injected here -->
-        </div>
+            <div class="fitness-content">
+                <div class="fitness-card full-width">
+                    <h2>📊 Active Goals</h2>
+                    <div id="active-goals-list"></div>
+                </div>
 
-        <!-- Analytics Dashboard -->
-        <div id="analyticsDashboard" class="analytics-dashboard hidden">
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">📊 Health Score</h3>
-                <div id="healthScoreDisplay" class="text-center">
-                    <div id="compositeHealthScore" class="text-4xl font-bold text-blue-600 mb-2">--</div>
-                    <div id="healthGrade" class="text-lg font-medium text-gray-600 mb-4">Not enough data</div>
-                    <div id="healthMetricsBreakdown" class="grid grid-cols-2 gap-2 text-sm">
-                        <!-- Metric breakdowns will be populated here -->
-                    </div>
+                <div class="fitness-card">
+                    <h2>📝 Recent Activity</h2>
+                    <div class="activity-log" id="recent-activity-list"></div>
                 </div>
-            </div>
-            
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">📈 Trend Analysis</h3>
-                <div id="trendAnalysisDisplay">
-                    <div id="overallTrendSummary" class="mb-4 p-3 bg-gray-50 rounded-lg">
-                        <!-- Overall trend summary -->
-                    </div>
-                    <div id="trendChart" class="chart-container" data-lazy-load="chart">
-                        <!-- Advanced trend chart will be rendered here -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">🧠 AI Insights</h3>
-                <div id="aiInsightsDisplay">
-                    <div id="keyInsights" class="mb-4">
-                        <!-- Key AI-generated insights -->
-                    </div>
-                    <div id="personalizedRecommendations">
-                        <!-- Personalized recommendations -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">💓 Biometric Dashboard</h3>
-                <div id="biometricDashboard">
-                    <div id="biometricSummary" class="grid grid-cols-2 gap-4 mb-4">
-                        <!-- Biometric summary cards -->
-                    </div>
-                    <div id="biometricTrendsChart" class="chart-container">
-                        <!-- Biometric trends chart -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">🔗 Correlations</h3>
-                <div id="correlationAnalysis">
-                    <div id="correlationMatrix" class="mb-4">
-                        <!-- Correlation matrix visualization -->
-                    </div>
-                    <div id="significantCorrelations">
-                        <!-- Significant correlations list -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analytics-card">
-                <h3 class="text-lg font-semibold mb-2">🎯 Goal Difficulty Analysis</h3>
-                <div id="goalDifficultyAnalysis">
-                    <div id="difficultyOverview" class="mb-4">
-                        <!-- Difficulty overview -->
-                    </div>
-                    <div id="goalOptimizationSuggestions">
-                        <!-- Goal optimization suggestions -->
-                    </div>
+
+                <div class="fitness-card">
+                    <h2>🏅 Latest Badges</h2>
+                    <div class="badges-container" id="dashboard-badges"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Summary Views -->
-        <div id="summaryViews" class="hidden">
-            <div class="summary-container">
-                <h3 class="text-lg font-semibold mb-3">📅 Weekly Summary</h3>
-                <div class="summary-grid" id="weeklySummary">
-                    <!-- Weekly summary cards will be injected here -->
-                </div>
-            </div>
-            <div class="summary-container">
-                <h3 class="text-lg font-semibold mb-3">📅 Monthly Summary</h3>
-                <div class="summary-grid" id="monthlySummary">
-                    <!-- Monthly summary cards will be injected here -->
-                </div>
-            </div>
-        </div>
-
-        <div id="goalDetails" class="hidden w-full">
-            <div class="goal-stats">
-                <h3 id="goalName" class="text-2xl font-bold mb-2"></h3>
-                <p class="text-base font-semibold">Remaining <span id="remainingCount" class="text-4xl font-extrabold text-blue-800"></span></p>
-                <p id="totalCount" class="text-sm text-gray-600 mt-1"></p>
-                <div class="progress-bar">
-                    <div id="progressBar" class="progress-fill"></div>
-                </div>
-                <div id="completionDate" class="mt-4 text-center"></div>
-                <div id="inconsistencyMessage" class="mt-2 text-center font-medium text-sm"></div>
-                <div id="streakInfo" class="mt-4 text-center"></div>
-                <div id="achievements" class="mt-4 text-center"></div>
-                <div id="goalNotes" class="mt-4 text-center hidden"></div>
-            </div>
-
-            <!-- Progress Chart -->
-            <div id="progressChart" class="chart-container mt-4 hidden" data-lazy-load="chart">
-                <h4 class="text-lg font-medium mb-2">📊 Progress Chart</h4>
-                <!-- Chart will be rendered here -->
-            </div>
-
-            <!-- Pyramid Calculator -->
-            <div id="pyramidCalculator" class="pyramid-calculator mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900 dark:to-blue-900 rounded-lg hidden">
-                <h4 class="text-lg font-semibold mb-3 text-purple-800 dark:text-purple-200">🔺 Exercise Pyramid Calculator</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <div class="grid grid-cols-3 gap-2 mb-3">
-                            <div>
-                                <label for="pyramidStart" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Start</label>
-                                <input type="number" id="pyramidStart" value="1" min="1" class="w-full border rounded px-2 py-1 text-sm">
-                            </div>
-                            <div>
-                                <label for="pyramidPeak" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">Peak</label>
-                                <input type="number" id="pyramidPeak" value="12" min="1" class="w-full border rounded px-2 py-1 text-sm">
-                            </div>
-                            <div>
-                                <label for="pyramidEnd" class="block text-xs text-gray-600 dark:text-gray-400 mb-1">End</label>
-                                <input type="number" id="pyramidEnd" value="1" min="1" class="w-full border rounded px-2 py-1 text-sm">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="flex items-center text-sm">
-                                <input type="checkbox" id="doublePeak" checked class="mr-2">
-                                <span class="text-gray-700 dark:text-gray-300">Double peak (do peak amount twice)</span>
-                            </label>
-                        </div>
-                        <div class="text-center">
-                            <div id="pyramidTotal" class="text-3xl font-bold text-purple-600 dark:text-purple-300 mb-1">156</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">Total Reps</div>
-                            <button id="usePyramidButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg w-full">
-                                📝 Use This Amount
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-sm mb-2">
-                            <div class="font-medium text-gray-700 dark:text-gray-300 mb-2">Pyramid Pattern:</div>
-                            <div id="pyramidPattern" class="text-xs text-gray-600 dark:text-gray-400 font-mono bg-white dark:bg-gray-800 p-2 rounded max-h-24 overflow-y-auto">
-                                1→2→3→4→5→6→7→8→9→10→11→12→12→11→10→9→8→7→6→5→4→3→2→1
-                            </div>
-                        </div>
-                        <div id="pyramidImpact" class="text-sm space-y-1">
-                            <div class="text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Daily Target Impact:</span>
-                                <div id="dailyImpact" class="text-green-600 dark:text-green-400 font-medium">+106 above target</div>
-                            </div>
-                            <div class="text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Goal Impact:</span>
-                                <div id="goalImpact" class="text-blue-600 dark:text-blue-400 font-medium">3.1% of total goal</div>
-                            </div>
-                            <div class="text-gray-600 dark:text-gray-400">
-                                <span class="font-medium">Completion Boost:</span>
-                                <div id="completionImpact" class="text-purple-600 dark:text-purple-400 font-medium">2.1 days ahead</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="log-input mt-4">
-                <label for="logInput" class="text-sm font-medium text-gray-700 dark:text-gray-300">Log Progress Today</label>
-                <input type="number" id="logInput" placeholder="Enter amount completed" class="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-describedby="logHelp">
-                <div id="logHelp" class="sr-only">Enter the amount you completed today for this goal</div>
-                <div class="flex gap-2">
-                    <button id="logButton" class="flex-1" aria-label="Log today's progress">Log</button>
-                    <button id="pyramidToggleButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Toggle pyramid calculator">
-                        🔺 Pyramid
-                    </button>
-                    <button id="bulkAddButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg" aria-label="Add multiple entries">
-                        📝 Bulk Add
-                    </button>
-                </div>
-            </div>
-
-            <!-- Multi-Goal Tracking Container -->
-            <div id="multiGoalContainer" class="hidden">
-                <!-- Multi-goal inputs will be rendered here -->
-            </div>
-
-            <div class="history mt-4">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">History</h3>
-                <div id="historyList" class="flex flex-col gap-1">
-                    <!-- History items will be inserted here -->
-                </div>
-            </div>
-
-            <!-- Goal Sharing -->
-            <div class="mt-4 text-center">
-                <button id="shareGoalButton" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    🔗 Share Goal
-                </button>
-            </div>
-
-            <!-- Goal Difficulty Analysis -->
-            <div id="goalDifficultyDisplay" class="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 rounded-lg hidden">
-                <h4 class="text-lg font-semibold mb-2 text-purple-800 dark:text-purple-200">🎯 Goal Difficulty Analysis</h4>
-                <div id="difficultyScore" class="text-center mb-3">
-                    <div class="text-2xl font-bold text-purple-600 dark:text-purple-300" id="difficultyScoreValue">--</div>
-                    <div class="text-sm text-purple-500 dark:text-purple-400" id="difficultyLevel">Calculating...</div>
-                </div>
-                <div id="difficultyFactors" class="grid grid-cols-2 gap-2 text-xs">
-                    <!-- Difficulty factors will be populated here -->
-                </div>
-                <div id="difficultyRecommendations" class="mt-3 text-sm">
-                    <!-- Recommendations will be populated here -->
-                </div>
-            </div>
-        </div>
-
-        <div id="noGoalsMessage" class="text-center text-gray-500 dark:text-gray-400 italic mt-8">
-            <p>You haven't created any goals yet.</p>
-            <p>Click "Add Goal" to get started!</p>
-        </div>
-
-        <!-- View Toggle Buttons -->
-        <div class="flex justify-center gap-2 mt-6">
-            <button id="goalsViewButton" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium">
-                Goals
-            </button>
-            <button id="analyticsViewButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">
-                Analytics
-            </button>
-            <button id="summaryViewButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">
-                Summary
-            </button>
-            <button id="biometricsViewButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">
-                💓 Health
-            </button>
-            <button id="journalViewButton" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium">
-                📝 Journal
-            </button>
-        </div>
-
-        <!-- Biometric Tracking View -->
-        <div id="biometricsView" class="hidden mt-6">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Health & Biometrics</h2>
-                    <button id="connectDeviceButton" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        📱 Connect Device
-                    </button>
-                </div>
-
-                <!-- Manual Biometric Entry -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">Quick Log</h3>
-                        <div class="space-y-3">
-                            <div class="flex gap-2">
-                                <select id="biometricType" class="flex-1 border rounded px-3 py-2 text-sm">
-                                    <option value="heartRate">❤️ Heart Rate (bpm)</option>
-                                    <option value="steps">🚶 Steps</option>
-                                    <option value="weight">⚖️ Weight (lbs)</option>
-                                    <option value="sleep">😴 Sleep (hours)</option>
-                                    <option value="mood">😊 Mood (1-10)</option>
-                                    <option value="energy">⚡ Energy (1-10)</option>
-                                    <option value="stress">😰 Stress (1-10)</option>
-                                </select>
-                                <input type="number" id="biometricValue" placeholder="Value" class="w-20 border rounded px-3 py-2 text-sm">
-                                <button id="logBiometricButton" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm">
-                                    Log
-                                </button>
-                            </div>
-                            <input type="text" id="biometricNotes" placeholder="Optional notes..." class="w-full border rounded px-3 py-2 text-sm">
-                        </div>
-                    </div>
-
-                    <!-- Real-time Stats -->
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">Today's Stats</h3>
-                        <div id="todaysBiometrics" class="space-y-2 text-sm">
-                            <!-- Today's biometric summary will be populated here -->
-                            <div class="text-gray-500 dark:text-gray-400 text-center py-4">No data logged today</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Biometric Trends -->
-                <div class="mb-6">
-                    <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">Health Trends (Last 30 Days)</h3>
-                    <div id="biometricTrendsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Biometric trend cards will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Health Insights -->
-                <div>
-                    <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">🧠 Health Insights</h3>
-                    <div id="healthInsights" class="space-y-3">
-                        <!-- Health insights will be populated here -->
-                        <div class="text-gray-500 dark:text-gray-400 text-center py-4">Start logging biometrics to see personalized insights</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Journal View -->
-        <div id="journalView" class="hidden mt-6">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">📝 Fitness Journal</h2>
-                    <div class="flex gap-2">
-                        <button id="exportJournalButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                            📤 Export Journal
-                        </button>
-                        <button id="journalAnalyticsButton" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">
-                            📊 Analytics
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Journal Entry Form -->
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                    <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">New Journal Entry</h3>
-                    <div class="space-y-4">
-                        <div class="flex gap-3">
-                            <input type="date" id="journalDate" class="border rounded px-3 py-2 text-sm" />
-                            <select id="journalMood" class="border rounded px-3 py-2 text-sm">
-                                <option value="">Mood (optional)</option>
-                                <option value="1">😢 Very Low (1)</option>
-                                <option value="2">😞 Low (2)</option>
-                                <option value="3">😐 Neutral (3)</option>
-                                <option value="4">🙂 Good (4)</option>
-                                <option value="5">😊 Excellent (5)</option>
-                            </select>
-                            <select id="journalCategory" class="border rounded px-3 py-2 text-sm">
-                                <option value="">Category (optional)</option>
-                                <option value="workout">🏋️ Workout</option>
-                                <option value="nutrition">🥗 Nutrition</option>
-                                <option value="motivation">💪 Motivation</option>
-                                <option value="progress">📈 Progress</option>
-                                <option value="challenge">😤 Challenge</option>
-                                <option value="reflection">🤔 Reflection</option>
-                                <option value="general">📝 General</option>
+        <!-- Goals Tab -->
+        <div id="goals-tab" class="tab-content">
+            <div class="fitness-content">
+                <div class="fitness-card">
+                    <h2>➕ Create New Goal</h2>
+                    <form id="goal-form">
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="goal-activity" required>
+                                <option value="">Select Activity</option>
+                                <option value="pushups">Push-ups</option>
+                                <option value="planks">Planks (seconds)</option>
+                                <option value="crunches">Crunches</option>
+                                <option value="bike">Stationary Bike (minutes)</option>
+                                <option value="jog">Jogging (miles)</option>
+                                <option value="walk">Walking (miles)</option>
+                                <option value="weights">Weight Lifting (lbs)</option>
                             </select>
                         </div>
-                        
-                        <div>
-                            <label for="journalTags" class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Tags (comma-separated)</label>
-                            <input type="text" id="journalTags" placeholder="e.g., pushups, motivation, progress" class="w-full border rounded px-3 py-2 text-sm">
+
+                        <div class="form-group">
+                            <label>Goal Name</label>
+                            <input type="text" id="goal-name" placeholder="e.g., 100 Push-ups Challenge" required>
                         </div>
 
-                        <div>
-                            <label for="journalEntry" class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Journal Entry</label>
-                            <textarea id="journalEntry" placeholder="Write about your fitness journey, achievements, challenges, or reflections..." 
-                                class="w-full border rounded px-3 py-2 text-sm h-32 resize-vertical"></textarea>
+                        <div class="form-group">
+                            <label>Target Amount</label>
+                            <input type="number" id="goal-target" placeholder="e.g., 100" required min="1">
                         </div>
 
-                        <div>
-                            <label for="relatedGoals" class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Related Goals (optional)</label>
-                            <div id="relatedGoalsContainer" class="flex flex-wrap gap-2">
-                                <!-- Goal checkboxes will be populated here -->
-                            </div>
+                        <div class="form-group">
+                            <label>Target Date</label>
+                            <input type="date" id="goal-date" required>
                         </div>
 
-                        <div class="flex gap-2">
-                            <button id="saveJournalEntry" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                                💾 Save Entry
-                            </button>
-                            <button id="clearJournalForm" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                                🗑️ Clear
-                            </button>
-                        </div>
-                    </div>
+                        <button type="submit" class="fitness-btn">Create Goal</button>
+                    </form>
                 </div>
 
-                <!-- Journal Filters -->
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <select id="journalFilterPeriod" class="border rounded px-3 py-2 text-sm">
-                        <option value="all">All Entries</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="quarter">Last 3 Months</option>
-                    </select>
-                    <select id="journalFilterMood" class="border rounded px-3 py-2 text-sm">
-                        <option value="">All Moods</option>
-                        <option value="1">😢 Very Low</option>
-                        <option value="2">😞 Low</option>
-                        <option value="3">😐 Neutral</option>
-                        <option value="4">🙂 Good</option>
-                        <option value="5">😊 Excellent</option>
-                    </select>
-                    <select id="journalFilterCategory" class="border rounded px-3 py-2 text-sm">
-                        <option value="">All Categories</option>
-                        <option value="workout">🏋️ Workout</option>
-                        <option value="nutrition">🥗 Nutrition</option>
-                        <option value="motivation">💪 Motivation</option>
-                        <option value="progress">📈 Progress</option>
-                        <option value="challenge">😤 Challenge</option>
-                        <option value="reflection">🤔 Reflection</option>
-                        <option value="general">📝 General</option>
-                    </select>
-                    <input type="text" id="journalFilterTag" placeholder="Filter by tag..." class="border rounded px-3 py-2 text-sm">
-                    <button id="clearJournalFilters" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-3 rounded-lg text-sm">
-                        Clear Filters
-                    </button>
-                </div>
-
-                <!-- Journal Entries List -->
-                <div id="journalEntriesContainer">
-                    <div id="journalEntriesList" class="space-y-4">
-                        <!-- Journal entries will be populated here -->
-                        <div class="text-gray-500 dark:text-gray-400 text-center py-8">
-                            <p class="text-lg mb-2">📝 Start Your Fitness Journal</p>
-                            <p class="text-sm">Record your thoughts, progress, and reflections to enhance your fitness journey!</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Pagination -->
-                    <div id="journalPagination" class="flex justify-center items-center gap-2 mt-6 hidden">
-                        <button id="prevJournalPage" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-3 rounded-lg text-sm">
-                            ← Previous
-                        </button>
-                        <span id="journalPageInfo" class="text-sm text-gray-600 dark:text-gray-400 px-4">
-                            Page 1 of 1
-                        </span>
-                        <button id="nextJournalPage" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-3 rounded-lg text-sm">
-                            Next →
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Journal Analytics Summary -->
-                <div id="journalAnalyticsSummary" class="hidden mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg">
-                    <h3 class="font-semibold mb-3 text-gray-800 dark:text-white">📊 Journal Insights</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="text-center">
-                            <div id="journalTotalEntries" class="text-2xl font-bold text-blue-600 dark:text-blue-300">0</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">Total Entries</div>
-                        </div>
-                        <div class="text-center">
-                            <div id="journalAvgMood" class="text-2xl font-bold text-green-600 dark:text-green-300">--</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">Avg Mood</div>
-                        </div>
-                        <div class="text-center">
-                            <div id="journalStreak" class="text-2xl font-bold text-orange-600 dark:text-orange-300">0</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">Day Streak</div>
-                        </div>
-                    </div>
-                    <div id="journalMoodTrend" class="mt-4 text-sm text-gray-600 dark:text-gray-400 text-center">
-                        <!-- Mood trend analysis will be displayed here -->
-                    </div>
+                <div class="fitness-card">
+                    <h2>🎯 Your Goals</h2>
+                    <div id="goals-list"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Backup Management -->
-        <div class="mt-6 text-center">
-            <button id="createBackupButton" class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg mr-2">
-                💾 Create Backup
-            </button>
-            <button id="restoreBackupButton" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-4 rounded-lg">
-                📥 Restore Backup
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal for adding/editing a goal -->
-    <div id="addGoalModal" class="modal">
-        <div class="modal-content">
-            <span id="closeModal" class="close-button">&times;</span>
-            <h2 id="goalModalTitle" class="text-2xl font-bold text-gray-800 mb-4">Add a New Goal</h2>
-            <div class="flex flex-col gap-4">
-                <div id="templateSection">
-                    <label for="goalTemplate" class="block text-sm font-medium text-gray-700">Quick Start Templates</label>
-                    <select id="goalTemplate" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                        <option value="">Select a template (optional)</option>
-                        <option value="pushups">Push-ups (5000 reps, 50/day)</option>
-                        <option value="situps">Sit-ups (3000 reps, 30/day)</option>
-                        <option value="running">Running (100 miles, 1 mile/day)</option>
-                        <option value="walking">Walking (500 miles, 2 miles/day)</option>
-                        <option value="squats">Squats (2000 reps, 25/day)</option>
-                        <option value="planks">Plank (300 minutes, 3 min/day)</option>
-                        <option value="water">Water Intake (2000 glasses, 8/day)</option>
-                        <option value="reading">Reading (365 pages, 5 pages/day)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="newGoalName" class="block text-sm font-medium text-gray-700">Goal Name</label>
-                    <input type="text" id="newGoalName" placeholder="e.g., Pushups" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="newGoalType" class="block text-sm font-medium text-gray-700">Goal Type</label>
-                    <select id="newGoalType" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                        <option value="count">Count (Reps/Items)</option>
-                        <option value="weight">Weight (Lbs/Kg)</option>
-                        <option value="distance">Distance (Miles/Km)</option>
-                        <option value="time">Time (Minutes)</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="newGoalCategory" class="block text-sm font-medium text-gray-700">Category</label>
-                    <select id="newGoalCategory" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                        <option value="fitness">🏋️ Fitness</option>
-                        <option value="health">🏥 Health</option>
-                        <option value="learning">📚 Learning</option>
-                        <option value="lifestyle">🏠 Lifestyle</option>
-                        <option value="personal">👤 Personal</option>
-                        <option value="other">📋 Other</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="newGoalTarget" class="block text-sm font-medium text-gray-700">Target Amount</label>
-                    <input type="number" id="newGoalTarget" placeholder="e.g., 5000" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="newGoalDaily" class="block text-sm font-medium text-gray-700">Daily Target (for prediction)</label>
-                    <input type="number" id="newGoalDaily" placeholder="e.g., 50" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="newGoalNotes" class="block text-sm font-medium text-gray-700">Notes (optional)</label>
-                    <textarea id="newGoalNotes" placeholder="e.g., Focus on proper form, increase by 5 each week..." class="w-full mt-1 border-2 border-gray-300 rounded-md p-2 h-20 resize-none"></textarea>
-                </div>
-                <div>
-                    <label for="newGoalDeadline" class="block text-sm font-medium text-gray-700">Deadline (optional)</label>
-                    <input type="date" id="newGoalDeadline" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                </div>
-                
-                <!-- Multi-Goal Tracking Options -->
-                <div>
-                    <label class="flex items-center">
-                        <input type="checkbox" id="enableMultiTracking" class="mr-2">
-                        <span class="text-sm font-medium text-gray-700">Enable multi-field tracking</span>
-                    </label>
-                    <div id="multiTrackingOptions" class="hidden mt-2 p-3 bg-gray-50 rounded-md">
-                        <button type="button" id="addMultiField" class="text-sm bg-blue-500 text-white px-3 py-1 rounded">
-                            + Add Field
-                        </button>
-                        <div id="multiFieldsList" class="mt-2"></div>
-                    </div>
-                </div>
-
-                <!-- Rest Days Configuration -->
-                <div>
-                    <label class="flex items-center">
-                        <input type="checkbox" id="enableRestDays" class="mr-2">
-                        <span class="text-sm font-medium text-gray-700">Configure rest days</span>
-                    </label>
-                    <div id="restDaysOptions" class="hidden mt-2 p-3 bg-gray-50 rounded-md">
-                        <div class="text-sm text-gray-600 mb-2">Select rest days:</div>
-                        <div class="flex gap-1">
-                            <label class="text-xs"><input type="checkbox" value="0" class="rest-day mr-1">Sun</label>
-                            <label class="text-xs"><input type="checkbox" value="1" class="rest-day mr-1">Mon</label>
-                            <label class="text-xs"><input type="checkbox" value="2" class="rest-day mr-1">Tue</label>
-                            <label class="text-xs"><input type="checkbox" value="3" class="rest-day mr-1">Wed</label>
-                            <label class="text-xs"><input type="checkbox" value="4" class="rest-day mr-1">Thu</label>
-                            <label class="text-xs"><input type="checkbox" value="5" class="rest-day mr-1">Fri</label>
-                            <label class="text-xs"><input type="checkbox" value="6" class="rest-day mr-1">Sat</label>
+        <!-- Log Activity Tab -->
+        <div id="log-tab" class="tab-content">
+            <div class="fitness-content">
+                <div class="fitness-card">
+                    <h2>📝 Log Today's Activity</h2>
+                    <form id="activity-form">
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="activity-type" required>
+                                <option value="">Select Activity</option>
+                                <option value="pushups">Push-ups</option>
+                                <option value="planks">Planks (seconds)</option>
+                                <option value="crunches">Crunches</option>
+                                <option value="bike">Stationary Bike (minutes)</option>
+                                <option value="jog">Jogging (miles)</option>
+                                <option value="walk">Walking (miles)</option>
+                                <option value="weights">Weight Lifting (lbs)</option>
+                            </select>
                         </div>
-                    </div>
+
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input type="number" id="activity-amount" placeholder="How much did you do?" required min="0" step="0.1">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="activity-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="activity-notes" rows="3" placeholder="How did it feel? Any observations?"></textarea>
+                        </div>
+
+                        <button type="submit" class="fitness-btn">Log Activity</button>
+                    </form>
                 </div>
 
-                <!-- Notification Settings -->
-                <div>
-                    <label class="flex items-center">
-                        <input type="checkbox" id="enableReminders" class="mr-2">
-                        <span class="text-sm font-medium text-gray-700">Enable daily reminders</span>
-                    </label>
-                    <div id="reminderOptions" class="hidden mt-2 p-3 bg-gray-50 rounded-md">
-                        <label for="reminderTime" class="block text-xs text-gray-600">Reminder time:</label>
-                        <input type="time" id="reminderTime" value="09:00" class="mt-1 border rounded px-2 py-1 text-sm">
-                    </div>
+                <div class="fitness-card">
+                    <h2>📋 Activity History</h2>
+                    <div class="activity-log" id="activity-history"></div>
                 </div>
+            </div>
+        </div>
 
-                <button id="saveGoalButton" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    Save Goal
-                </button>
+        <!-- Badges Tab -->
+        <div id="badges-tab" class="tab-content">
+            <div class="fitness-card full-width">
+                <h2>🏅 Your Badges</h2>
+                <div class="badges-container" id="all-badges"></div>
             </div>
         </div>
     </div>
 
-    <!-- Delete confirmation modal -->
-    <div id="deleteConfirmModal" class="modal">
-        <div class="modal-content">
-            <span id="closeDeleteModal" class="close-button">&times;</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Delete Goal</h2>
-            <p class="text-gray-600 mb-6">Are you sure you want to delete this goal? This action cannot be undone and will remove all progress history.</p>
-            <div class="flex gap-4 justify-end">
-                <button id="cancelDeleteButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    Cancel
-                </button>
-                <button id="confirmDeleteButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    Delete Goal
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Import data modal -->
-    <div id="importModal" class="modal">
-        <div class="modal-content">
-            <span id="closeImportModal" class="close-button">&times;</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Import Data</h2>
-            <div class="flex flex-col gap-4">
-                <div>
-                    <label for="importFile" class="block text-sm font-medium text-gray-700">Select JSON File</label>
-                    <input type="file" id="importFile" accept=".json" class="w-full mt-1 border-2 border-gray-300 rounded-md p-2">
-                </div>
-                <p class="text-sm text-gray-600">
-                    Select a JSON file exported from this app. This will replace all current goals and data.
-                </p>
-                <div class="flex gap-4 justify-end">
-                    <button id="cancelImportButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        Cancel
-                    </button>
-                    <button id="confirmImportButton" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        Import Data
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Backup Management Modal -->
-    <div id="backupModal" class="modal">
-        <div class="modal-content">
-            <span id="closeBackupModal" class="close-button">&times;</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Backup Management</h2>
-            <div class="flex flex-col gap-4">
-                <div id="backupsList">
-                    <!-- Backup list will be populated here -->
-                </div>
-                <div class="flex gap-4 justify-end">
-                    <button id="cancelBackupButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Entry Modal -->
-    <div id="bulkEntryModal" class="modal">
-        <div class="modal-content bulk-entry-modal">
-            <span id="closeBulkEntryModal" class="close-button">&times;</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Bulk Add Entries</h2>
-            <div class="mb-4">
-                <p class="text-sm text-gray-600 mb-3">Add multiple entries for different dates. This is useful for catching up on missed logs or entering historical data.</p>
-                
-                <div id="bulkEntriesContainer">
-                    <!-- Bulk entry items will be added here -->
-                </div>
-                
-                <div class="flex gap-2 mt-4">
-                    <button id="addBulkEntryItem" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        + Add Entry
-                    </button>
-                    <button id="fillWeekTemplate" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        📅 Fill Week
-                    </button>
-                </div>
-            </div>
-            
-            <div class="flex gap-4 justify-end">
-                <button id="cancelBulkEntry" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    Cancel
-                </button>
-                <button id="saveBulkEntries" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                    Save All Entries
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Modal for Messages -->
-    <div id="messageModal" class="modal">
-        <div class="message-modal-content">
-            <p id="messageText" class="text-lg font-medium mb-4 text-gray-800"></p>
-            <button id="closeMessageModal" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
-                OK
-            </button>
-        </div>
-    </div>
-
-    <!-- Service Worker Script -->
-    <script>
-        // PWA functionality
-        function createManifest() {
-            const manifest = {
-                "name": "Dynamic Fitness Tracker",
-                "short_name": "FitnessTracker",
-                "description": "Track your fitness goals and build healthy habits",
-                "start_url": "./",
-                "display": "standalone",
-                "background_color": "#ffffff",
-                "theme_color": "#0ea5e9",
-                "icons": [
-                    {
-                        "src": "data:image/svg+xml;base64," + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="#0ea5e9">
-                                <circle cx="96" cy="96" r="88" fill="#f3f4f6"/>
-                                <path d="M96 32c-35.3 0-64 28.7-64 64s28.7 64 64 64 64-28.7 64-64-28.7-64-64-64zm0 116c-28.7 0-52-23.3-52-52s23.3-52 52-52 52 23.3 52 52-23.3 52-52 52z"/>
-                                <path d="M96 52c-24.3 0-44 19.7-44 44s19.7 44 44 44 44-19.7 44-44-19.7-44-44-44zm20 50l-20-12-20 12V76l20-12 20 12v26z"/>
-                            </svg>
-                        `),
-                        "sizes": "192x192",
-                        "type": "image/svg+xml"
-                    }
-                ],
-                "categories": ["health", "productivity", "lifestyle"]
-            };
-            
-            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            document.getElementById('manifest-placeholder').href = url;
-        }
-
-        function registerServiceWorker() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((registration) => {
-                        console.log('ServiceWorker registration successful');
-                    })
-                    .catch((error) => {
-                        console.log('ServiceWorker registration failed');
-                    });
-            }
-        }
-
-        // Initialize PWA
-        function initPWA() {
-            createManifest();
-            registerServiceWorker();
-            
-            // Add install prompt
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                
-                // Show install button if not already installed
-                if (!window.matchMedia('(display-mode: standalone)').matches) {
-                    const installButton = document.createElement('button');
-                    installButton.textContent = '📱 Install App';
-                    installButton.className = 'fixed bottom-4 right-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg z-50';
-                    installButton.onclick = () => {
-                        deferredPrompt.prompt();
-                        deferredPrompt.userChoice.then((choiceResult) => {
-                            if (choiceResult.outcome === 'accepted') {
-                                installButton.remove();
-                            }
-                            deferredPrompt = null;
-                        });
-                    };
-                    document.body.appendChild(installButton);
-                    
-                    // Auto-hide after 10 seconds
-                    setTimeout(() => {
-                        if (installButton.parentNode) {
-                            installButton.style.opacity = '0.5';
-                        }
-                    }, 10000);
-                }
-            });
-        }
-
-        // Initialize PWA on load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPWA);
-        } else {
-            initPWA();
-        }
-    </script>
-
-    <!-- Shared Utilities -->
     <script src="../shared/storage-utils.js"></script>
-    <script src="../shared/error-handler.js"></script>
-    
-    <!-- Advanced Analytics Modules -->
-    <script src="advanced-analytics.js"></script>
-    <script src="advanced-visualizations.js"></script>
-    <script src="biometric-tracking.js"></script>
-    <script src="health-trend-monitoring.js"></script>
-    
-    <!-- Quran Component -->
-    <script src="../quran-component.js"></script>
-    
-    <!-- Load main application script -->
+    <script src="../shared/theme-manager.js"></script>
+    <script src="../shared/data-manager.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

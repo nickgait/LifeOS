@@ -3,1074 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Manager - LifeOS</title>
+    <title>LifeOS - Finance Tracker</title>
+    <link rel="stylesheet" href="../shared/styles.css">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>💰 Finance Manager</h1>
-                <div class="header-actions">
-                    <button id="quickAddBtn" class="btn btn-primary">+ Quick Add</button>
-                    <button id="menuBtn" class="btn btn-secondary">☰</button>
-                </div>
+    <div class="container finance-page">
+        <div class="finance-header">
+            <div>
+                <h1>💰 LifeOS Finance</h1>
+                <div class="subtitle">Track expenses and manage budgets</div>
             </div>
-        </header>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('expenses')">Expenses</button>
+                <button class="nav-tab" onclick="switchTab('budgets')">Budgets</button>
+            </div>
+        </div>
 
-        <!-- Daily Quran Verse Section -->
-        <div id="daily-verse-container"></div>
-
-        <nav class="main-nav" id="mainNav">
-            <button class="nav-item active" data-view="dashboard">Dashboard</button>
-            <button class="nav-item" data-view="transactions">Transactions</button>
-            <button class="nav-item" data-view="recurring">Recurring</button>
-            <button class="nav-item" data-view="budgets">Budgets</button>
-            <button class="nav-item" data-view="meals">Meal Budget</button>
-            <button class="nav-item" data-view="accounts">Accounts</button>
-            <button class="nav-item" data-view="goals">Goals</button>
-            <button class="nav-item" data-view="reports">Reports</button>
-            <button class="nav-item" data-view="projections">Projections</button>
-            <button class="nav-item" data-view="settings">Settings</button>
-        </nav>
-
-        <main id="mainContent">
-            <!-- Dashboard View -->
-            <div class="view active" id="dashboard">
-                <div class="dashboard-grid">
-                    <div class="card balance-overview">
-                        <h3>Account Balances</h3>
-                        <div id="accountBalances" class="account-balances">
-                            <!-- Account balances will be populated here -->
-                        </div>
-                        <button class="btn btn-sm" onclick="showView('accounts')">Manage Accounts</button>
-                    </div>
-
-                    <div class="card monthly-summary">
-                        <h3>This Month</h3>
-                        <div class="summary-stats">
-                            <div class="stat">
-                                <span class="stat-label">Income</span>
-                                <span class="stat-value income" id="monthlyIncome">$0.00</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Expenses</span>
-                                <span class="stat-value expense" id="monthlyExpenses">$0.00</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Net</span>
-                                <span class="stat-value" id="monthlyNet">$0.00</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card recent-transactions">
-                        <h3>Recent Transactions</h3>
-                        <div id="recentTransactions" class="transaction-list">
-                            <!-- Recent transactions will be populated here -->
-                        </div>
-                        <button class="btn btn-sm" onclick="showView('transactions')">View All</button>
-                    </div>
-
-                    <div class="card budget-overview">
-                        <h3>Budget Status</h3>
-                        <div id="budgetStatus" class="budget-status">
-                            <!-- Budget status will be populated here -->
-                        </div>
-                        <button class="btn btn-sm" onclick="showView('budgets')">Manage Budgets</button>
-                    </div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="monthly-expenses">$0.00</div>
+                    <div class="stat-label">This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-expenses">$0.00</div>
+                    <div class="stat-label">Total Spent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="expense-count">0</div>
+                    <div class="stat-label">Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="category-count">0</div>
+                    <div class="stat-label">Categories</div>
                 </div>
             </div>
 
-            <!-- Transactions View -->
-            <div class="view" id="transactions">
-                <div class="view-header">
-                    <h2>Transactions</h2>
-                    <button class="btn btn-primary" id="addTransactionBtn">+ Add Transaction</button>
+            <div class="finance-content">
+                <div class="finance-card">
+                    <h2>💳 Recent Expenses</h2>
+                    <div id="recent-expenses"></div>
                 </div>
 
-                <div class="filters">
-                    <div class="filter-group">
-                        <input type="text" id="searchTransactions" placeholder="Search transactions..." class="filter-input">
-                        <select id="filterCategory" class="filter-select">
-                            <option value="">All Categories</option>
-                        </select>
-                        <select id="filterAccount" class="filter-select">
-                            <option value="">All Accounts</option>
-                        </select>
-                        <select id="filterType" class="filter-select">
-                            <option value="">All Types</option>
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                        </select>
-                    </div>
-                    <div class="date-filter">
-                        <input type="date" id="startDate" class="filter-input">
-                        <input type="date" id="endDate" class="filter-input">
-                    </div>
-                    <div class="bulk-actions" style="margin-top: 15px;">
-                        <button class="btn btn-sm" id="selectAllBtn">Select All</button>
-                        <button class="btn btn-sm btn-secondary" id="deselectAllBtn">Deselect All</button>
-                        <button class="btn btn-sm" id="bulkDeleteBtn" disabled>Delete Selected</button>
-                        <button class="btn btn-sm" id="exportSelectedBtn" disabled>Export Selected</button>
-                        <input type="file" id="importCsvBtn" accept=".csv" style="display: none;">
-                        <button class="btn btn-sm" onclick="document.getElementById('importCsvBtn').click()">Import CSV</button>
-                    </div>
-                </div>
-
-                <div id="transactionsList" class="transactions-container">
-                    <!-- Transactions will be populated here -->
+                <div class="finance-card">
+                    <h2>📊 This Month's Breakdown</h2>
+                    <div id="category-breakdown"></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Recurring Transactions View -->
-            <div class="view" id="recurring">
-                <div class="view-header">
-                    <h2>Recurring Transactions</h2>
-                    <div>
-                        <button class="btn btn-secondary" id="processRecurringBtn">Process Due</button>
-                        <button class="btn btn-primary" id="addRecurringBtn">+ Add Recurring</button>
-                    </div>
-                </div>
-
-                <div class="recurring-overview">
-                    <div class="card">
-                        <h3>📅 Next Due Transactions</h3>
-                        <div id="upcomingRecurring" class="upcoming-recurring">
-                            <!-- Upcoming recurring transactions will be shown here -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filters">
-                    <div class="filter-group">
-                        <select id="recurringStatusFilter" class="filter-select">
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="paused">Paused</option>
-                            <option value="expired">Expired</option>
-                        </select>
-                        <select id="recurringTypeFilter" class="filter-select">
-                            <option value="">All Types</option>
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                        </select>
-                        <select id="recurringFrequencyFilter" class="filter-select">
-                            <option value="">All Frequencies</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="bi-weekly">Bi-Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="quarterly">Quarterly</option>
-                            <option value="yearly">Yearly</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="recurringList" class="recurring-container">
-                    <!-- Recurring transactions will be populated here -->
-                </div>
-            </div>
-
-            <!-- Budgets View -->
-            <div class="view" id="budgets">
-                <div class="view-header">
-                    <h2>Budgets</h2>
-                    <button class="btn btn-primary" id="addBudgetBtn">+ Create Budget</button>
-                </div>
-
-                <div class="budgets-controls">
-                    <div class="filter-group">
-                        <label for="budgetTimeView">View:</label>
-                        <select id="budgetTimeView" class="filter-select">
-                            <option value="current">Current Month</option>
-                            <option value="next">Next Month</option>
-                            <option value="multi">Multi-Month View</option>
-                            <option value="all">All Budgets</option>
-                        </select>
-                    </div>
-                    
-                    <div id="multiMonthRange" class="filter-group" style="display: none;">
-                        <label for="budgetRangeStart">From:</label>
-                        <input type="month" id="budgetRangeStart" class="filter-input">
-                        <label for="budgetRangeEnd">To:</label>
-                        <input type="month" id="budgetRangeEnd" class="filter-input">
-                        <button class="btn btn-sm btn-secondary" id="applyBudgetRange">Apply</button>
-                    </div>
-                </div>
-
-                <div id="budgetsList" class="budgets-container">
-                    <!-- Budgets will be populated here -->
-                </div>
-            </div>
-
-            <!-- Meal Budget View -->
-            <div class="view" id="meals">
-                <div class="view-header">
-                    <h2>Meal Budget & Savings</h2>
-                    <button class="btn btn-primary" id="addMealBtn">+ Log Meal</button>
-                </div>
-
-                <!-- Meal Budget Overview Cards -->
-                <div class="meal-overview">
-                    <div class="card meal-kitty-card">
-                        <div class="kitty-header">
-                            <h3>💰 Savings Kitty</h3>
-                            <div class="kitty-amount" id="mealKittyAmount">$0.00</div>
-                        </div>
-                        <div class="kitty-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="mealKittyProgress" style="width: 0%"></div>
-                            </div>
-                            <div class="progress-text">
-                                <span id="mealKittyProgressText">$0 of $0 goal</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card meal-budget-settings">
-                        <h3>Meal Budget Settings</h3>
-                        <div class="meal-budget-grid">
-                            <div class="budget-item">
-                                <label>🌅 Breakfast</label>
-                                <input type="number" id="breakfastBudget" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="budget-item">
-                                <label>🌞 Lunch</label>
-                                <input type="number" id="lunchBudget" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                            <div class="budget-item">
-                                <label>🌙 Dinner</label>
-                                <input type="number" id="dinnerBudget" step="0.01" min="0" placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="savings-goal-section">
-                            <label>💎 Savings Goal</label>
-                            <input type="number" id="mealSavingsGoal" step="0.01" min="0" placeholder="0.00">
-                        </div>
-                        <button class="btn btn-secondary" id="saveMealSettings">Save Settings</button>
-                    </div>
-                </div>
-
-                <!-- Today's Meal Status -->
-                <div class="card today-meals">
-                    <h3>Today's Meals</h3>
-                    <div class="today-meal-grid" id="todayMealGrid">
-                        <!-- Today's meals will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Meal History -->
-                <div class="card meal-history">
-                    <div class="section-header">
-                        <h3>Meal History</h3>
-                        <div class="meal-filters">
-                            <select id="mealHistoryFilter" class="filter-select">
-                                <option value="week">This Week</option>
-                                <option value="month">This Month</option>
-                                <option value="all">All Time</option>
+        <!-- Expenses Tab -->
+        <div id="expenses-tab" class="tab-content">
+            <div class="finance-content full-width" style="grid-template-columns: 1fr;">
+                <div class="finance-card">
+                    <h2>➕ Log Expense</h2>
+                    <form id="expense-form">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="expense-category" required>
+                                <option value="food">🍔 Food & Dining</option>
+                                <option value="transport">🚗 Transportation</option>
+                                <option value="utilities">💡 Utilities</option>
+                                <option value="entertainment">🎬 Entertainment</option>
+                                <option value="shopping">🛍️ Shopping</option>
+                                <option value="healthcare">⚕️ Healthcare</option>
+                                <option value="education">📚 Education</option>
+                                <option value="other">📌 Other</option>
                             </select>
                         </div>
-                    </div>
-                    <div id="mealHistoryList" class="meal-history-list">
-                        <!-- Meal history will be populated here -->
-                    </div>
+
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="expense-description" placeholder="e.g., Grocery shopping" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Amount</label>
+                            <input type="number" id="expense-amount" placeholder="0.00" required min="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="expense-date" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes (Optional)</label>
+                            <textarea id="expense-notes" placeholder="Add any notes..."></textarea>
+                        </div>
+
+                        <button type="submit" class="finance-btn">Log Expense</button>
+                    </form>
                 </div>
             </div>
 
-            <!-- Accounts View -->
-            <div class="view" id="accounts">
-                <div class="view-header">
-                    <h2>Accounts</h2>
-                    <div>
-                        <button class="btn btn-secondary" id="reconcileBtn">Reconcile</button>
-                        <button class="btn btn-secondary" id="transferBtn">Transfer Funds</button>
-                        <button class="btn btn-primary" id="addAccountBtn">+ Add Account</button>
-                    </div>
-                </div>
+            <div class="finance-content">
+                <div class="finance-card full-width">
+                    <h2>📋 Your Expenses</h2>
 
-                <div id="accountsList" class="accounts-container">
-                    <!-- Accounts will be populated here -->
+                    <div id="category-tags" style="margin-bottom: 20px;"></div>
+
+                    <div class="expense-list" id="expenses-list"></div>
                 </div>
             </div>
-
-            <!-- Goals View -->
-            <div class="view" id="goals">
-                <div class="view-header">
-                    <h2>Financial Goals</h2>
-                    <button class="btn btn-primary" id="addGoalBtn">+ Create Goal</button>
-                </div>
-
-                <div id="goalsList" class="goals-container">
-                    <!-- Goals will be populated here -->
-                </div>
-            </div>
-
-            <!-- Reports View -->
-            <div class="view" id="reports">
-                <div class="view-header">
-                    <h2>Reports & Analytics</h2>
-                    <div>
-                        <button class="btn btn-secondary" id="exportReportsBtn">Export Reports</button>
-                    </div>
-                </div>
-
-                <div class="reports-controls">
-                    <div class="filter-group">
-                        <label for="reportTimeRange">Time Range:</label>
-                        <select id="reportTimeRange" class="filter-select">
-                            <option value="3months">Last 3 Months</option>
-                            <option value="6months">Last 6 Months</option>
-                            <option value="1year">Last Year</option>
-                            <option value="2years">Last 2 Years</option>
-                            <option value="all">All Time</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="reports-grid">
-                    <div class="card">
-                        <h3>Monthly Spending Trends</h3>
-                        <div class="chart-container">
-                            <canvas id="monthlyTrendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Category Spending Pie Chart</h3>
-                        <div class="chart-container">
-                            <canvas id="categoryPieChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Income vs Expenses</h3>
-                        <div class="chart-container">
-                            <canvas id="incomeExpenseChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Account Balance Trends</h3>
-                        <div class="chart-container">
-                            <canvas id="balanceTrendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Budget vs Actual</h3>
-                        <div class="chart-container">
-                            <canvas id="budgetVsActualChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Goal Progress</h3>
-                        <div class="chart-container">
-                            <canvas id="goalProgressChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="card full-width">
-                        <h3>Financial Summary Report</h3>
-                        <div id="summaryReport" class="summary-report">
-                            <!-- Summary report will be displayed here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Projections View -->
-            <div class="view" id="projections">
-                <div class="view-header">
-                    <h2>Growth Projections</h2>
-                    <div>
-                        <button class="btn btn-secondary" id="resetProjectionsBtn">Reset All</button>
-                    </div>
-                </div>
-
-                <div class="projections-grid">
-                    <div class="card">
-                        <h3>💰 Savings Growth Calculator</h3>
-                        <p>Project your savings growth with regular monthly contributions</p>
-                        
-                        <div class="projection-form">
-                            <div class="form-group">
-                                <label for="savingsInitial">Current Savings Amount ($)</label>
-                                <input type="number" id="savingsInitial" step="0.01" min="0" placeholder="20000" value="20000">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="savingsMonthly">Monthly Contribution ($)</label>
-                                <input type="number" id="savingsMonthly" step="0.01" min="0" placeholder="500">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="savingsRate">Annual Interest Rate (%)</label>
-                                <input type="number" id="savingsRate" step="0.01" min="0" max="100" placeholder="2.5" value="2.5">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="savingsYears">Time Period (Years)</label>
-                                <input type="number" id="savingsYears" min="1" max="50" placeholder="10" value="10">
-                            </div>
-                            
-                            <button class="btn btn-primary" onclick="financeManager.calculateSavingsProjection()">Calculate Savings Growth</button>
-                        </div>
-                        
-                        <div id="savingsResults" class="projection-results" style="display: none;">
-                            <h4>Savings Projection Results</h4>
-                            <div class="results-summary">
-                                <div class="result-item">
-                                    <span class="result-label">Final Amount:</span>
-                                    <span class="result-value" id="savingsFinalAmount">$0.00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Total Contributions:</span>
-                                    <span class="result-value" id="savingsTotalContributions">$0.00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Interest Earned:</span>
-                                    <span class="result-value" id="savingsInterestEarned">$0.00</span>
-                                </div>
-                            </div>
-                            <div id="savingsYearlyBreakdown" class="yearly-breakdown"></div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>📈 Investment Growth Calculator</h3>
-                        <p>Project your investment portfolio growth with compound returns</p>
-                        
-                        <div class="projection-form">
-                            <div class="form-group">
-                                <label for="investmentInitial">Current Investment Amount ($)</label>
-                                <input type="number" id="investmentInitial" step="0.01" min="0" placeholder="20000" value="20000">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="investmentMonthly">Monthly Investment ($)</label>
-                                <input type="number" id="investmentMonthly" step="0.01" min="0" placeholder="1000">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="investmentReturn">Expected Annual Return (%)</label>
-                                <input type="number" id="investmentReturn" step="0.01" min="0" max="100" placeholder="7" value="7">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="investmentYears">Investment Period (Years)</label>
-                                <input type="number" id="investmentYears" min="1" max="50" placeholder="20" value="20">
-                            </div>
-                            
-                            <button class="btn btn-primary" onclick="financeManager.calculateInvestmentProjection()">Calculate Investment Growth</button>
-                        </div>
-                        
-                        <div id="investmentResults" class="projection-results" style="display: none;">
-                            <h4>Investment Projection Results</h4>
-                            <div class="results-summary">
-                                <div class="result-item">
-                                    <span class="result-label">Final Portfolio Value:</span>
-                                    <span class="result-value" id="investmentFinalAmount">$0.00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Total Invested:</span>
-                                    <span class="result-value" id="investmentTotalInvested">$0.00</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Investment Gains:</span>
-                                    <span class="result-value" id="investmentGains">$0.00</span>
-                                </div>
-                            </div>
-                            <div id="investmentYearlyBreakdown" class="yearly-breakdown"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="card full-width">
-                        <h3>📊 Scenario Comparison</h3>
-                        <p>Compare different savings and investment scenarios side by side</p>
-                        
-                        <div class="scenario-controls">
-                            <button class="btn btn-secondary" onclick="financeManager.addScenario()">+ Add Scenario</button>
-                            <button class="btn btn-secondary" onclick="financeManager.compareScenarios()">Compare All</button>
-                            <button class="btn btn-secondary" onclick="financeManager.clearScenarios()">Clear All</button>
-                        </div>
-                        
-                        <div id="scenarioComparison" class="scenario-comparison">
-                            <div class="scenario-placeholder">
-                                <p>Use the calculators above to create scenarios, then add them here for comparison.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings View -->
-            <div class="view" id="settings">
-                <div class="view-header">
-                    <h2>Settings</h2>
-                </div>
-
-                <div class="settings-grid">
-                    <div class="card">
-                        <h3>Categories</h3>
-                        <p>Manage custom expense and income categories</p>
-                        
-                        <div class="category-management">
-                            <div class="category-section">
-                                <h4>Expense Categories</h4>
-                                <div id="expenseCategories" class="category-list"></div>
-                                <div class="add-category">
-                                    <input type="text" id="newExpenseCategory" placeholder="New expense category">
-                                    <div class="category-color-picker">
-                                        <input type="color" id="newExpenseCategoryColor" value="#dc3545">
-                                        <button class="btn btn-sm" onclick="financeManager.addCustomCategory('expense')">Add</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="category-section">
-                                <h4>Income Categories</h4>
-                                <div id="incomeCategories" class="category-list"></div>
-                                <div class="add-category">
-                                    <input type="text" id="newIncomeCategory" placeholder="New income category">
-                                    <div class="category-color-picker">
-                                        <input type="color" id="newIncomeCategoryColor" value="#28a745">
-                                        <button class="btn btn-sm" onclick="financeManager.addCustomCategory('income')">Add</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Data Management</h3>
-                        <p>Import, export, and manage your financial data</p>
-                        
-                        <div class="data-actions">
-                            <button class="btn" onclick="financeManager.exportData()">Export All Data (JSON)</button>
-                            <input type="file" id="importDataBtn" accept=".json" style="display: none;" onchange="financeManager.importData(event)">
-                            <button class="btn btn-secondary" onclick="document.getElementById('importDataBtn').click()">Import Data (JSON)</button>
-                            <button class="btn btn-secondary" onclick="financeManager.migrateMealData()">Migrate Meal Data to Transactions</button>
-                            <button class="btn btn-secondary" onclick="financeManager.clearAllData()">Clear All Data</button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Preferences</h3>
-                        <p>Customize your finance app experience</p>
-                        
-                        <div class="preferences">
-                            <div class="form-group">
-                                <label for="defaultCurrency">Default Currency</label>
-                                <select id="defaultCurrency">
-                                    <option value="USD">USD ($)</option>
-                                    <option value="EUR">EUR (€)</option>
-                                    <option value="GBP">GBP (£)</option>
-                                    <option value="JPY">JPY (¥)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="dateFormat">Date Format</label>
-                                <select id="dateFormat">
-                                    <option value="MM/dd/yyyy">MM/dd/yyyy</option>
-                                    <option value="dd/MM/yyyy">dd/MM/yyyy</option>
-                                    <option value="yyyy-MM-dd">yyyy-MM-dd</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="enableNotifications">
-                                    Enable Budget Notifications
-                                </label>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="enableAutoSave">
-                                    Enable Auto-save
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <button class="btn btn-primary" onclick="financeManager.saveSettings()">Save Preferences</button>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Transaction Modal -->
-    <div id="transactionModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="transactionModalTitle">Add Transaction</h3>
-                <button class="modal-close" id="closeTransactionModal">&times;</button>
-            </div>
-            <form id="transactionForm">
-                <div class="form-group">
-                    <label for="transactionType">Type</label>
-                    <select id="transactionType" required>
-                        <option value="expense">Expense</option>
-                        <option value="income">Income</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="transactionAmount">Amount</label>
-                    <input type="number" id="transactionAmount" step="0.01" min="0" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="transactionCategory">Category</label>
-                    <select id="transactionCategory" required>
-                        <!-- Categories will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="transactionAccount">Account</label>
-                    <select id="transactionAccount" required>
-                        <!-- Accounts will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="transactionDescription">Description</label>
-                    <input type="text" id="transactionDescription" placeholder="Transaction description">
-                </div>
-
-                <div class="form-group">
-                    <label for="transactionDate">Date</label>
-                    <input type="date" id="transactionDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="transactionRecurring">
-                        Recurring Transaction
-                    </label>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelTransaction">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Transaction</button>
-                </div>
-            </form>
         </div>
-    </div>
 
-    <!-- Account Modal -->
-    <div id="accountModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="accountModalTitle">Add Account</h3>
-                <button class="modal-close" id="closeAccountModal">&times;</button>
-            </div>
-            <form id="accountForm">
-                <div class="form-group">
-                    <label for="accountName">Account Name</label>
-                    <input type="text" id="accountName" placeholder="e.g., Checking Account" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="accountType">Account Type</label>
-                    <select id="accountType" required>
-                        <option value="checking">Checking</option>
-                        <option value="savings">Savings</option>
-                        <option value="credit">Credit Card</option>
-                        <option value="investment">Investment</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="accountBalance">Initial Balance</label>
-                    <input type="number" id="accountBalance" step="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="accountColor">Color</label>
-                    <input type="color" id="accountColor" value="#667eea">
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelAccount">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Account</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Budget Modal -->
-    <div id="budgetModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="budgetModalTitle">Create Budget</h3>
-                <button class="modal-close" id="closeBudgetModal">&times;</button>
-            </div>
-            <form id="budgetForm">
-                <div class="form-group">
-                    <label for="budgetCategory">Category</label>
-                    <select id="budgetCategory" required>
-                        <!-- Categories will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="budgetAmount">Monthly Limit</label>
-                    <input type="number" id="budgetAmount" step="0.01" min="0" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="budgetAlert">Alert Threshold (%)</label>
-                    <input type="number" id="budgetAlert" min="0" max="100" value="80" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="budgetDuration">Budget Duration</label>
-                    <select id="budgetDuration">
-                        <option value="single">Single Month</option>
-                        <option value="multi">Multiple Months</option>
-                    </select>
-                </div>
-
-                <div id="multiMonthOptions" class="form-group" style="display: none;">
-                    <div class="multi-month-controls">
-                        <div class="form-row">
-                            <div class="form-col">
-                                <label for="budgetStartMonth">Start Month</label>
-                                <input type="month" id="budgetStartMonth" required>
-                            </div>
-                            <div class="form-col">
-                                <label for="budgetEndMonth">End Month</label>
-                                <input type="month" id="budgetEndMonth" required>
-                            </div>
+        <!-- Budgets Tab -->
+        <div id="budgets-tab" class="tab-content">
+            <div class="finance-content full-width" style="grid-template-columns: 1fr;">
+                <div class="finance-card">
+                    <h2>💼 Create Budget</h2>
+                    <form id="budget-form">
+                        <div class="form-group">
+                            <label>Budget Name</label>
+                            <input type="text" id="budget-name" placeholder="e.g., Monthly Food Budget" required>
                         </div>
-                        <div class="form-row">
-                            <label>
-                                <input type="checkbox" id="budgetVaryByMonth">
-                                Set different amounts per month
-                            </label>
+
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="budget-category" required>
+                                <option value="food">🍔 Food & Dining</option>
+                                <option value="transport">🚗 Transportation</option>
+                                <option value="utilities">💡 Utilities</option>
+                                <option value="entertainment">🎬 Entertainment</option>
+                                <option value="shopping">🛍️ Shopping</option>
+                                <option value="healthcare">⚕️ Healthcare</option>
+                                <option value="education">📚 Education</option>
+                                <option value="other">📌 Other</option>
+                            </select>
                         </div>
-                        <div id="monthlyBudgetBreakdown" style="display: none;">
-                            <!-- Monthly breakdown will be populated dynamically -->
+
+                        <div class="form-group">
+                            <label>Monthly Limit</label>
+                            <input type="number" id="budget-limit" placeholder="0.00" required min="0" step="0.01">
                         </div>
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="budgetRollover">
-                        Enable Budget Rollover (unused budget carries to next month)
-                    </label>
-                </div>
+                        <div class="form-group">
+                            <label>For Month</label>
+                            <input type="month" id="budget-month">
+                        </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelBudget">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Budget</button>
+                        <button type="submit" class="finance-btn">Create Budget</button>
+                    </form>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Goal Modal -->
-    <div id="goalModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="goalModalTitle">Create Financial Goal</h3>
-                <button class="modal-close" id="closeGoalModal">&times;</button>
             </div>
-            <form id="goalForm">
-                <div class="form-group">
-                    <label for="goalName">Goal Name</label>
-                    <input type="text" id="goalName" placeholder="e.g., Emergency Fund" required>
-                </div>
 
-                <div class="form-group">
-                    <label for="goalType">Goal Type</label>
-                    <select id="goalType" required>
-                        <option value="savings">Savings Goal</option>
-                        <option value="debt">Debt Reduction</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="goalTarget">Target Amount</label>
-                    <input type="number" id="goalTarget" step="0.01" min="0" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="goalCurrent">Current Amount</label>
-                    <input type="number" id="goalCurrent" step="0.01" min="0" placeholder="0.00" value="0">
-                </div>
-
-                <div class="form-group">
-                    <label for="goalDate">Target Date</label>
-                    <input type="date" id="goalDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="goalDescription">Description</label>
-                    <textarea id="goalDescription" placeholder="Optional goal description"></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelGoal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Goal</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Transfer Modal -->
-    <div id="transferModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Transfer Funds</h3>
-                <button class="modal-close" id="closeTransferModal">&times;</button>
-            </div>
-            <form id="transferForm">
-                <div class="form-group">
-                    <label for="transferFrom">From Account</label>
-                    <select id="transferFrom" required>
-                        <!-- Accounts will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="transferTo">To Account</label>
-                    <select id="transferTo" required>
-                        <!-- Accounts will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="transferAmount">Amount</label>
-                    <input type="number" id="transferAmount" step="0.01" min="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="transferDescription">Description (optional)</label>
-                    <input type="text" id="transferDescription" placeholder="Transfer description">
-                </div>
-
-                <div class="form-group">
-                    <label for="transferDate">Date</label>
-                    <input type="date" id="transferDate" required>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelTransfer">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Transfer Funds</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Achievement Modal -->
-    <div id="achievementModal" class="modal">
-        <div class="modal-content achievement-modal">
-            <div class="modal-header">
-                <h3>🎉 Goal Achievement!</h3>
-                <button class="modal-close" id="closeAchievementModal">&times;</button>
-            </div>
-            <div style="padding: 20px; text-align: center;">
-                <div class="achievement-content">
-                    <div class="achievement-icon">🏆</div>
-                    <h2 id="achievementTitle"></h2>
-                    <p id="achievementDescription"></p>
-                    <div class="achievement-stats" id="achievementStats"></div>
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-primary" onclick="document.getElementById('achievementModal').classList.remove('active')">Awesome!</button>
+            <div class="finance-content">
+                <div class="finance-card full-width">
+                    <h2>📊 Your Budgets</h2>
+                    <div id="budgets-list"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Reconcile Modal -->
-    <div id="reconcileModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Account Reconciliation</h3>
-                <button class="modal-close" id="closeReconcileModal">&times;</button>
-            </div>
-            <form id="reconcileForm">
-                <div class="form-group">
-                    <label for="reconcileAccount">Account to Reconcile</label>
-                    <select id="reconcileAccount" required>
-                        <!-- Accounts will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="reconcileStatement">Statement Balance</label>
-                    <input type="number" id="reconcileStatement" step="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="reconcileDate">Statement Date</label>
-                    <input type="date" id="reconcileDate" required>
-                </div>
-
-                <div id="reconcileResults" class="reconcile-results" style="display: none;">
-                    <h4>Reconciliation Results</h4>
-                    <div class="reconcile-summary"></div>
-                    <div class="reconcile-differences"></div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelReconcile">Cancel</button>
-                    <button type="button" class="btn btn-secondary" id="calculateReconcile">Calculate Difference</button>
-                    <button type="submit" class="btn btn-primary" style="display: none;" id="completeReconcile">Complete Reconciliation</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Recurring Transaction Modal -->
-    <div id="recurringModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="recurringModalTitle">Add Recurring Transaction</h3>
-                <button class="modal-close" id="closeRecurringModal">&times;</button>
-            </div>
-            <form id="recurringForm">
-                <div class="form-group">
-                    <label for="recurringType">Type</label>
-                    <select id="recurringType" required>
-                        <option value="expense">Expense</option>
-                        <option value="income">Income</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringAmount">Amount</label>
-                    <input type="number" id="recurringAmount" step="0.01" min="0" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringCategory">Category</label>
-                    <select id="recurringCategory" required>
-                        <!-- Categories will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringAccount">Account</label>
-                    <select id="recurringAccount" required>
-                        <!-- Accounts will be populated dynamically -->
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringDescription">Description</label>
-                    <input type="text" id="recurringDescription" placeholder="e.g., Monthly Rent" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringFrequency">Frequency</label>
-                    <select id="recurringFrequency" required>
-                        <option value="weekly">Weekly (Every 7 days)</option>
-                        <option value="bi-weekly">Bi-Weekly (Every 14 days)</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly (Every 3 months)</option>
-                        <option value="yearly">Yearly</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringStartDate">Start Date</label>
-                    <input type="date" id="recurringStartDate" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringEndDate">End Date (Optional)</label>
-                    <input type="date" id="recurringEndDate">
-                    <small>Leave blank for indefinite recurring</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="recurringDayOfMonth">Day of Month (for monthly/quarterly/yearly)</label>
-                    <select id="recurringDayOfMonth">
-                        <option value="same">Same as start date</option>
-                        <option value="last">Last day of month</option>
-                        <option value="1">1st</option>
-                        <option value="15">15th</option>
-                        <option value="custom">Custom day</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="customDayGroup" style="display: none;">
-                    <label for="recurringCustomDay">Custom Day (1-31)</label>
-                    <input type="number" id="recurringCustomDay" min="1" max="31">
-                </div>
-
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="recurringAutoProcess">
-                        Auto-process when due (automatically create transactions)
-                    </label>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelRecurring">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Recurring Transaction</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Meal Logging Modal -->
-    <div id="mealModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="mealModalTitle">Log Meal</h3>
-                <button class="modal-close" id="closeMealModal">&times;</button>
-            </div>
-            <form id="mealForm">
-                <div class="form-group">
-                    <label for="mealType">Meal Type</label>
-                    <select id="mealType" required>
-                        <option value="breakfast">🌅 Breakfast</option>
-                        <option value="lunch">🌞 Lunch</option>
-                        <option value="dinner">🌙 Dinner</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="mealAmount">Amount Spent</label>
-                    <input type="number" id="mealAmount" step="0.01" min="0" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="mealDescription">Description (Optional)</label>
-                    <input type="text" id="mealDescription" placeholder="What did you eat?">
-                </div>
-
-                <div class="form-group">
-                    <label for="mealDate">Date</label>
-                    <input type="date" id="mealDate" required>
-                </div>
-
-                <div class="meal-budget-info" id="mealBudgetInfo">
-                    <!-- Budget comparison will be shown here -->
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelMeal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Log Meal</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div id="toastContainer"></div>
-
-    <script src="../quran-component.js"></script>
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/theme-manager.js"></script>
+    <script src="../shared/data-manager.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
