@@ -43,6 +43,16 @@ class RetirementPlanner {
 
     // ==================== 401K CALCULATOR ====================
 
+    calculatePensionBenefit(finalSalary, pensionPercentage, yearsWorking, vestingYears) {
+        // Check if pension is vested
+        if (yearsWorking < vestingYears) {
+            return 0; // No pension benefit if not vested
+        }
+
+        // Annual pension = Final Salary × (Pension Percentage / 100)
+        return finalSalary * (pensionPercentage / 100);
+    }
+
     calculate401k(formData) {
         const primaryAge = parseInt(formData.primaryAge);
         const retirementAge = parseInt(formData.retirementAge);
@@ -54,8 +64,8 @@ class RetirementPlanner {
         }
 
         const projections = [];
-        let primaryBalance = parseFloat(formData.current401k);
-        let spouseBalance = formData.includeSpouse ? parseFloat(formData.spouse401k) : 0;
+        let primaryBalance = parseFloat(formData.current401k) || 0;
+        let spouseBalance = formData.includeSpouse ? (parseFloat(formData.spouse401k) || 0) : 0;
 
         const primaryIncome = parseFloat(formData.primaryIncome);
         const spouseIncome = formData.includeSpouse ? parseFloat(formData.spouseIncome) : 0;
@@ -65,6 +75,17 @@ class RetirementPlanner {
         const spouseContribution = formData.includeSpouse ? parseFloat(formData.spouseContribution) / 100 : 0;
         const spouseMatch = formData.includeSpouse ? parseFloat(formData.spouseMatch) / 100 : 0;
         const annualReturn = parseFloat(formData.annualReturn) / 100;
+
+        // Pension data
+        const primaryHasPension = formData.primaryHasPension;
+        const primaryPensionPercentage = primaryHasPension ? parseFloat(formData.primaryPensionPercentage) : 0;
+        const primaryPensionVesting = primaryHasPension ? parseInt(formData.primaryPensionVesting) : 0;
+        const primaryPensionYearsService = primaryHasPension ? parseInt(formData.primaryPensionYearsService) : 0;
+
+        const spouseHasPension = formData.includeSpouse && formData.spouseHasPension;
+        const spousePensionPercentage = spouseHasPension ? parseFloat(formData.spousePensionPercentage) : 0;
+        const spousePensionVesting = spouseHasPension ? parseInt(formData.spousePensionVesting) : 0;
+        const spousePensionYearsService = spouseHasPension ? parseInt(formData.spousePensionYearsService) : 0;
 
         let currentPrimaryIncome = primaryIncome;
         let currentSpouseIncome = spouseIncome;
@@ -92,6 +113,33 @@ class RetirementPlanner {
 
             const combinedBalance = primaryBalance + spouseBalance;
 
+            // Calculate pension benefits at retirement
+            let primaryPensionIncome = 0;
+            let spousePensionIncome = 0;
+
+            if (year === yearsToRetirement) {
+                // At retirement, calculate pension income
+                if (primaryHasPension) {
+                    primaryPensionIncome = this.calculatePensionBenefit(
+                        currentPrimaryIncome,
+                        primaryPensionPercentage,
+                        primaryPensionYearsService + yearsToRetirement,
+                        primaryPensionVesting
+                    );
+                }
+
+                if (spouseHasPension) {
+                    spousePensionIncome = this.calculatePensionBenefit(
+                        currentSpouseIncome,
+                        spousePensionPercentage,
+                        spousePensionYearsService + yearsToRetirement,
+                        spousePensionVesting
+                    );
+                }
+            }
+
+            const totalPensionIncome = primaryPensionIncome + spousePensionIncome;
+
             projections.push({
                 year: year,
                 age: currentAge,
@@ -101,7 +149,10 @@ class RetirementPlanner {
                 totalContribution: totalAnnualContribution,
                 primaryBalance: primaryBalance,
                 spouseBalance: spouseBalance,
-                combinedBalance: combinedBalance
+                combinedBalance: combinedBalance,
+                primaryPensionIncome: primaryPensionIncome,
+                spousePensionIncome: spousePensionIncome,
+                totalPensionIncome: totalPensionIncome
             });
 
             // Apply raise for next year
@@ -114,11 +165,13 @@ class RetirementPlanner {
         // Calculate totals
         const totalContributions = projections.reduce((sum, p) => sum + p.totalContribution, 0);
         const finalBalance = projections[projections.length - 1].combinedBalance;
+        const finalAnnualPensionIncome = projections[projections.length - 1].totalPensionIncome;
         const investmentGrowth = finalBalance - projections[0].primaryBalance - projections[0].spouseBalance - totalContributions;
 
         return {
             projections: projections,
             finalBalance: finalBalance,
+            finalAnnualPensionIncome: finalAnnualPensionIncome,
             totalContributions: totalContributions,
             investmentGrowth: investmentGrowth,
             yearsToRetirement: yearsToRetirement,
@@ -148,6 +201,7 @@ class RetirementPlanner {
                 <td>${this.formatCurrency(projection.totalIncome)}</td>
                 <td>${this.formatCurrency(projection.totalContribution)}</td>
                 <td>${this.formatCurrency(projection.combinedBalance)}</td>
+                <td>${this.formatCurrency(projection.totalPensionIncome)}</td>
             `;
             tbody.appendChild(row);
         });
@@ -291,6 +345,8 @@ class RetirementPlanner {
         const dashboardSavings = document.getElementById('dashboard-savings');
         const dashboardTotal = document.getElementById('dashboard-total');
         const dashboardYears = document.getElementById('dashboard-years');
+        const dashboardPensionCard = document.getElementById('dashboard-pension-card');
+        const dashboardPension = document.getElementById('dashboard-pension');
         const dashboardEmpty = document.getElementById('dashboard-empty');
 
         if (!this.retirement401kData && !this.savingsData) {
@@ -305,10 +361,12 @@ class RetirementPlanner {
         let total401k = 0;
         let totalSavings = 0;
         let yearsToRetirement = 0;
+        let annualPensionIncome = 0;
 
         if (this.retirement401kData) {
             total401k = this.retirement401kData.finalBalance;
             yearsToRetirement = this.retirement401kData.yearsToRetirement;
+            annualPensionIncome = this.retirement401kData.finalAnnualPensionIncome || 0;
         }
 
         if (this.savingsData) {
@@ -322,6 +380,16 @@ class RetirementPlanner {
         dashboardSavings.textContent = this.formatCurrency(totalSavings);
         dashboardTotal.textContent = this.formatCurrency(combinedTotal);
         dashboardYears.textContent = yearsToRetirement;
+
+        // Show pension card if there's pension income
+        if (annualPensionIncome > 0) {
+            dashboardPensionCard.style.display = 'block';
+            dashboardPension.textContent = this.formatCurrency(annualPensionIncome);
+            const monthlyPensionIncome = annualPensionIncome / 12;
+            document.getElementById('dashboard-pension-monthly').textContent = this.formatCurrency(monthlyPensionIncome) + '/month';
+        } else {
+            dashboardPensionCard.style.display = 'none';
+        }
 
         this.drawCharts();
     }
@@ -539,6 +607,28 @@ function toggleSpouseFields() {
     }
 }
 
+function togglePrimaryPensionFields() {
+    const checkbox = document.getElementById('primary-has-pension');
+    const fields = document.getElementById('primary-pension-fields');
+
+    if (checkbox.checked) {
+        fields.style.display = 'block';
+    } else {
+        fields.style.display = 'none';
+    }
+}
+
+function toggleSpousePensionFields() {
+    const checkbox = document.getElementById('spouse-has-pension');
+    const fields = document.getElementById('spouse-pension-fields');
+
+    if (checkbox.checked) {
+        fields.style.display = 'block';
+    } else {
+        fields.style.display = 'none';
+    }
+}
+
 function handleRetirement401kSubmit(event) {
     event.preventDefault();
 
@@ -553,12 +643,20 @@ function handleRetirement401kSubmit(event) {
         primaryContribution: formData.get('primary-contribution'),
         primaryMatch: formData.get('primary-match'),
         current401k: formData.get('current-401k'),
+        primaryHasPension: formData.get('primary-has-pension') ? true : false,
+        primaryPensionPercentage: formData.get('primary-pension-percentage'),
+        primaryPensionVesting: formData.get('primary-pension-vesting'),
+        primaryPensionYearsService: formData.get('primary-pension-years-service'),
         includeSpouse: formData.get('include-spouse') ? true : false,
         spouseAge: formData.get('spouse-age'),
         spouseIncome: formData.get('spouse-income'),
         spouseContribution: formData.get('spouse-contribution'),
         spouseMatch: formData.get('spouse-match'),
         spouse401k: formData.get('spouse-401k'),
+        spouseHasPension: formData.get('spouse-has-pension') ? true : false,
+        spousePensionPercentage: formData.get('spouse-pension-percentage'),
+        spousePensionVesting: formData.get('spouse-pension-vesting'),
+        spousePensionYearsService: formData.get('spouse-pension-years-service'),
         taxRate: formData.get('tax-rate'),
         annualReturn: formData.get('annual-return')
     };
@@ -574,6 +672,10 @@ function clearRetirement401k() {
     document.getElementById('retirement401k-form').reset();
     document.getElementById('include-spouse').checked = false;
     document.getElementById('spouse-fields').style.display = 'none';
+    document.getElementById('primary-has-pension').checked = false;
+    document.getElementById('primary-pension-fields').style.display = 'none';
+    document.getElementById('spouse-has-pension').checked = false;
+    document.getElementById('spouse-pension-fields').style.display = 'none';
     planner.retirement401kData = null;
     planner.saveData();
     planner.updateDashboard();

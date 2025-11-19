@@ -27,6 +27,13 @@ Plan your retirement savings with realistic projections based on:
   - Individual company match percentages
   - Can set to 0% for either person
 
+- **Pension Plan Support**
+  - Optional pension income for primary person and spouse
+  - Configure pension percentage of final salary
+  - Set vesting requirements (years of service)
+  - Track current years of service
+  - Annual pension income calculated and displayed at retirement
+
 - **Investment Details**
   - Federal tax rate (manual input)
   - Projected annual return percentage
@@ -37,11 +44,13 @@ Plan your retirement savings with realistic projections based on:
     - Annual income
     - Annual contributions
     - 401k balance at each year
+    - Annual pension income (if applicable)
     - Age at each milestone
   - Summary cards showing:
     - Total balance at retirement
     - Total contributions made
     - Investment growth earned
+  - Dashboard stat card showing annual pension income at retirement (if applicable)
 
 ### 2. Savings Account Calculator
 
@@ -91,16 +100,24 @@ Central dashboard showing:
    - Set company match percentage (e.g., 3%)
    - Enter current 401k balance
 
-3. **Add Spouse (Optional)**
+3. **Configure Pension (Optional)**
+   - Check "Has a Pension Plan" if applicable
+   - Enter pension percentage of final salary (e.g., 2% per year of service)
+   - Set vesting requirement (years of service required, e.g., 5 years)
+   - Enter current years of service with the employer
+   - The calculator will compute annual pension income at retirement if vesting is met
+
+4. **Add Spouse (Optional)**
    - Check "Include Spouse in Retirement Plan"
    - Enter spouse age, income, and contribution details
    - Can set spouse company match to 0% if not applicable
+   - Optionally add spouse pension details
 
-4. **Tax & Investment Settings**
+5. **Tax & Investment Settings**
    - Enter your federal tax rate
    - Enter projected annual return percentage (historically 7% is reasonable)
 
-5. **Calculate**
+6. **Calculate**
    - Click "Calculate 401k Projection"
    - Results appear with year-by-year table
 
@@ -176,6 +193,24 @@ Year Balance = Previous Balance + (Annual Contributions)
 5. **Raise Percentage**: Use conservative estimates for long-term planning
 
 ## Examples
+
+### Pension Plans
+
+Many government and public sector employees have defined benefit pension plans. Here are common examples:
+
+**Example 1: Government Employee (PERS-style)**
+- Pension Percentage: 2.5% per year of service
+- Vesting Requirement: 5 years
+- Current Years of Service: 8 years
+- Final Salary at Retirement: $75,000
+- **Annual Pension Income: $75,000 × (2.5% × 13 years) = $24,375/year**
+
+**Example 2: Military Retirement**
+- Pension Percentage: 2.5% per year of service
+- Vesting Requirement: 20 years
+- Current Years of Service: 5 years
+- Final Salary at Retirement: $85,000
+- **Annual Pension Income: $85,000 × (2.5% × 25 years) = $53,125/year** (at 25 years service)
 
 ### Conservative Planning
 - Annual Return: 5%

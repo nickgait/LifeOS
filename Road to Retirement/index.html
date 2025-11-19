@@ -52,6 +52,11 @@
                             <div class="stat-value" id="dashboard-years">0</div>
                             <div class="stat-subtitle">years</div>
                         </div>
+                        <div class="stat-card" id="dashboard-pension-card" style="display: none;">
+                            <div class="stat-label">Annual Pension Income</div>
+                            <div class="stat-value" id="dashboard-pension">$0.00</div>
+                            <div class="stat-subtitle" id="dashboard-pension-monthly">$0.00/month</div>
+                        </div>
                     </div>
 
                     <!-- Charts Container -->
@@ -119,6 +124,33 @@
                                     <label for="current-401k">Current 401k Balance</label>
                                     <input type="number" id="current-401k" name="current-401k" min="0" step="1000" value="0" placeholder="0" required>
                                 </div>
+
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="primary-has-pension" name="primary-has-pension" onchange="togglePrimaryPensionFields()">
+                                        Has a Pension Plan
+                                    </label>
+                                </div>
+
+                                <div id="primary-pension-fields" style="display: none;">
+                                    <div class="form-group">
+                                        <label for="primary-pension-percentage">Pension Percentage of Salary (%)</label>
+                                        <input type="number" id="primary-pension-percentage" name="primary-pension-percentage" min="0" max="100" step="0.1" placeholder="0" value="0">
+                                        <small>Percentage of final salary paid annually in retirement</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="primary-pension-vesting">Years of Service Required (Vesting)</label>
+                                        <input type="number" id="primary-pension-vesting" name="primary-pension-vesting" min="0" max="50" step="1" placeholder="0" value="0">
+                                        <small>Minimum years required to qualify for pension</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="primary-pension-years-service">Current Years of Service</label>
+                                        <input type="number" id="primary-pension-years-service" name="primary-pension-years-service" min="0" max="50" step="1" placeholder="0" value="0">
+                                        <small>Years already worked at current employer</small>
+                                    </div>
+                                </div>
                             </fieldset>
 
                             <!-- Spouse Section -->
@@ -156,6 +188,33 @@
                                     <div class="form-group">
                                         <label for="spouse-401k">Spouse Current 401k Balance</label>
                                         <input type="number" id="spouse-401k" name="spouse-401k" min="0" step="1000" value="0" placeholder="0">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>
+                                            <input type="checkbox" id="spouse-has-pension" name="spouse-has-pension" onchange="toggleSpousePensionFields()">
+                                            Spouse Has a Pension Plan
+                                        </label>
+                                    </div>
+
+                                    <div id="spouse-pension-fields" style="display: none;">
+                                        <div class="form-group">
+                                            <label for="spouse-pension-percentage">Pension Percentage of Salary (%)</label>
+                                            <input type="number" id="spouse-pension-percentage" name="spouse-pension-percentage" min="0" max="100" step="0.1" placeholder="0" value="0">
+                                            <small>Percentage of final salary paid annually in retirement</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="spouse-pension-vesting">Years of Service Required (Vesting)</label>
+                                            <input type="number" id="spouse-pension-vesting" name="spouse-pension-vesting" min="0" max="50" step="1" placeholder="0" value="0">
+                                            <small>Minimum years required to qualify for pension</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="spouse-pension-years-service">Current Years of Service</label>
+                                            <input type="number" id="spouse-pension-years-service" name="spouse-pension-years-service" min="0" max="50" step="1" placeholder="0" value="0">
+                                            <small>Years already worked at current employer</small>
+                                        </div>
                                     </div>
                                 </div>
                             </fieldset>
@@ -207,7 +266,8 @@
                                         <th>Age (Primary)</th>
                                         <th>Annual Income</th>
                                         <th>Annual Contribution</th>
-                                        <th>Balance</th>
+                                        <th>401k Balance</th>
+                                        <th>Annual Pension Income</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
