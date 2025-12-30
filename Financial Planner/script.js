@@ -12,30 +12,9 @@ class FinancialPlanner {
         this.projectionScenario = 'moderate';
         this.charts = {};
 
-        // Default pre-loaded holdings based on user's portfolio
-        this.defaultBrokerageHoldings = [
-            { ticker: 'NVDA', name: 'NVIDIA Corp', value: 20339, sector: 'Technology', compliant: true },
-            { ticker: 'FTNT', name: 'Fortinet Inc', value: 8180, sector: 'Technology', compliant: true },
-            { ticker: 'CHWY', name: 'Chewy Inc', value: 3249, sector: 'Consumer Discretionary', compliant: true },
-            { ticker: 'PAYC', name: 'Paycom Software', value: 4827, sector: 'Technology', compliant: true },
-            { ticker: 'PG', name: 'Procter & Gamble', value: 2904, sector: 'Consumer Staples', compliant: true },
-            { ticker: 'PEP', name: 'PepsiCo Inc', value: 7259, sector: 'Consumer Staples', compliant: true },
-            { ticker: 'XOM', name: 'Exxon Mobil', value: 3083, sector: 'Energy', compliant: true },
-            { ticker: 'CAMT', name: 'Camtek Ltd', value: 5668, sector: 'Technology', compliant: true },
-            { ticker: 'TSCO', name: 'Tractor Supply Co', value: 2088, sector: 'Consumer Discretionary', compliant: true },
-            { ticker: 'CL', name: 'Colgate-Palmolive', value: 3995, sector: 'Consumer Staples', compliant: true },
-            { ticker: 'CVX', name: 'Chevron Corp', value: 7889, sector: 'Energy', compliant: true },
-            { ticker: 'KO', name: 'Coca-Cola Co', value: 7087, sector: 'Consumer Staples', compliant: true },
-            { ticker: 'SPRE', name: 'SP Funds S&P 500 Sharia ETF', value: 2054, sector: 'Diversified', compliant: true },
-            { ticker: 'SPSK', name: 'SP Funds DJ Global Sukuk ETF', value: 13029, sector: 'Fixed Income', compliant: true },
-            { ticker: 'SPUS', name: 'SP Funds S&P 500 Sharia ETF', value: 15564, sector: 'Diversified', compliant: true },
-            { ticker: 'HLAL', name: 'Wahed FTSE USA Shariah ETF', value: 12554, sector: 'Diversified', compliant: true }
-        ];
-
-        this.defaultRetirementHoldings = [
-            { ticker: 'LCIDX', name: 'US Large Cap Index', value: 136300, sector: 'Diversified', compliant: false },
-            { ticker: 'SMIDX', name: 'US Small/Mid Cap Index', value: 45132, sector: 'Diversified', compliant: false }
-        ];
+        // No default holdings - app starts blank
+        this.defaultBrokerageHoldings = [];
+        this.defaultRetirementHoldings = [];
 
         // Sharia-compliant fund data
         this.shariaFunds = {
