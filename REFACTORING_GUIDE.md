@@ -6,20 +6,37 @@ This document provides a guide for refactoring the remaining LifeOS apps to use 
 
 ### ✅ Completed
 - **Journal App** - Refactored and pushed to GitHub (commit: 0f74c4a)
-  - Lines saved: ~30
+  - Lines saved: 30 (380 → 350)
   - Eliminated: `init()`, `setupDefaultDate()`, `refresh()`, `formatDate()`
   - Now uses: `createItem()`, `findById()`, `deleteById()`, BaseApp utilities
 
+- **Goals App** - Refactored and pushed to GitHub (commit: 9afb8d0)
+  - Lines saved: 21 (320 → 299)
+  - Eliminated: `init()`, `setupDefaultDates()`, `refresh()`, `getDaysRemaining()`
+  - Now uses: `createItem()`, `findById()`, `deleteById()`, `daysBetween()`
+
+- **Fitness App** - Refactored and pushed to GitHub (commit: e34f411)
+  - Lines saved: 41 (463 → 422)
+  - Eliminated: `init()`, `setupDefaultDates()`, `refresh()`
+  - Now uses: `createItem()`, `deleteById()`, `daysBetween()`, `formatDate()`
+
+- **Finance App** - Refactored and pushed to GitHub (commit: e34f411)
+  - Lines saved: 35 (374 → 339)
+  - Eliminated: `init()`, `setupDefaultDates()`, `refresh()`
+  - Now uses: `createItem()`, `deleteById()`, `formatDate()`, `formatCurrency()`
+
+- **TodoList App** - Refactored and pushed to GitHub (commit: e34f411)
+  - Lines saved: 33 (453 → 420)
+  - Eliminated: `init()`, `setupDefaultDates()`, `daysBetween()`
+  - Now uses: `createItem()`, `findById()`, `deleteById()`, `daysBetween()`
+
 ### ⏳ Remaining Apps
-- Goals (319 lines)
-- Fitness (463 lines)
-- Finance (373 lines)
-- TodoList (452 lines)
 - Investments (1,271 lines) - Complex, save for last
 - Road to Retirement (791 lines) - Complex, save for last
 - Financial Planner (1,648 lines) - Very complex, save for last
 
-**Estimated total savings:** ~800-1,000 lines for simple apps
+**Total savings so far:** 160 lines across 5 apps
+**Estimated additional savings:** ~400-600 lines for complex apps
 
 ---
 
@@ -312,4 +329,4 @@ HTML change:
 ---
 
 **Last Updated:** December 29, 2025
-**Status:** Journal app complete, 7 apps remaining
+**Status:** 5 simple apps complete (Journal, Goals, Fitness, Finance, TodoList), 3 complex apps remaining
