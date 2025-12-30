@@ -3,9 +3,12 @@
  * Daily journaling and reflection app
  */
 
-class JournalApp {
+class JournalApp extends BaseApp {
   constructor() {
-    this.entries = StorageManager.get('journal-entries') || [];
+    super('journal-entries');
+
+    // App-specific properties
+    this.entries = this.data; // Alias for clarity
     this.selectedEntry = null;
     this.searchQuery = '';
     this.moodEmojis = {
@@ -15,20 +18,6 @@ class JournalApp {
       bad: '😔',
       terrible: '😢'
     };
-
-    this.init();
-  }
-
-  init() {
-    this.setupEventListeners();
-    this.setupDefaultDate();
-    this.renderEntries();
-    this.updateDashboard();
-
-    // Listen for data changes
-    StorageManager.onChange('journal-*', () => {
-      this.refresh();
-    });
   }
 
   setupEventListeners() {
@@ -56,18 +45,10 @@ class JournalApp {
     }
   }
 
-  setupDefaultDate() {
-    const entryDate = document.getElementById('entry-date');
-    if (entryDate) {
-      entryDate.value = new Date().toISOString().split('T')[0];
-    }
-  }
-
   handleEntrySubmit(e) {
     e.preventDefault();
 
-    const entry = {
-      id: Date.now(),
+    const entry = this.createItem({
       date: document.getElementById('entry-date').value,
       title: document.getElementById('entry-title').value,
       content: document.getElementById('entry-content').value,
@@ -75,29 +56,27 @@ class JournalApp {
       tags: document.getElementById('entry-tags').value
         .split(',')
         .map(t => t.trim())
-        .filter(t => t),
-      createdAt: new Date().toISOString()
-    };
+        .filter(t => t)
+    });
 
     this.entries.push(entry);
-    StorageManager.set('journal-entries', this.entries);
+    this.save();
 
     e.target.reset();
-    this.setupDefaultDate();
+    this.setupDefaultDates();
     alert('Entry saved successfully!');
     this.renderEntries();
     this.updateDashboard();
   }
 
   viewEntry(entryId) {
-    this.selectedEntry = this.entries.find(e => e.id === entryId);
+    this.selectedEntry = this.findById(entryId);
     this.renderEntryDetail();
   }
 
   deleteEntry(entryId) {
     if (confirm('Delete this entry? This cannot be undone.')) {
-      this.entries = this.entries.filter(e => e.id !== entryId);
-      StorageManager.set('journal-entries', this.entries);
+      this.deleteById(entryId);
       this.selectedEntry = null;
       this.renderEntries();
       this.updateDashboard();
@@ -105,7 +84,7 @@ class JournalApp {
   }
 
   editEntry(entryId) {
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.findById(entryId);
     if (entry) {
       document.getElementById('entry-title').value = entry.title;
       document.getElementById('entry-content').value = entry.content;
@@ -126,16 +105,6 @@ class JournalApp {
 
   getMoodEmoji(mood) {
     return this.moodEmojis[mood] || '😐';
-  }
-
-  formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
   }
 
   getWordCount(text) {
@@ -345,9 +314,9 @@ class JournalApp {
   }
 
   refresh() {
-    this.entries = StorageManager.get('journal-entries') || [];
+    super.refresh(); // Call BaseApp refresh
+    this.entries = this.data; // Update alias
     this.renderEntries();
-    this.updateDashboard();
   }
 }
 
