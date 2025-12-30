@@ -40,6 +40,13 @@ class FinancialPlanner {
     }
 
     loadData() {
+        // One-time migration: Clear old hardcoded default data
+        const migrationKey = 'financial-planner-migrated-v2';
+        if (!StorageManager.get(migrationKey)) {
+            StorageManager.remove('financial-planner-holdings');
+            StorageManager.set(migrationKey, true);
+        }
+
         const savedProfile = StorageManager.get('financial-planner-profile');
         const savedHoldings = StorageManager.get('financial-planner-holdings');
         const savedShariaMode = StorageManager.get('financial-planner-sharia-mode');
@@ -52,9 +59,9 @@ class FinancialPlanner {
         if (savedHoldings) {
             this.holdings = savedHoldings;
         } else {
-            // Load defaults
-            this.holdings.brokerage = [...this.defaultBrokerageHoldings];
-            this.holdings.retirement = [...this.defaultRetirementHoldings];
+            // Start with empty holdings
+            this.holdings.brokerage = [];
+            this.holdings.retirement = [];
         }
 
         if (savedShariaMode !== null) {
