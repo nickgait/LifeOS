@@ -41,9 +41,10 @@ class FinancialPlanner {
 
     loadData() {
         // One-time migration: Clear old hardcoded default data
-        const migrationKey = 'financial-planner-migrated-v2';
+        const migrationKey = 'financial-planner-migrated-v3';
         if (!StorageManager.get(migrationKey)) {
             StorageManager.remove('financial-planner-holdings');
+            StorageManager.remove('financial-planner-profile');
             StorageManager.set(migrationKey, true);
         }
 
