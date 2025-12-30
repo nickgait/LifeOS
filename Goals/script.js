@@ -3,9 +3,11 @@
  * Multi-category goal tracking app
  */
 
-class GoalsApp {
+class GoalsApp extends BaseApp {
   constructor() {
-    this.goals = StorageManager.get('goals-all') || [];
+    super('goals-all');
+
+    this.goals = this.data;
     this.categories = [
       { id: 'health', name: 'Health & Fitness', icon: '🏃', color: '#10b981' },
       { id: 'career', name: 'Career & Work', icon: '💼', color: '#3b82f6' },
@@ -15,19 +17,6 @@ class GoalsApp {
       { id: 'other', name: 'Other', icon: '✨', color: '#6b7280' }
     ];
     this.selectedCategory = 'all';
-
-    this.init();
-  }
-
-  init() {
-    this.setupEventListeners();
-    this.setupDefaultDates();
-    this.updateDashboard();
-
-    // Listen for data changes
-    StorageManager.onChange('goals-*', () => {
-      this.refresh();
-    });
 
     // Listen for fitness goals changes to sync them
     StorageManager.onChange('fitness-goals', () => {
@@ -53,18 +42,10 @@ class GoalsApp {
     });
   }
 
-  setupDefaultDates() {
-    const targetDate = document.getElementById('goal-target-date');
-    if (targetDate) {
-      targetDate.value = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    }
-  }
-
   handleGoalSubmit(e) {
     e.preventDefault();
 
-    const goal = {
-      id: Date.now(),
+    const goal = this.createItem({
       name: document.getElementById('goal-name').value,
       description: document.getElementById('goal-description').value,
       category: document.getElementById('goal-category').value,
@@ -73,10 +54,10 @@ class GoalsApp {
       status: 'active',
       milestones: [],
       notes: []
-    };
+    });
 
     this.goals.push(goal);
-    StorageManager.set('goals-all', this.goals);
+    this.save();
 
     e.target.reset();
     this.setupDefaultDates();
@@ -87,19 +68,18 @@ class GoalsApp {
 
   deleteGoal(goalId) {
     if (confirm('Are you sure you want to delete this goal?')) {
-      this.goals = this.goals.filter(g => g.id !== goalId);
-      StorageManager.set('goals-all', this.goals);
+      this.deleteById(goalId);
       this.renderGoals();
       this.updateDashboard();
     }
   }
 
   completeGoal(goalId) {
-    const goal = this.goals.find(g => g.id === goalId);
+    const goal = this.findById(goalId);
     if (goal) {
       goal.status = 'completed';
       goal.completedDate = new Date().toISOString().split('T')[0];
-      StorageManager.set('goals-all', this.goals);
+      this.save();
       this.renderGoals();
       this.updateDashboard();
     }
@@ -113,10 +93,6 @@ class GoalsApp {
   getCategoryColor(categoryId) {
     const category = this.categories.find(c => c.id === categoryId);
     return category ? category.color : '#6b7280';
-  }
-
-  getDaysRemaining(targetDate) {
-    return Math.ceil((new Date(targetDate) - new Date()) / (1000 * 60 * 60 * 24));
   }
 
   renderGoals() {
@@ -154,7 +130,7 @@ class GoalsApp {
     goalsList.innerHTML = filteredGoals
       .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
       .map(goal => {
-        const daysLeft = this.getDaysRemaining(goal.targetDate);
+        const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
         const color = this.getCategoryColor(goal.category);
 
         return `
@@ -180,10 +156,12 @@ class GoalsApp {
               </span>
             </div>
             <div class="goal-actions">
-              ${goal.status === 'active' ? `
+              ${goal.status === 'active' && !goal.fromFitness ? `
                 <button class="goals-btn goals-btn-small" onclick="goalsApp.completeGoal(${goal.id})">Mark Complete</button>
               ` : ''}
-              <button class="goals-btn goals-btn-small goals-btn-danger" onclick="goalsApp.deleteGoal(${goal.id})">Delete</button>
+              ${!goal.fromFitness ? `
+                <button class="goals-btn goals-btn-small goals-btn-danger" onclick="goalsApp.deleteGoal(${goal.id})">Delete</button>
+              ` : ''}
             </div>
           </div>
         `;
@@ -228,7 +206,7 @@ class GoalsApp {
     }
 
     dashboardGoals.innerHTML = recentGoals.map(goal => {
-      const daysLeft = this.getDaysRemaining(goal.targetDate);
+      const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
       return `
         <div class="goal-item">
           <h3 style="margin-bottom: 5px;">${goal.name}</h3>
@@ -285,8 +263,9 @@ class GoalsApp {
   }
 
   refresh() {
-    this.goals = StorageManager.get('goals-all') || [];
-    this.updateDashboard();
+    super.refresh();
+    this.goals = this.data;
+    this.renderGoals();
   }
 }
 
