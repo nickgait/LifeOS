@@ -25,6 +25,12 @@
         </nav>
 
         <main class="app-content">
+            <!-- Info Banner -->
+            <div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                <strong>💡 Tip:</strong> For comprehensive portfolio analysis, stress testing, and tax planning, check out the
+                <a href="../Financial Planner/index.html" style="color: #0284c7; font-weight: 600;">Financial Planner</a> app.
+            </div>
+
             <!-- DASHBOARD TAB -->
             <div id="dashboard-tab" class="tab-content active">
                 <div class="retirement-dashboard">
@@ -116,6 +122,12 @@
                                 </div>
 
                                 <div class="form-group">
+                                    <label for="primary-contribution-increase">Annual Contribution Increase (%)</label>
+                                    <input type="number" id="primary-contribution-increase" name="primary-contribution-increase" min="0" max="20" step="0.1" value="0" placeholder="0">
+                                    <small>Increase contribution % each year with your raise (e.g., 2% to increase from 12% to 14% next year)</small>
+                                </div>
+
+                                <div class="form-group">
                                     <label for="primary-match">Company Match (%)</label>
                                     <input type="number" id="primary-match" name="primary-match" min="0" max="100" step="0.1" value="3" placeholder="3" required>
                                 </div>
@@ -181,6 +193,12 @@
                                     </div>
 
                                     <div class="form-group">
+                                        <label for="spouse-contribution-increase">Spouse Annual Contribution Increase (%)</label>
+                                        <input type="number" id="spouse-contribution-increase" name="spouse-contribution-increase" min="0" max="20" step="0.1" value="0" placeholder="0">
+                                        <small>Increase contribution % each year with spouse's raise</small>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="spouse-match">Spouse Company Match (%)</label>
                                         <input type="number" id="spouse-match" name="spouse-match" min="0" max="100" step="0.1" value="3" placeholder="3">
                                     </div>
@@ -235,6 +253,31 @@
                                 </div>
                             </fieldset>
 
+                            <!-- 401k Limits Section -->
+                            <fieldset>
+                                <legend>401k Contribution Limits (Optional)</legend>
+
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="enforce-401k-limits" name="enforce-401k-limits">
+                                        Enforce IRS Annual Contribution Limits
+                                    </label>
+                                    <small>Cap contributions at the official IRS limits ($23,500 in 2024, $30,500 if 50+)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="annual-contribution-limit">Annual Limit ($)</label>
+                                    <input type="number" id="annual-contribution-limit" name="annual-contribution-limit" min="0" step="100" value="23500" placeholder="23500">
+                                    <small>2024 IRS limit (updates automatically based on age if limits are enforced)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="catch-up-contribution-limit">Catch-up Limit for Age 50+ ($)</label>
+                                    <input type="number" id="catch-up-contribution-limit" name="catch-up-contribution-limit" min="0" step="100" value="7500" placeholder="7500">
+                                    <small>Additional amount allowed at age 50 and above (2024 amount)</small>
+                                </div>
+                            </fieldset>
+
                             <button type="submit" class="btn-primary">Calculate 401k Projection</button>
                         </form>
                     </div>
@@ -266,6 +309,7 @@
                                         <th>Age (Primary)</th>
                                         <th>Annual Income</th>
                                         <th>Annual Contribution</th>
+                                        <th>Contrib. Rate</th>
                                         <th>401k Balance</th>
                                         <th>Annual Pension Income</th>
                                     </tr>

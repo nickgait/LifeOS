@@ -28,6 +28,12 @@ class GoalsApp {
     StorageManager.onChange('goals-*', () => {
       this.refresh();
     });
+
+    // Listen for fitness goals changes to sync them
+    StorageManager.onChange('fitness-goals', () => {
+      this.renderGoals();
+      this.updateDashboard();
+    });
   }
 
   setupEventListeners() {
@@ -117,9 +123,22 @@ class GoalsApp {
     const goalsList = document.getElementById('goals-list');
     if (!goalsList) return;
 
-    let filteredGoals = this.goals;
+    // Get fitness goals and add them as health category
+    const fitnessGoals = (StorageManager.get('fitness-goals') || [])
+      .filter(g => g.status === 'active')
+      .map(g => ({
+        ...g,
+        category: 'health',
+        description: `${g.activity} - Target: ${g.target}`,
+        fromFitness: true
+      }));
+
+    // Combine with regular goals
+    const allGoals = [...this.goals, ...fitnessGoals];
+
+    let filteredGoals = allGoals;
     if (this.selectedCategory !== 'all') {
-      filteredGoals = this.goals.filter(g => g.category === this.selectedCategory);
+      filteredGoals = allGoals.filter(g => g.category === this.selectedCategory);
     }
 
     if (filteredGoals.length === 0) {
@@ -172,9 +191,14 @@ class GoalsApp {
   }
 
   updateDashboard() {
-    const totalGoals = this.goals.length;
-    const activeGoals = this.goals.filter(g => g.status === 'active').length;
-    const completedGoals = this.goals.filter(g => g.status === 'completed').length;
+    // Include fitness goals in counts
+    const fitnessGoals = StorageManager.get('fitness-goals') || [];
+    const activeFitnessGoals = fitnessGoals.filter(g => g.status === 'active').length;
+    const completedFitnessGoals = fitnessGoals.filter(g => g.status === 'completed').length;
+
+    const totalGoals = this.goals.length + fitnessGoals.length;
+    const activeGoals = this.goals.filter(g => g.status === 'active').length + activeFitnessGoals;
+    const completedGoals = this.goals.filter(g => g.status === 'completed').length + completedFitnessGoals;
 
     document.getElementById('total-goals-count').textContent = totalGoals;
     document.getElementById('active-goals-count').textContent = activeGoals;

@@ -70,11 +70,18 @@ class RetirementPlanner {
         const primaryIncome = parseFloat(formData.primaryIncome);
         const spouseIncome = formData.includeSpouse ? parseFloat(formData.spouseIncome) : 0;
         const raisePercentage = parseFloat(formData.raisePercentage) / 100;
-        const primaryContribution = parseFloat(formData.primaryContribution) / 100;
+        let primaryContribution = parseFloat(formData.primaryContribution) / 100;
         const primaryMatch = parseFloat(formData.primaryMatch) / 100;
-        const spouseContribution = formData.includeSpouse ? parseFloat(formData.spouseContribution) / 100 : 0;
+        const primaryContributionIncrease = parseFloat(formData.primaryContributionIncrease) / 100 || 0;
+        let spouseContribution = formData.includeSpouse ? parseFloat(formData.spouseContribution) / 100 : 0;
         const spouseMatch = formData.includeSpouse ? parseFloat(formData.spouseMatch) / 100 : 0;
+        const spouseContributionIncrease = formData.includeSpouse ? (parseFloat(formData.spouseContributionIncrease) / 100 || 0) : 0;
         const annualReturn = parseFloat(formData.annualReturn) / 100;
+
+        // 401k Limit configuration
+        const enforceLimits = formData.enforceLimits === true || formData.enforceLimits === 'on';
+        const baseLimitAmount = parseFloat(formData.annualContributionLimit) || 23500;
+        const catchUpAmount = parseFloat(formData.catchUpContributionLimit) || 7500;
 
         // Pension data
         const primaryHasPension = formData.primaryHasPension;
@@ -89,19 +96,54 @@ class RetirementPlanner {
 
         let currentPrimaryIncome = primaryIncome;
         let currentSpouseIncome = spouseIncome;
+        let currentPrimaryContributionRate = primaryContribution;
+        let currentSpouseContributionRate = spouseContribution;
 
         for (let year = 1; year <= yearsToRetirement; year++) {
             const currentAge = primaryAge + year - 1;
 
-            // Primary person contributions
-            const primaryEmployeeContribution = currentPrimaryIncome * primaryContribution;
-            const primaryEmployerMatch = currentPrimaryIncome * primaryMatch;
-            const primaryTotalContribution = primaryEmployeeContribution + primaryEmployerMatch;
+            // Calculate applicable 401k limit for this year (with catch-up if applicable)
+            let primaryLimit = baseLimitAmount;
+            let spouseLimit = baseLimitAmount;
+            if (enforceLimits && currentAge >= 50) {
+                primaryLimit = baseLimitAmount + catchUpAmount;
+            }
+            if (enforceLimits && formData.includeSpouse) {
+                const spouseAge = parseInt(formData.spouseAge) + year - 1;
+                if (spouseAge >= 50) {
+                    spouseLimit = baseLimitAmount + catchUpAmount;
+                }
+            }
+
+            // Primary person contributions (before limit caps)
+            let primaryEmployeeContribution = currentPrimaryIncome * currentPrimaryContributionRate;
+            let primaryEmployerMatch = currentPrimaryIncome * primaryMatch;
+            let primaryTotalContribution = primaryEmployeeContribution + primaryEmployerMatch;
+
+            // Apply limit if enforced
+            if (enforceLimits && primaryTotalContribution > primaryLimit) {
+                // Cap the contribution at the limit (prioritize employer match)
+                primaryTotalContribution = primaryLimit;
+                // Adjust employee contribution if necessary
+                primaryEmployeeContribution = Math.max(0, primaryLimit - primaryEmployerMatch);
+            }
 
             // Spouse contributions (if applicable)
-            const spouseEmployeeContribution = formData.includeSpouse ? currentSpouseIncome * spouseContribution : 0;
-            const spouseEmployerMatch = formData.includeSpouse ? currentSpouseIncome * spouseMatch : 0;
-            const spouseTotalContribution = spouseEmployeeContribution + spouseEmployerMatch;
+            let spouseEmployeeContribution = 0;
+            let spouseEmployerMatch = 0;
+            let spouseTotalContribution = 0;
+
+            if (formData.includeSpouse) {
+                spouseEmployeeContribution = currentSpouseIncome * currentSpouseContributionRate;
+                spouseEmployerMatch = currentSpouseIncome * spouseMatch;
+                spouseTotalContribution = spouseEmployeeContribution + spouseEmployerMatch;
+
+                // Apply limit if enforced
+                if (enforceLimits && spouseTotalContribution > spouseLimit) {
+                    spouseTotalContribution = spouseLimit;
+                    spouseEmployeeContribution = Math.max(0, spouseLimit - spouseEmployerMatch);
+                }
+            }
 
             const totalAnnualContribution = primaryTotalContribution + spouseTotalContribution;
 
@@ -152,13 +194,23 @@ class RetirementPlanner {
                 combinedBalance: combinedBalance,
                 primaryPensionIncome: primaryPensionIncome,
                 spousePensionIncome: spousePensionIncome,
-                totalPensionIncome: totalPensionIncome
+                totalPensionIncome: totalPensionIncome,
+                primaryContributionRate: currentPrimaryContributionRate * 100,
+                spouseContributionRate: currentSpouseContributionRate * 100
             });
 
             // Apply raise for next year
             currentPrimaryIncome *= (1 + raisePercentage);
             if (formData.includeSpouse) {
                 currentSpouseIncome *= (1 + raisePercentage);
+            }
+
+            // Increase contribution rates for next year if specified
+            if (primaryContributionIncrease > 0) {
+                currentPrimaryContributionRate += primaryContributionIncrease;
+            }
+            if (formData.includeSpouse && spouseContributionIncrease > 0) {
+                currentSpouseContributionRate += spouseContributionIncrease;
             }
         }
 
@@ -200,6 +252,7 @@ class RetirementPlanner {
                 <td>${projection.age}</td>
                 <td>${this.formatCurrency(projection.totalIncome)}</td>
                 <td>${this.formatCurrency(projection.totalContribution)}</td>
+                <td>${projection.primaryContributionRate.toFixed(1)}%</td>
                 <td>${this.formatCurrency(projection.combinedBalance)}</td>
                 <td>${this.formatCurrency(projection.totalPensionIncome)}</td>
             `;
@@ -641,6 +694,7 @@ function handleRetirement401kSubmit(event) {
         primaryIncome: formData.get('primary-income'),
         raisePercentage: formData.get('raise-percentage'),
         primaryContribution: formData.get('primary-contribution'),
+        primaryContributionIncrease: formData.get('primary-contribution-increase'),
         primaryMatch: formData.get('primary-match'),
         current401k: formData.get('current-401k'),
         primaryHasPension: formData.get('primary-has-pension') ? true : false,
@@ -651,6 +705,7 @@ function handleRetirement401kSubmit(event) {
         spouseAge: formData.get('spouse-age'),
         spouseIncome: formData.get('spouse-income'),
         spouseContribution: formData.get('spouse-contribution'),
+        spouseContributionIncrease: formData.get('spouse-contribution-increase'),
         spouseMatch: formData.get('spouse-match'),
         spouse401k: formData.get('spouse-401k'),
         spouseHasPension: formData.get('spouse-has-pension') ? true : false,
@@ -658,7 +713,10 @@ function handleRetirement401kSubmit(event) {
         spousePensionVesting: formData.get('spouse-pension-vesting'),
         spousePensionYearsService: formData.get('spouse-pension-years-service'),
         taxRate: formData.get('tax-rate'),
-        annualReturn: formData.get('annual-return')
+        annualReturn: formData.get('annual-return'),
+        enforceLimits: formData.get('enforce-401k-limits'),
+        annualContributionLimit: formData.get('annual-contribution-limit'),
+        catchUpContributionLimit: formData.get('catch-up-contribution-limit')
     };
 
     const result = planner.calculate401k(data);

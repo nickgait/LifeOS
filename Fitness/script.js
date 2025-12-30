@@ -7,7 +7,7 @@ class FitnessTracker {
   constructor() {
     this.goals = StorageManager.get('fitness-goals') || [];
     this.activities = StorageManager.get('fitness-activities') || [];
-    this.badges = StorageManager.get('fitness-badges') || this.getDefaultBadges();
+    this.badges = StorageManager.get('fitness-badges') || DataManager.getDefaultFitnessBadges();
 
     this.init();
   }
@@ -49,19 +49,6 @@ class FitnessTracker {
     }
   }
 
-  getDefaultBadges() {
-    return [
-      { id: 'first-log', name: 'First Step', icon: '👟', earned: false, requirement: 'Log your first activity' },
-      { id: 'week-streak', name: 'Week Warrior', icon: '🔥', earned: false, requirement: 'Log activities for 7 days straight' },
-      { id: 'first-goal', name: 'Goal Setter', icon: '🎯', earned: false, requirement: 'Create your first goal' },
-      { id: 'goal-complete', name: 'Achiever', icon: '⭐', earned: false, requirement: 'Complete your first goal' },
-      { id: 'ten-activities', name: 'Dedicated', icon: '💪', earned: false, requirement: 'Log 10 activities' },
-      { id: 'fifty-activities', name: 'Committed', icon: '🏆', earned: false, requirement: 'Log 50 activities' },
-      { id: 'hundred-pushups', name: 'Push-up Pro', icon: '💥', earned: false, requirement: 'Complete 100 push-ups in one session' },
-      { id: 'five-mile', name: 'Distance Runner', icon: '🏃', earned: false, requirement: 'Run 5 miles in one session' },
-      { id: 'consistency', name: 'Consistent', icon: '📅', earned: false, requirement: 'Log activities for 30 days' }
-    ];
-  }
 
   handleGoalSubmit(e) {
     e.preventDefault();
@@ -442,7 +429,7 @@ class FitnessTracker {
   refresh() {
     this.goals = StorageManager.get('fitness-goals') || [];
     this.activities = StorageManager.get('fitness-activities') || [];
-    this.badges = StorageManager.get('fitness-badges') || this.getDefaultBadges();
+    this.badges = StorageManager.get('fitness-badges') || DataManager.getDefaultFitnessBadges();
     this.updateDashboard();
   }
 }

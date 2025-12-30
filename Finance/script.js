@@ -7,7 +7,7 @@ class FinanceApp {
   constructor() {
     this.expenses = StorageManager.get('finance-expenses') || [];
     this.budgets = StorageManager.get('finance-budgets') || [];
-    this.categories = StorageManager.get('finance-categories') || this.getDefaultCategories();
+    this.categories = StorageManager.get('finance-categories') || DataManager.getDefaultFinanceCategories();
     this.selectedCategory = 'all';
 
     this.init();
@@ -25,18 +25,6 @@ class FinanceApp {
     });
   }
 
-  getDefaultCategories() {
-    return [
-      { id: 'food', name: 'Food & Dining', icon: '🍔', color: '#f59e0b' },
-      { id: 'transport', name: 'Transportation', icon: '🚗', color: '#3b82f6' },
-      { id: 'utilities', name: 'Utilities', icon: '💡', color: '#8b5cf6' },
-      { id: 'entertainment', name: 'Entertainment', icon: '🎬', color: '#ec4899' },
-      { id: 'shopping', name: 'Shopping', icon: '🛍️', color: '#06b6d4' },
-      { id: 'healthcare', name: 'Healthcare', icon: '⚕️', color: '#10b981' },
-      { id: 'education', name: 'Education', icon: '📚', color: '#6366f1' },
-      { id: 'other', name: 'Other', icon: '📌', color: '#6b7280' }
-    ];
-  }
 
   setupEventListeners() {
     const expenseForm = document.getElementById('expense-form');
@@ -350,7 +338,7 @@ class FinanceApp {
   refresh() {
     this.expenses = StorageManager.get('finance-expenses') || [];
     this.budgets = StorageManager.get('finance-budgets') || [];
-    this.categories = StorageManager.get('finance-categories') || this.getDefaultCategories();
+    this.categories = StorageManager.get('finance-categories') || DataManager.getDefaultFinanceCategories();
     this.updateDashboard();
   }
 }

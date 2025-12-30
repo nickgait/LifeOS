@@ -303,6 +303,29 @@
             </div>
         </div>
 
+        <!-- Net Worth Overview -->
+        <div class="quick-actions" id="net-worth-section" style="display: none;">
+            <h3>💰 Net Worth Overview</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 10px;">
+                    <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">Investment Value</div>
+                    <div style="font-size: 24px; font-weight: bold;" id="investment-value">$0</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 20px; border-radius: 10px;">
+                    <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">Cash Balance</div>
+                    <div style="font-size: 24px; font-weight: bold;" id="cash-balance">$0</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 20px; border-radius: 10px;">
+                    <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">Monthly Spending</div>
+                    <div style="font-size: 24px; font-weight: bold;" id="monthly-spending">$0</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px;">
+                    <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">Total Net Worth</div>
+                    <div style="font-size: 24px; font-weight: bold;" id="net-worth-total">$0</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Quick Actions -->
         <div class="quick-actions">
             <h3>⚡ Quick Actions</h3>
@@ -466,6 +489,27 @@
                         <div class="app-button">Open App →</div>
                     </div>
                 </a>
+
+                <!-- Financial Planner App -->
+                <a href="Financial Planner/index.html" class="app-card">
+                    <div class="app-card-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                        <div class="app-icon">📊</div>
+                        <div class="app-name">Financial Planner</div>
+                        <div class="app-subtitle">Comprehensive analysis</div>
+                    </div>
+                    <div class="app-card-body">
+                        <div class="app-description">
+                            Full retirement analysis with portfolio review, stress testing, and optional Sharia-compliant mode.
+                        </div>
+                        <ul class="app-features">
+                            <li>Portfolio analysis</li>
+                            <li>10-year projections</li>
+                            <li>Stress testing</li>
+                            <li>Sharia-compliant options</li>
+                        </ul>
+                        <div class="app-button" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">Open App →</div>
+                    </div>
+                </a>
             </div>
         </div>
 
@@ -495,6 +539,9 @@
             const tasks = StorageManager.get('todolist-tasks') || [];
             const activeTasks = tasks.filter(t => !t.completed).length;
             document.getElementById('stat-tasks').textContent = activeTasks;
+
+            // Update Net Worth section
+            updateNetWorth();
 
             // Load recent activity
             const recentActivity = DataManager.getRecentActivity(5);
@@ -549,6 +596,57 @@
                 return 'Yesterday';
             } else {
                 return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        }
+
+        function updateNetWorth() {
+            // Get investment holdings
+            const holdings = StorageManager.get('investments-holdings') || [];
+            const cashBalance = StorageManager.get('investments-cash') || 0;
+
+            // Calculate total investment value
+            let totalInvestmentValue = 0;
+            holdings.forEach(holding => {
+                const totalShares = parseFloat(holding.shares) || 0;
+                const currentPrice = parseFloat(holding.currentPrice) || parseFloat(holding.purchasePrice) || 0;
+                totalInvestmentValue += totalShares * currentPrice;
+            });
+
+            // Get monthly spending from finance
+            const expenses = StorageManager.get('finance-expenses') || [];
+            const now = new Date();
+            const monthlySpending = expenses
+                .filter(e => {
+                    const expenseDate = new Date(e.date);
+                    return expenseDate.getMonth() === now.getMonth() &&
+                           expenseDate.getFullYear() === now.getFullYear();
+                })
+                .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+            // Calculate net worth
+            const netWorth = totalInvestmentValue + cashBalance;
+
+            // Update display
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount);
+            };
+
+            document.getElementById('investment-value').textContent = formatCurrency(totalInvestmentValue);
+            document.getElementById('cash-balance').textContent = formatCurrency(cashBalance);
+            document.getElementById('monthly-spending').textContent = formatCurrency(monthlySpending);
+            document.getElementById('net-worth-total').textContent = formatCurrency(netWorth);
+
+            // Show/hide net worth section based on whether there's data
+            const netWorthSection = document.getElementById('net-worth-section');
+            if (holdings.length > 0 || cashBalance > 0) {
+                netWorthSection.style.display = 'block';
+            } else {
+                netWorthSection.style.display = 'none';
             }
         }
 
