@@ -3,24 +3,13 @@
  * Modularized fitness tracking app with shared storage
  */
 
-class FitnessTracker {
+class FitnessTracker extends BaseApp {
   constructor() {
-    this.goals = StorageManager.get('fitness-goals') || [];
+    super('fitness-goals');
+
+    this.goals = this.data;
     this.activities = StorageManager.get('fitness-activities') || [];
     this.badges = StorageManager.get('fitness-badges') || DataManager.getDefaultFitnessBadges();
-
-    this.init();
-  }
-
-  init() {
-    this.setupEventListeners();
-    this.setDefaultDates();
-    this.updateDashboard();
-
-    // Listen for data changes
-    StorageManager.onChange('fitness-*', () => {
-      this.refresh();
-    });
   }
 
   setupEventListeners() {
@@ -36,25 +25,10 @@ class FitnessTracker {
     }
   }
 
-  setDefaultDates() {
-    const activityDate = document.getElementById('activity-date');
-    const goalDate = document.getElementById('goal-date');
-
-    if (activityDate) {
-      activityDate.value = new Date().toISOString().split('T')[0];
-    }
-
-    if (goalDate) {
-      goalDate.value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    }
-  }
-
-
   handleGoalSubmit(e) {
     e.preventDefault();
 
-    const goal = {
-      id: Date.now(),
+    const goal = this.createItem({
       name: document.getElementById('goal-name').value,
       activity: document.getElementById('goal-activity').value,
       target: parseFloat(document.getElementById('goal-target').value),
@@ -62,15 +36,15 @@ class FitnessTracker {
       targetDate: document.getElementById('goal-date').value,
       createdDate: new Date().toISOString().split('T')[0],
       status: 'active'
-    };
+    });
 
     this.goals.push(goal);
-    StorageManager.set('fitness-goals', this.goals);
+    this.save();
 
     this.checkBadge('first-goal');
 
     e.target.reset();
-    this.setDefaultDates();
+    this.setupDefaultDates();
     alert('Goal created successfully!');
     this.renderGoals();
     this.updateDashboard();
@@ -79,13 +53,12 @@ class FitnessTracker {
   handleActivitySubmit(e) {
     e.preventDefault();
 
-    const activity = {
-      id: Date.now(),
+    const activity = this.createItem({
       type: document.getElementById('activity-type').value,
       amount: parseFloat(document.getElementById('activity-amount').value),
       date: document.getElementById('activity-date').value,
       notes: document.getElementById('activity-notes').value
-    };
+    });
 
     this.activities.push(activity);
     StorageManager.set('fitness-activities', this.activities);
@@ -99,7 +72,7 @@ class FitnessTracker {
     this.checkStreakBadge();
 
     e.target.reset();
-    this.setDefaultDates();
+    this.setupDefaultDates();
     alert('Activity logged successfully!');
     this.renderActivityHistory();
     this.updateDashboard();
@@ -121,7 +94,7 @@ class FitnessTracker {
     });
 
     if (updated) {
-      StorageManager.set('fitness-goals', this.goals);
+      this.save();
     }
   }
 
@@ -148,256 +121,43 @@ class FitnessTracker {
 
       if (diffDays === 1) {
         streak++;
-      } else if (diffDays > 1) {
+      } else {
         streak = 1;
       }
-    }
 
-    if (streak >= 7) this.checkBadge('week-streak');
-    if (sortedActivities.length >= 30) this.checkBadge('consistency');
+      if (streak >= 7) {
+        this.checkBadge('week-streak');
+      }
+      if (streak >= 30) {
+        this.checkBadge('consistency');
+      }
+    }
   }
 
   checkBadge(badgeId) {
     const badge = this.badges.find(b => b.id === badgeId);
     if (badge && !badge.earned) {
-      let shouldEarn = false;
-
-      if (badgeId === 'first-log' && this.activities.length >= 1) {
-        shouldEarn = true;
-      } else if (badgeId === 'first-goal' && this.goals.length >= 1) {
-        shouldEarn = true;
-      } else if (badgeId === 'goal-complete' && this.goals.some(g => g.status === 'completed')) {
-        shouldEarn = true;
-      } else if (badgeId === 'ten-activities' && this.activities.length >= 10) {
-        shouldEarn = true;
-      } else if (badgeId === 'fifty-activities' && this.activities.length >= 50) {
-        shouldEarn = true;
-      } else if (badgeId === 'hundred-pushups' || badgeId === 'five-mile') {
-        shouldEarn = true;
-      } else if (badgeId === 'week-streak' || badgeId === 'consistency') {
-        shouldEarn = true;
-      }
-
-      if (shouldEarn) {
-        badge.earned = true;
-        this.showBadgeNotification(badge);
-        StorageManager.set('fitness-badges', this.badges);
-      }
+      badge.earned = true;
+      badge.earnedDate = new Date().toISOString().split('T')[0];
+      StorageManager.set('fitness-badges', this.badges);
     }
-  }
-
-  showBadgeNotification(badge) {
-    alert(`🎉 Badge Earned: ${badge.icon} ${badge.name}!\n${badge.requirement}`);
-  }
-
-  renderGoals() {
-    const goalsList = document.getElementById('goals-list');
-
-    if (!goalsList) return;
-
-    if (this.goals.length === 0) {
-      goalsList.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">🎯</div>
-          <p>No goals yet. Create your first goal to get started!</p>
-        </div>
-      `;
-      return;
-    }
-
-    goalsList.innerHTML = this.goals.map(goal => {
-      const progress = (goal.current / goal.target * 100).toFixed(1);
-      const daysLeft = Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
-      const daysTotal = Math.ceil((new Date(goal.targetDate) - new Date(goal.createdDate)) / (1000 * 60 * 60 * 24));
-      const expectedProgress = ((daysTotal - daysLeft) / daysTotal * 100).toFixed(1);
-
-      let status = 'on-pace';
-      let statusText = 'On Pace';
-
-      if (goal.status === 'completed') {
-        status = 'ahead';
-        statusText = 'Completed!';
-      } else if (progress < expectedProgress) {
-        status = 'behind';
-        statusText = 'Behind Pace';
-      } else if (progress > expectedProgress) {
-        status = 'ahead';
-        statusText = 'Ahead of Pace';
-      }
-
-      return `
-        <div class="goal-item">
-          <h3>${goal.name}</h3>
-          <div class="goal-details">
-            ${this.getActivityLabel(goal.activity)} • Target: ${goal.target} • Due: ${goal.targetDate}
-            ${goal.status === 'active' ? `<br>Days remaining: ${daysLeft}` : ''}
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar" style="width: ${Math.min(progress, 100)}%">
-              ${progress}%
-            </div>
-          </div>
-          <div>
-            Current: ${goal.current.toFixed(1)} / ${goal.target}
-            <span class="status-badge status-${status}">${statusText}</span>
-          </div>
-          ${goal.status === 'active' ? `
-            <div class="goal-actions">
-              <button class="fitness-btn fitness-btn-small fitness-btn-danger" onclick="fitnessApp.deleteGoal(${goal.id})">Delete Goal</button>
-            </div>
-          ` : ''}
-        </div>
-      `;
-    }).join('');
   }
 
   deleteGoal(goalId) {
-    if (confirm('Are you sure you want to delete this goal?')) {
-      this.goals = this.goals.filter(g => g.id !== goalId);
-      StorageManager.set('fitness-goals', this.goals);
+    if (confirm('Delete this goal?')) {
+      this.deleteById(goalId);
       this.renderGoals();
       this.updateDashboard();
     }
   }
 
-  renderActivityHistory() {
-    const historyDiv = document.getElementById('activity-history');
-
-    if (!historyDiv) return;
-
-    if (this.activities.length === 0) {
-      historyDiv.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">📝</div>
-          <p>No activities logged yet. Start logging your workouts!</p>
-        </div>
-      `;
-      return;
+  deleteActivity(activityId) {
+    if (confirm('Delete this activity?')) {
+      this.activities = this.activities.filter(a => a.id !== activityId);
+      StorageManager.set('fitness-activities', this.activities);
+      this.renderActivityHistory();
+      this.updateDashboard();
     }
-
-    const sortedActivities = [...this.activities].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    historyDiv.innerHTML = sortedActivities.map(activity => `
-      <div class="log-entry">
-        <div class="log-info">
-          <div class="log-activity">${this.getActivityLabel(activity.type)}</div>
-          <div class="log-date">${activity.date}</div>
-          ${activity.notes ? `<div style="font-size: 12px; color: #666; margin-top: 4px;">${activity.notes}</div>` : ''}
-        </div>
-        <div class="log-amount">${activity.amount} ${this.getActivityUnit(activity.type)}</div>
-      </div>
-    `).join('');
-  }
-
-  renderAllBadges() {
-    const badgesDiv = document.getElementById('all-badges');
-
-    if (!badgesDiv) return;
-
-    badgesDiv.innerHTML = this.badges.map(badge => `
-      <div class="badge ${badge.earned ? 'earned' : 'locked'}">
-        <div class="badge-icon">${badge.icon}</div>
-        <div class="badge-name">${badge.name}</div>
-        <div style="font-size: 10px; color: #666; margin-top: 5px;">${badge.requirement}</div>
-      </div>
-    `).join('');
-  }
-
-  updateDashboard() {
-    document.getElementById('active-goals-count').textContent = this.goals.filter(g => g.status === 'active').length;
-    document.getElementById('total-activities-count').textContent = this.activities.length;
-    document.getElementById('badges-earned-count').textContent = this.badges.filter(b => b.earned).length;
-
-    this.renderDashboardGoals();
-    this.renderDashboardActivities();
-    this.renderDashboardBadges();
-  }
-
-  renderDashboardGoals() {
-    const activeGoalsList = document.getElementById('active-goals-list');
-    if (!activeGoalsList) return;
-
-    const activeGoals = this.goals.filter(g => g.status === 'active').slice(0, 3);
-
-    if (activeGoals.length === 0) {
-      activeGoalsList.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">🎯</div>
-          <p>No active goals. Create a goal to start tracking!</p>
-        </div>
-      `;
-      return;
-    }
-
-    activeGoalsList.innerHTML = activeGoals.map(goal => {
-      const progress = (goal.current / goal.target * 100).toFixed(1);
-      const daysLeft = Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
-
-      return `
-        <div class="goal-item">
-          <h3>${goal.name}</h3>
-          <div class="goal-details">
-            ${this.getActivityLabel(goal.activity)} • ${daysLeft} days left
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar" style="width: ${Math.min(progress, 100)}%">
-              ${progress}%
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  renderDashboardActivities() {
-    const recentList = document.getElementById('recent-activity-list');
-    if (!recentList) return;
-
-    const recentActivities = [...this.activities].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-
-    if (recentActivities.length === 0) {
-      recentList.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">📝</div>
-          <p>No activities yet. Log your first workout!</p>
-        </div>
-      `;
-      return;
-    }
-
-    recentList.innerHTML = recentActivities.map(activity => `
-      <div class="log-entry">
-        <div class="log-info">
-          <div class="log-activity">${this.getActivityLabel(activity.type)}</div>
-          <div class="log-date">${activity.date}</div>
-        </div>
-        <div class="log-amount">${activity.amount} ${this.getActivityUnit(activity.type)}</div>
-      </div>
-    `).join('');
-  }
-
-  renderDashboardBadges() {
-    const dashboardBadges = document.getElementById('dashboard-badges');
-    if (!dashboardBadges) return;
-
-    const earnedBadges = this.badges.filter(b => b.earned).slice(-4);
-
-    if (earnedBadges.length === 0) {
-      dashboardBadges.innerHTML = `
-        <div class="empty-state" style="grid-column: 1/-1;">
-          <div class="empty-state-icon">🏅</div>
-          <p>No badges earned yet. Keep working out!</p>
-        </div>
-      `;
-      return;
-    }
-
-    dashboardBadges.innerHTML = earnedBadges.map(badge => `
-      <div class="badge earned">
-        <div class="badge-icon">${badge.icon}</div>
-        <div class="badge-name">${badge.name}</div>
-      </div>
-    `).join('');
   }
 
   getActivityLabel(type) {
@@ -416,18 +176,216 @@ class FitnessTracker {
   getActivityUnit(type) {
     const units = {
       'pushups': 'reps',
-      'planks': 'sec',
+      'planks': 'seconds',
       'crunches': 'reps',
-      'bike': 'min',
-      'jog': 'mi',
-      'walk': 'mi',
-      'weights': 'lbs'
+      'bike': 'minutes',
+      'jog': 'miles',
+      'walk': 'miles',
+      'weights': 'minutes'
     };
     return units[type] || '';
   }
 
+  renderGoals() {
+    const goalsList = document.getElementById('goals-list');
+    if (!goalsList) return;
+
+    if (this.goals.length === 0) {
+      goalsList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🎯</div>
+          <p>No fitness goals yet. Create your first goal!</p>
+        </div>
+      `;
+      return;
+    }
+
+    goalsList.innerHTML = this.goals
+      .sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate))
+      .map(goal => {
+        const progress = goal.target > 0 ? (goal.current / goal.target * 100) : 0;
+        const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
+
+        return `
+          <div class="fitness-goal-item">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+              <div>
+                <h3 style="margin-bottom: 5px;">${goal.name}</h3>
+                <div style="font-size: 13px; color: #666;">
+                  ${this.getActivityLabel(goal.activity)} • Target: ${goal.target} ${this.getActivityUnit(goal.activity)}
+                </div>
+              </div>
+              <span class="status-badge ${goal.status === 'active' ? 'status-active' : 'status-completed'}">
+                ${goal.status === 'active' ? 'Active' : 'Completed'}
+              </span>
+            </div>
+
+            <div class="progress-bar-container">
+              <div class="progress-bar" style="width: ${Math.min(progress, 100)}%">
+                ${progress.toFixed(1)}%
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; color: #666;">
+              <span>${goal.current} / ${goal.target} ${this.getActivityUnit(goal.activity)}</span>
+              <span>${goal.status === 'active' ? `${Math.max(daysLeft, 0)} days left` : `Completed ${goal.completedDate}`}</span>
+            </div>
+
+            <button class="fitness-btn fitness-btn-small fitness-btn-danger" style="margin-top: 10px;" onclick="fitnessApp.deleteGoal(${goal.id})">Delete</button>
+          </div>
+        `;
+      }).join('');
+  }
+
+  renderActivityHistory() {
+    const historyList = document.getElementById('activity-history');
+    if (!historyList) return;
+
+    if (this.activities.length === 0) {
+      historyList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📝</div>
+          <p>No activities logged yet. Log your first activity!</p>
+        </div>
+      `;
+      return;
+    }
+
+    historyList.innerHTML = this.activities
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 20)
+      .map(activity => `
+        <div class="activity-item">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; color: #333; margin-bottom: 3px;">
+                ${this.getActivityLabel(activity.type)}
+              </div>
+              <div style="font-size: 13px; color: #666;">
+                ${activity.amount} ${this.getActivityUnit(activity.type)}
+                ${activity.notes ? ` • ${activity.notes}` : ''}
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 12px; color: #999; margin-bottom: 5px;">
+                ${this.formatDate(activity.date)}
+              </div>
+              <button class="fitness-btn fitness-btn-small fitness-btn-danger" onclick="fitnessApp.deleteActivity(${activity.id})">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+  }
+
+  renderAllBadges() {
+    const badgesList = document.getElementById('all-badges');
+    if (!badgesList) return;
+
+    const earnedBadges = this.badges.filter(b => b.earned);
+    const unearnedBadges = this.badges.filter(b => !b.earned);
+
+    badgesList.innerHTML = `
+      ${earnedBadges.length > 0 ? `
+        <h3 style="margin-bottom: 15px;">Earned Badges (${earnedBadges.length}/${this.badges.length})</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+          ${earnedBadges.map(badge => `
+            <div class="badge-card earned">
+              <div class="badge-icon">${badge.icon}</div>
+              <div class="badge-name">${badge.name}</div>
+              <div class="badge-requirement">${badge.requirement}</div>
+              <div style="font-size: 11px; color: #10b981; margin-top: 5px;">
+                Earned ${this.formatDate(badge.earnedDate)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      ${unearnedBadges.length > 0 ? `
+        <h3 style="margin-bottom: 15px; color: #999;">Locked Badges</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+          ${unearnedBadges.map(badge => `
+            <div class="badge-card">
+              <div class="badge-icon" style="opacity: 0.3;">${badge.icon}</div>
+              <div class="badge-name" style="color: #999;">${badge.name}</div>
+              <div class="badge-requirement">${badge.requirement}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  updateDashboard() {
+    const activeGoals = this.goals.filter(g => g.status === 'active').length;
+    const completedGoals = this.goals.filter(g => g.status === 'completed').length;
+    const totalActivities = this.activities.length;
+    const earnedBadges = this.badges.filter(b => b.earned).length;
+
+    document.getElementById('active-goals-count').textContent = activeGoals;
+    document.getElementById('completed-goals-count').textContent = completedGoals;
+    document.getElementById('total-activities-count').textContent = totalActivities;
+    document.getElementById('earned-badges-count').textContent = `${earnedBadges}/${this.badges.length}`;
+
+    this.renderRecentActivities();
+    this.renderEarnedBadges();
+  }
+
+  renderRecentActivities() {
+    const recentDiv = document.getElementById('recent-activities');
+    if (!recentDiv) return;
+
+    const recent = this.activities
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    if (recent.length === 0) {
+      recentDiv.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🏃</div>
+          <p>No activities yet. Start logging!</p>
+        </div>
+      `;
+      return;
+    }
+
+    recentDiv.innerHTML = recent.map(activity => `
+      <div class="activity-item" style="margin-bottom: 10px;">
+        <div style="font-weight: 500; color: #333;">${this.getActivityLabel(activity.type)}</div>
+        <div style="font-size: 13px; color: #666;">
+          ${activity.amount} ${this.getActivityUnit(activity.type)} • ${this.formatDate(activity.date)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  renderEarnedBadges() {
+    const badgesDiv = document.getElementById('earned-badges-display');
+    if (!badgesDiv) return;
+
+    const earned = this.badges.filter(b => b.earned);
+
+    if (earned.length === 0) {
+      badgesDiv.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🏆</div>
+          <p>No badges earned yet. Keep working out!</p>
+        </div>
+      `;
+      return;
+    }
+
+    badgesDiv.innerHTML = earned.map(badge => `
+      <div class="badge-card earned" style="text-align: center;">
+        <div style="font-size: 40px; margin-bottom: 5px;">${badge.icon}</div>
+        <div style="font-weight: 600; color: #333; font-size: 14px;">${badge.name}</div>
+      </div>
+    `).join('');
+  }
+
   refresh() {
-    this.goals = StorageManager.get('fitness-goals') || [];
+    super.refresh();
+    this.goals = this.data;
     this.activities = StorageManager.get('fitness-activities') || [];
     this.badges = StorageManager.get('fitness-badges') || DataManager.getDefaultFitnessBadges();
     this.updateDashboard();

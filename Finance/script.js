@@ -3,28 +3,15 @@
  * Expense tracking and budget management app
  */
 
-class FinanceApp {
+class FinanceApp extends BaseApp {
   constructor() {
-    this.expenses = StorageManager.get('finance-expenses') || [];
+    super('finance-expenses');
+
+    this.expenses = this.data;
     this.budgets = StorageManager.get('finance-budgets') || [];
     this.categories = StorageManager.get('finance-categories') || DataManager.getDefaultFinanceCategories();
     this.selectedCategory = 'all';
-
-    this.init();
   }
-
-  init() {
-    this.setupEventListeners();
-    this.setupDefaultDates();
-    this.renderCategories();
-    this.updateDashboard();
-
-    // Listen for data changes
-    StorageManager.onChange('finance-*', () => {
-      this.refresh();
-    });
-  }
-
 
   setupEventListeners() {
     const expenseForm = document.getElementById('expense-form');
@@ -48,11 +35,9 @@ class FinanceApp {
     });
   }
 
-  setupDefaultDates() {
-    const expenseDate = document.getElementById('expense-date');
-    if (expenseDate) {
-      expenseDate.value = new Date().toISOString().split('T')[0];
-    }
+  init() {
+    super.init();
+    this.renderCategories();
   }
 
   renderCategories() {
@@ -81,17 +66,16 @@ class FinanceApp {
   handleExpenseSubmit(e) {
     e.preventDefault();
 
-    const expense = {
-      id: Date.now(),
+    const expense = this.createItem({
       description: document.getElementById('expense-description').value,
       category: document.getElementById('expense-category').value,
       amount: parseFloat(document.getElementById('expense-amount').value),
       date: document.getElementById('expense-date').value,
       notes: document.getElementById('expense-notes').value
-    };
+    });
 
     this.expenses.push(expense);
-    StorageManager.set('finance-expenses', this.expenses);
+    this.save();
 
     e.target.reset();
     this.setupDefaultDates();
@@ -123,10 +107,8 @@ class FinanceApp {
 
   deleteExpense(expenseId) {
     if (confirm('Delete this expense?')) {
-      this.expenses = this.expenses.filter(e => e.id !== expenseId);
-      StorageManager.set('finance-expenses', this.expenses);
+      this.deleteById(expenseId);
       this.renderExpenses();
-      this.updateDashboard();
     }
   }
 
@@ -194,11 +176,11 @@ class FinanceApp {
               ${this.getCategoryIcon(expense.category)} ${this.getCategoryName(expense.category)}
             </div>
             <div class="expense-description">${expense.description}</div>
-            <div class="expense-date">${expense.date}</div>
+            <div class="expense-date">${this.formatDate(expense.date)}</div>
             ${expense.notes ? `<div style="font-size: 11px; color: #999; margin-top: 4px;">${expense.notes}</div>` : ''}
           </div>
           <div class="expense-amount">
-            <div class="expense-value">$${expense.amount.toFixed(2)}</div>
+            <div class="expense-value">${this.formatCurrency(expense.amount)}</div>
           </div>
           <div class="expense-actions">
             <button class="finance-btn finance-btn-small finance-btn-danger" onclick="financeApp.deleteExpense(${expense.id})">Delete</button>
@@ -257,8 +239,8 @@ class FinanceApp {
     const allTimeTotal = this.expenses.reduce((sum, e) => sum + e.amount, 0);
     const uniqueCategories = [...new Set(this.expenses.map(e => e.category))].length;
 
-    document.getElementById('monthly-expenses').textContent = '$' + monthlyTotal.toFixed(2);
-    document.getElementById('total-expenses').textContent = '$' + allTimeTotal.toFixed(2);
+    document.getElementById('monthly-expenses').textContent = this.formatCurrency(monthlyTotal);
+    document.getElementById('total-expenses').textContent = this.formatCurrency(allTimeTotal);
     document.getElementById('expense-count').textContent = this.expenses.length;
     document.getElementById('category-count').textContent = uniqueCategories;
 
@@ -290,10 +272,10 @@ class FinanceApp {
           <div class="expense-category" style="margin-bottom: 2px;">
             ${this.getCategoryIcon(expense.category)} ${expense.description}
           </div>
-          <div class="expense-date">${expense.date}</div>
+          <div class="expense-date">${this.formatDate(expense.date)}</div>
         </div>
         <div class="expense-amount">
-          <div class="expense-value" style="font-size: 14px;">$${expense.amount.toFixed(2)}</div>
+          <div class="expense-value" style="font-size: 14px;">${this.formatCurrency(expense.amount)}</div>
         </div>
       </div>
     `).join('');
@@ -328,7 +310,7 @@ class FinanceApp {
           .map(([catId, total]) => `
             <li class="category-item">
               <span class="category-name">${this.getCategoryIcon(catId)} ${this.getCategoryName(catId)}</span>
-              <span class="category-amount">$${total.toFixed(2)}</span>
+              <span class="category-amount">${this.formatCurrency(total)}</span>
             </li>
           `).join('')}
       </ul>
@@ -336,10 +318,11 @@ class FinanceApp {
   }
 
   refresh() {
-    this.expenses = StorageManager.get('finance-expenses') || [];
+    super.refresh();
+    this.expenses = this.data;
     this.budgets = StorageManager.get('finance-budgets') || [];
     this.categories = StorageManager.get('finance-categories') || DataManager.getDefaultFinanceCategories();
-    this.updateDashboard();
+    this.renderExpenses();
   }
 }
 
