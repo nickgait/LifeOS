@@ -115,6 +115,13 @@
                                         <input type="number" id="cash-reserves" name="cash-reserves" min="0" step="100" required>
                                     </div>
                                 </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="monthly-savings">Monthly Savings to Cash Reserves ($)</label>
+                                        <input type="number" id="monthly-savings" name="monthly-savings" min="0" step="50" required>
+                                        <small>Amount automatically added to cash reserves each month</small>
+                                    </div>
+                                </div>
                             </fieldset>
 
                             <fieldset>
@@ -336,6 +343,11 @@
                                 <div class="stat-value" id="spouse-projected">$0</div>
                                 <div class="stat-subtitle">At spouse's retirement</div>
                             </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Projected Cash Reserves</div>
+                                <div class="stat-value" id="projected-cash">$0</div>
+                                <div class="stat-subtitle">With monthly savings</div>
+                            </div>
                         </div>
 
                         <div class="charts-container">
@@ -358,13 +370,43 @@
                     <h2>Portfolio Analysis</h2>
 
                     <div class="analysis-section">
+                        <h3>Cash Holdings</h3>
+                        <div class="holdings-input">
+                            <p class="section-note">Enter your uninvested cash balances to include in portfolio allocation analysis.</p>
+                            <div class="cash-input-row">
+                                <label>Brokerage Cash:</label>
+                                <input type="number" id="brokerage-cash" placeholder="0.00" step="0.01" onchange="planner.updateCashHolding('brokerage', parseFloat(this.value) || 0)">
+                                <label>401(k) Cash:</label>
+                                <input type="number" id="retirement-cash" placeholder="0.00" step="0.01" onchange="planner.updateCashHolding('retirement', parseFloat(this.value) || 0)">
+                                <label>Total Cash:</label>
+                                <div id="total-cash-display" class="cash-total">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
                         <h3>Brokerage Account Holdings</h3>
                         <div class="holdings-input">
-                            <p class="section-note">Enter your current holdings to analyze concentration risk, sector balance, and compliance status.</p>
+                            <p class="section-note">Enter your ticker symbol and number of shares. Click the refresh button (↻) to fetch current prices. <strong>Note:</strong> Prices do not auto-update - use the refresh buttons to get the latest market prices.</p>
+                            <div class="holdings-header">
+                                <span>Ticker</span>
+                                <span>Name</span>
+                                <span>Shares</span>
+                                <span>Price</span>
+                                <span>Value</span>
+                                <span>Updated</span>
+                                <span>Sector</span>
+                                <span class="sharia-only">Compliant</span>
+                                <span></span>
+                            </div>
                             <div id="brokerage-holdings-container">
                                 <!-- Holdings will be dynamically added -->
                             </div>
-                            <button type="button" class="btn-secondary" onclick="addHolding('brokerage')">+ Add Holding</button>
+                            <div class="holdings-actions">
+                                <button type="button" class="btn-secondary" onclick="planner.addHolding('brokerage')">+ Add Holding</button>
+                                <button type="button" class="btn-primary" onclick="planner.refreshAllPrices('brokerage')">↻ Refresh All Prices</button>
+                            </div>
+                            <div id="brokerage-refresh-status" class="refresh-status" style="display: none;"></div>
                         </div>
 
                         <div id="brokerage-analysis" class="analysis-results" style="display: none;">
@@ -386,16 +428,40 @@
                             <div class="chart-wrapper">
                                 <canvas id="sectorChart"></canvas>
                             </div>
+
+                            <!-- Cash Rebalancing Recommendations -->
+                            <div id="cash-rebalancing" style="margin-top: 2rem; display: none;">
+                                <h4>Cash Investment Recommendations</h4>
+                                <div class="analysis-card">
+                                    <div class="analysis-title">Suggested Purchases to Rebalance</div>
+                                    <div id="rebalancing-suggestions" class="analysis-content"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="analysis-section">
                         <h3>401(k) Holdings</h3>
                         <div class="holdings-input">
+                            <div class="holdings-header">
+                                <span>Ticker</span>
+                                <span>Name</span>
+                                <span>Shares</span>
+                                <span>Price</span>
+                                <span>Value</span>
+                                <span>Updated</span>
+                                <span>Sector</span>
+                                <span class="sharia-only">Compliant</span>
+                                <span></span>
+                            </div>
                             <div id="retirement-holdings-container">
                                 <!-- Holdings will be dynamically added -->
                             </div>
-                            <button type="button" class="btn-secondary" onclick="addHolding('retirement')">+ Add Holding</button>
+                            <div class="holdings-actions">
+                                <button type="button" class="btn-secondary" onclick="planner.addHolding('retirement')">+ Add Holding</button>
+                                <button type="button" class="btn-primary" onclick="planner.refreshAllPrices('retirement')">↻ Refresh All Prices</button>
+                            </div>
+                            <div id="retirement-refresh-status" class="refresh-status" style="display: none;"></div>
                         </div>
 
                         <div id="retirement-analysis" class="analysis-results" style="display: none;">
@@ -432,11 +498,11 @@
                     <div class="scenario-selector">
                         <h3>Select Return Scenario</h3>
                         <div class="scenario-buttons">
-                            <button class="scenario-btn" onclick="setScenario('conservative')" data-scenario="conservative">
+                            <button class="scenario-btn active" onclick="setScenario('conservative')" data-scenario="conservative">
                                 <span class="scenario-rate">6%</span>
                                 <span class="scenario-name">Conservative</span>
                             </button>
-                            <button class="scenario-btn active" onclick="setScenario('moderate')" data-scenario="moderate">
+                            <button class="scenario-btn" onclick="setScenario('moderate')" data-scenario="moderate">
                                 <span class="scenario-rate">7.5%</span>
                                 <span class="scenario-name">Moderate</span>
                             </button>
@@ -519,6 +585,10 @@
                             <div class="detail-card accent">
                                 <div class="detail-label">Annual Surplus/Shortfall</div>
                                 <div class="detail-value" id="annual-surplus">$0</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label">Cash Reserves at Retirement</div>
+                                <div class="detail-value" id="projected-retirement-cash">$0</div>
                             </div>
                         </div>
                     </div>
@@ -868,10 +938,18 @@
                     </div>
 
                     <div class="options-section">
-                        <h3>Schwab Availability Note</h3>
+                        <h3>Brokerage Availability</h3>
+
                         <div class="info-box">
-                            <p><strong>Charles Schwab:</strong> As of 2024, Schwab does not offer dedicated Sharia-compliant investment products or Islamic banking services. However, you can purchase individual stocks screened through Zoya, and ETFs like SPUS, HLAL, and SPSK through a standard Schwab brokerage account.</p>
-                            <p class="sharia-only"><strong>For SDBA through Empower:</strong> You can typically access these Sharia-compliant ETFs through your Self-Directed Brokerage Account if available in your 401(k) plan.</p>
+                            <p><strong>Major Brokerages:</strong> While none of the major U.S. brokerages (Fidelity, Vanguard, Charles Schwab, E*TRADE, TD Ameritrade, Interactive Brokers, Robinhood) offer their own Sharia-compliant ETF products, all of them provide access to third-party Islamic ETFs including SPUS, HLAL, SPSK, and SPRE through standard brokerage accounts with commission-free trading.</p>
+
+                            <p class="sharia-only"><strong>For 401(k) Accounts:</strong> If your employer's 401(k) plan includes a Self-Directed Brokerage Account (SDBA) option through providers like Fidelity, Schwab, or Empower, you can typically access these Sharia-compliant ETFs within your retirement account.</p>
+
+                            <p><strong>Note:</strong> Most brokerage-branded ETFs (like Vanguard's own funds) are not fully halal as they may include interest-based or non-compliant stocks. Focus on the dedicated Islamic ETFs mentioned above.</p>
+                        </div>
+
+                        <div class="info-box" style="margin-top: 15px;">
+                            <p><strong>Specialized Islamic Platforms:</strong> For investors seeking deeper Shariah compliance insights, dedicated Islamic investing platforms like <strong>Zoya</strong> provide detailed compliance information, full holdings lists with purification calculations, and portfolio screening tools that traditional brokerages typically don't offer.</p>
                         </div>
                     </div>
                 </div>

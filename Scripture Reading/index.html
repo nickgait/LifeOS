@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeOS - Scripture Reading</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container scripture-page">
+        <!-- Header -->
+        <div class="scripture-header">
+            <div>
+                <h1>📖 Scripture Reading</h1>
+                <div class="subtitle">Track your Bible and Quran reading plans</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard', event)">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('plans', event)">Plans</button>
+                <button class="nav-tab" onclick="switchTab('log', event)">Log Reading</button>
+                <button class="nav-tab" onclick="switchTab('history', event)">History</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content active">
+            <div class="scripture-content">
+                <!-- Active Plan Card -->
+                <div class="scripture-card" id="active-plan-card">
+                    <h2>Active Plan</h2>
+                    <div id="no-active-plan" class="empty-state">
+                        <p>📚 No active plan yet</p>
+                        <button class="scripture-btn" onclick="switchTab('plans', event)">Create Your First Plan</button>
+                    </div>
+                    <div id="active-plan-display" style="display: none;">
+                        <div class="plan-summary">
+                            <h3 id="active-plan-name">Complete Bible - 1 Year</h3>
+                            <div class="plan-meta">
+                                <span id="active-plan-type">Bible</span> •
+                                <span id="active-plan-dates">Jan 1 - Dec 31, 2025</span>
+                            </div>
+                        </div>
+
+                        <div class="progress-section">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="plan-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span id="progress-percentage">0%</span>
+                                <span id="progress-verses">0 / 31,102 verses</span>
+                            </div>
+                        </div>
+
+                        <div class="status-indicator" id="status-indicator">
+                            <div class="status-badge on-track">✓ On Track</div>
+                            <p id="status-message">You're right on schedule!</p>
+                        </div>
+
+                        <div class="current-position">
+                            <h4>📍 Current Position</h4>
+                            <p class="position-text" id="current-position-text">Genesis 1:1</p>
+                            <a href="#" id="dashboard-read-link" target="_blank" style="display: inline-block; margin-top: 10px; color: #667eea; text-decoration: none; font-weight: 500;">
+                                📖 Open in BibleGateway →
+                            </a>
+                        </div>
+
+                        <div class="daily-target">
+                            <h4>📊 Daily Target</h4>
+                            <div class="target-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="daily-target-verses">85</div>
+                                    <div class="stat-label">Verses/Day</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="daily-target-time">~43 min</div>
+                                    <div class="stat-label">Est. Time</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="days-remaining">365</div>
+                                    <div class="stat-label">Days Left</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px; padding: 12px; background: #f7fafc; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 0.85em; color: #718096; margin-bottom: 5px;">📍 Read to this verse today:</div>
+                                <div style="font-size: 1.1em; font-weight: 600; color: #667eea;" id="daily-target-endpoint">Genesis 3:21</div>
+                            </div>
+                        </div>
+
+                        <div class="completion-dates">
+                            <h4>📅 Completion Timeline</h4>
+                            <div class="date-comparison">
+                                <div class="date-item">
+                                    <div class="date-label">Original Target</div>
+                                    <div class="date-value" id="original-target-date">Dec 31, 2025</div>
+                                </div>
+                                <div class="date-item projected">
+                                    <div class="date-label">Projected Finish</div>
+                                    <div class="date-value" id="projected-finish-date">Dec 31, 2025</div>
+                                </div>
+                            </div>
+                            <div class="date-variance" id="date-variance-message">
+                                You're on track to finish on time!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Card -->
+                <div class="scripture-card">
+                    <h2>📈 Your Stats</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-readings">0</div>
+                            <div class="stat-label">Total Readings</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="current-streak">0</div>
+                            <div class="stat-label">Day Streak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-verses-read">0</div>
+                            <div class="stat-label">Total Verses</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-time-spent">0h</div>
+                            <div class="stat-label">Time Spent</div>
+                        </div>
+                    </div>
+
+                    <div class="quick-action">
+                        <button class="scripture-btn scripture-btn-primary" onclick="switchTab('log', event)">
+                            📝 Log Today's Reading
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plans Tab -->
+        <div id="plans-tab" class="tab-content">
+            <div class="scripture-card">
+                <h2>Create New Reading Plan</h2>
+                <form id="plan-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Scripture Type</label>
+                            <select id="plan-scripture-type" required>
+                                <option value="bible">Bible</option>
+                                <option value="quran">Quran</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Plan Type</label>
+                            <select id="plan-type" required>
+                                <option value="complete">Complete Bible/Quran</option>
+                                <option value="old-testament">Old Testament Only</option>
+                                <option value="new-testament">New Testament Only</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="date" id="plan-start-date" data-default="today" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Duration</label>
+                            <select id="plan-duration" required>
+                                <option value="30">30 Days (1 Month)</option>
+                                <option value="90">90 Days (3 Months)</option>
+                                <option value="180">180 Days (6 Months)</option>
+                                <option value="365" selected>365 Days (1 Year)</option>
+                                <option value="730">730 Days (2 Years)</option>
+                                <option value="custom">Custom...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="custom-date-group" style="display: none;">
+                        <label>Target Completion Date</label>
+                        <input type="date" id="plan-target-date">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Plan Name (Optional)</label>
+                        <input type="text" id="plan-name" placeholder="e.g., My 2025 Bible Reading">
+                    </div>
+
+                    <div class="plan-preview" id="plan-preview" style="display: none;">
+                        <h4>📋 Plan Summary</h4>
+                        <div id="plan-preview-content"></div>
+                    </div>
+
+                    <button type="submit" class="scripture-btn scripture-btn-primary">Create Plan</button>
+                </form>
+            </div>
+
+            <div class="scripture-card" id="plans-list-card">
+                <h2>Your Plans</h2>
+                <div id="plans-list">
+                    <div class="empty-state">No plans created yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Reading Tab -->
+        <div id="log-tab" class="tab-content">
+            <div class="scripture-card">
+                <h2>Log Your Reading</h2>
+
+                <div id="no-plan-warning" class="warning-box">
+                    ⚠️ You need to create a reading plan first.
+                    <button class="scripture-btn" onclick="switchTab('plans', event)">Create Plan</button>
+                </div>
+
+                <div id="log-reading-form-container" style="display: none;">
+                    <div class="active-plan-indicator">
+                        <strong>Active Plan:</strong> <span id="log-plan-name">Complete Bible - 1 Year</span>
+                    </div>
+
+                    <div class="current-position-box">
+                        <h4>📍 Start Reading From:</h4>
+                        <p class="position-display" id="log-start-position">Genesis 1:1</p>
+                        <div style="margin-top: 15px;">
+                            <a href="#" id="read-online-link" target="_blank" class="scripture-btn scripture-btn-secondary" style="display: inline-block; text-decoration: none; padding: 8px 16px; font-size: 0.9em;">
+                                📖 Read Online
+                            </a>
+                        </div>
+                    </div>
+
+                    <form id="reading-log-form">
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="reading-date" data-default="today" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>I Read To:</label>
+                                <div class="position-inputs">
+                                    <select id="end-book" required>
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                    <input type="number" id="end-chapter" placeholder="Ch" min="1" required>
+                                    <input type="number" id="end-verse" placeholder="Vs" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quick-actions">
+                            <p><strong>Quick Actions:</strong></p>
+                            <button type="button" class="scripture-btn scripture-btn-secondary" id="mark-daily-target">
+                                Mark Daily Target Complete
+                            </button>
+                            <div style="margin-top: 12px; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #667eea;">
+                                <div style="font-size: 0.85em; color: #718096; margin-bottom: 3px;">💡 To meet your daily target, read to:</div>
+                                <div style="font-size: 0.95em; font-weight: 600; color: #667eea;" id="log-target-endpoint">Genesis 3:21</div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Reading Time (minutes)</label>
+                            <input type="number" id="reading-duration" placeholder="Optional" min="1">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Notes & Reflections</label>
+                            <textarea id="reading-notes" rows="6" placeholder="What stood out to you? Any insights or questions?"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tags</label>
+                            <input type="text" id="reading-tags" placeholder="e.g., creation, faith, prayer (comma separated)">
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="save-to-journal">
+                                Save notes to Journal module
+                            </label>
+                        </div>
+
+                        <button type="submit" class="scripture-btn scripture-btn-primary">Log Reading</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history-tab" class="tab-content">
+            <div class="scripture-card">
+                <div class="history-header">
+                    <h2>Reading History</h2>
+                    <div class="search-box">
+                        <input type="text" id="history-search" placeholder="Search notes, tags, or references...">
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <select id="history-filter">
+                        <option value="all">All Readings</option>
+                        <option value="bible">Bible Only</option>
+                        <option value="quran">Quran Only</option>
+                        <option value="this-week">This Week</option>
+                        <option value="this-month">This Month</option>
+                    </select>
+                </div>
+
+                <div id="history-list">
+                    <div class="empty-state">No reading history yet. Start logging your readings!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load shared scripts -->
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/theme-manager.js"></script>
+    <script src="../shared/data-manager.js"></script>
+    <script src="../shared/base-app.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
