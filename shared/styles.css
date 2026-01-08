@@ -580,3 +580,103 @@ a:hover {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* App-specific wrapper classes (consolidated) */
+.app-page {
+  padding: 20px 0;
+}
+
+.app-header {
+  background: white;
+  padding: 20px 30px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-medium);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header h1 {
+  color: var(--color-primary);
+  font-size: 28px;
+  margin: 0;
+}
+
+.app-header .subtitle {
+  color: var(--color-text);
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.app-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.app-card {
+  background: white;
+  padding: 25px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-medium);
+}
+
+.app-card h2 {
+  color: var(--color-dark);
+  margin-bottom: 20px;
+  font-size: 20px;
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 10px;
+}
+
+/* Button styles */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-heavy);
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: var(--color-text);
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-block {
+  width: 100%;
+  margin-top: 10px;
+}

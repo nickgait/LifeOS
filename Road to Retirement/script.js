@@ -4,6 +4,7 @@ class RetirementPlanner {
     constructor() {
         this.retirement401kData = null;
         this.savingsData = null;
+        this.portfolioData = null;
         this.growthChart = null;
         this.breakdownChart = null;
         this.init();
@@ -13,11 +14,13 @@ class RetirementPlanner {
         this.loadData();
         this.attachEventListeners();
         this.updateDashboard();
+        this.restorePortfolioDisplay();
     }
 
     loadData() {
         this.retirement401kData = StorageManager.get('retirement-401k');
         this.savingsData = StorageManager.get('retirement-savings');
+        this.portfolioData = StorageManager.get('retirement-portfolio');
     }
 
     saveData() {
@@ -32,6 +35,12 @@ class RetirementPlanner {
         } else {
             // Remove savings data from storage
             StorageManager.remove('retirement-savings');
+        }
+        if (this.portfolioData) {
+            StorageManager.set('retirement-portfolio', this.portfolioData);
+        } else {
+            // Remove portfolio data from storage
+            StorageManager.remove('retirement-portfolio');
         }
         this.updateDashboard();
     }
@@ -272,6 +281,342 @@ class RetirementPlanner {
         }, 100);
     }
 
+    // ==================== PORTFOLIO TRACKER ====================
+
+    async fetchSP500Performance(updateDate) {
+        try {
+            const yearStart = '2026-01-01';
+            const apiKey = 'demo'; // Using demo key - users can add their own Alpha Vantage key if needed
+
+            // Fetch S&P 500 data using ^GSPC (S&P 500 index symbol)
+            const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=SPY&apikey=${apiKey}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data['Time Series (Daily)']) {
+                const timeSeries = data['Time Series (Daily)'];
+
+                // Get price on Jan 1, 2026 (or closest available date)
+                const startPrice = this.getClosestPrice(timeSeries, yearStart);
+
+                // Get price on update date (or closest available date)
+                const endPrice = this.getClosestPrice(timeSeries, updateDate);
+
+                if (startPrice && endPrice) {
+                    const sp500Return = ((endPrice - startPrice) / startPrice) * 100;
+                    return {
+                        startPrice,
+                        endPrice,
+                        return: sp500Return,
+                        available: true
+                    };
+                }
+            }
+
+            // If API fails or data unavailable, return null
+            return { available: false };
+        } catch (error) {
+            console.log('S&P 500 data fetch failed:', error);
+            return { available: false };
+        }
+    }
+
+    getClosestPrice(timeSeries, targetDate) {
+        // Try exact date first
+        if (timeSeries[targetDate]) {
+            return parseFloat(timeSeries[targetDate]['4. close']);
+        }
+
+        // Find closest available date (within 7 days)
+        const target = new Date(targetDate);
+        for (let i = 0; i <= 7; i++) {
+            const checkDate = new Date(target);
+            checkDate.setDate(checkDate.getDate() - i);
+            const dateStr = checkDate.toISOString().split('T')[0];
+
+            if (timeSeries[dateStr]) {
+                return parseFloat(timeSeries[dateStr]['4. close']);
+            }
+        }
+
+        return null;
+    }
+
+    getFinancialPlannerTotal() {
+        // Fetch holdings from Financial Planner
+        const holdings = StorageManager.get('financial-planner-holdings');
+        const cashHoldings = StorageManager.get('financial-planner-cash');
+
+        if (!holdings) {
+            return null;
+        }
+
+        let total = 0;
+
+        // Calculate brokerage total
+        if (holdings.brokerage) {
+            const brokerageValue = holdings.brokerage.reduce((sum, h) => sum + ((h.shares || 0) * (h.price || 0)), 0);
+            const brokerageCash = cashHoldings?.brokerage || 0;
+            total += brokerageValue + brokerageCash;
+        }
+
+        // Calculate retirement total
+        if (holdings.retirement) {
+            const retirementValue = holdings.retirement.reduce((sum, h) => sum + ((h.shares || 0) * (h.price || 0)), 0);
+            const retirementCash = cashHoldings?.retirement || 0;
+            total += retirementValue + retirementCash;
+        }
+
+        return total;
+    }
+
+    async calculatePortfolio(formData) {
+        const startingBalance = parseFloat(formData.startingBalance);
+
+        // Get current balance from Financial Planner
+        const currentBalance = this.getFinancialPlannerTotal();
+
+        if (currentBalance === null) {
+            alert('No portfolio data found in Financial Planner. Please add your holdings in the Financial Planner app first.');
+            return null;
+        }
+
+        const updateDate = new Date(formData.updateDate);
+
+        // Fetch S&P 500 performance for comparison
+        const sp500Data = await this.fetchSP500Performance(formData.updateDate);
+
+        // Year start: January 1, 2026
+        const yearStart = new Date('2026-01-01');
+
+        // Calculate quarter start (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec)
+        const currentMonth = updateDate.getMonth(); // 0-11
+        const currentQuarter = Math.floor(currentMonth / 3); // 0-3
+        const quarterStartMonth = currentQuarter * 3;
+        const quarterStart = new Date(2026, quarterStartMonth, 1);
+
+        // Calculate month start
+        const monthStart = new Date(updateDate.getFullYear(), updateDate.getMonth(), 1);
+
+        // Get stored historical balances or initialize
+        let history = this.portfolioData?.history || [];
+
+        // Add current update to history if it's a new entry
+        const existingEntry = history.find(h => h.date === formData.updateDate);
+        if (!existingEntry) {
+            history.push({
+                date: formData.updateDate,
+                balance: currentBalance,
+                timestamp: updateDate.getTime()
+            });
+            // Sort by date
+            history.sort((a, b) => a.timestamp - b.timestamp);
+        } else {
+            existingEntry.balance = currentBalance;
+        }
+
+        // Find balances for different periods
+        const monthStartBalance = this.findClosestBalance(history, monthStart) || startingBalance;
+        const quarterStartBalance = this.findClosestBalance(history, quarterStart) || startingBalance;
+        const yearStartBalance = startingBalance;
+
+        // Calculate gains
+        const ytdGain = currentBalance - yearStartBalance;
+        const ytdGainPercent = (ytdGain / yearStartBalance) * 100;
+
+        const qtdGain = currentBalance - quarterStartBalance;
+        const qtdGainPercent = (qtdGain / quarterStartBalance) * 100;
+
+        const mtdGain = currentBalance - monthStartBalance;
+        const mtdGainPercent = (mtdGain / monthStartBalance) * 100;
+
+        return {
+            startingBalance: startingBalance,
+            currentBalance: currentBalance,
+            updateDate: formData.updateDate,
+            updateDateObj: updateDate,
+            monthStartBalance: monthStartBalance,
+            quarterStartBalance: quarterStartBalance,
+            yearStartBalance: yearStartBalance,
+            ytdGain: ytdGain,
+            ytdGainPercent: ytdGainPercent,
+            qtdGain: qtdGain,
+            qtdGainPercent: qtdGainPercent,
+            mtdGain: mtdGain,
+            mtdGainPercent: mtdGainPercent,
+            sp500Data: sp500Data,
+            history: history,
+            formData: formData
+        };
+    }
+
+    findClosestBalance(history, targetDate) {
+        if (!history || history.length === 0) return null;
+
+        const targetTime = targetDate.getTime();
+
+        // Find the entry closest to but not after the target date
+        let closestEntry = null;
+        for (let entry of history) {
+            if (entry.timestamp <= targetTime) {
+                if (!closestEntry || entry.timestamp > closestEntry.timestamp) {
+                    closestEntry = entry;
+                }
+            }
+        }
+
+        return closestEntry ? closestEntry.balance : null;
+    }
+
+    renderPortfolioResults(result) {
+        // Show results section
+        const resultsDiv = document.getElementById('portfolio-results');
+        resultsDiv.style.display = 'block';
+
+        // Update current balance
+        document.getElementById('portfolio-current').textContent = this.formatCurrency(result.currentBalance);
+        const currentGainClass = result.ytdGain >= 0 ? 'positive' : 'negative';
+        document.getElementById('portfolio-current-gain').innerHTML =
+            `<span class="${currentGainClass}">${this.formatGain(result.ytdGain)} (${this.formatPercent(result.ytdGainPercent)})</span>`;
+
+        // Update MTD
+        document.getElementById('portfolio-mtd-amount').textContent = this.formatCurrency(result.currentBalance);
+        const mtdClass = result.mtdGain >= 0 ? 'positive' : 'negative';
+        document.getElementById('portfolio-mtd-gain').innerHTML =
+            `<span class="${mtdClass}">${this.formatGain(result.mtdGain)} (${this.formatPercent(result.mtdGainPercent)})</span>`;
+
+        // Update QTD
+        document.getElementById('portfolio-qtd-amount').textContent = this.formatCurrency(result.currentBalance);
+        const qtdClass = result.qtdGain >= 0 ? 'positive' : 'negative';
+        document.getElementById('portfolio-qtd-gain').innerHTML =
+            `<span class="${qtdClass}">${this.formatGain(result.qtdGain)} (${this.formatPercent(result.qtdGainPercent)})</span>`;
+
+        // Update YTD
+        document.getElementById('portfolio-ytd-amount').textContent = this.formatCurrency(result.currentBalance);
+        const ytdClass = result.ytdGain >= 0 ? 'positive' : 'negative';
+        document.getElementById('portfolio-ytd-gain').innerHTML =
+            `<span class="${ytdClass}">${this.formatGain(result.ytdGain)} (${this.formatPercent(result.ytdGainPercent)})</span>`;
+
+        // Populate table
+        const tbody = document.querySelector('#portfolio-table tbody');
+        tbody.innerHTML = '';
+
+        const periods = [
+            { name: 'Year-to-Date (2026)', start: result.yearStartBalance, gain: result.ytdGain, percent: result.ytdGainPercent },
+            { name: 'Quarter-to-Date', start: result.quarterStartBalance, gain: result.qtdGain, percent: result.qtdGainPercent },
+            { name: 'Month-to-Date', start: result.monthStartBalance, gain: result.mtdGain, percent: result.mtdGainPercent }
+        ];
+
+        periods.forEach(period => {
+            const gainClass = period.gain >= 0 ? 'positive' : 'negative';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${period.name}</strong></td>
+                <td>${this.formatCurrency(period.start)}</td>
+                <td>${this.formatCurrency(result.currentBalance)}</td>
+                <td class="${gainClass}">${this.formatGain(period.gain)}</td>
+                <td class="${gainClass}">${this.formatPercent(period.percent)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Display S&P 500 comparison if available
+        if (result.sp500Data && result.sp500Data.available) {
+            this.renderSP500Comparison(result.ytdGainPercent, result.sp500Data);
+        } else {
+            document.getElementById('sp500-comparison').style.display = 'none';
+        }
+
+        // Store data
+        this.portfolioData = result;
+        this.saveData();
+
+        // Scroll to results
+        setTimeout(() => {
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+
+    renderSP500Comparison(portfolioReturn, sp500Data) {
+        const comparisonDiv = document.getElementById('sp500-comparison');
+        const yourReturnEl = document.getElementById('sp500-your-return');
+        const benchmarkReturnEl = document.getElementById('sp500-benchmark-return');
+        const differenceEl = document.getElementById('sp500-difference');
+        const messageEl = document.getElementById('sp500-message');
+
+        comparisonDiv.style.display = 'block';
+
+        // Display returns
+        yourReturnEl.textContent = this.formatPercent(portfolioReturn);
+        yourReturnEl.className = portfolioReturn >= 0 ? 'positive' : 'negative';
+
+        benchmarkReturnEl.textContent = this.formatPercent(sp500Data.return);
+        benchmarkReturnEl.className = sp500Data.return >= 0 ? 'positive' : 'negative';
+
+        // Calculate and display difference
+        const difference = portfolioReturn - sp500Data.return;
+        differenceEl.textContent = this.formatPercent(difference);
+        differenceEl.className = difference >= 0 ? 'positive' : 'negative';
+
+        // Display message
+        let message = '';
+        let messageClass = '';
+
+        if (difference > 0) {
+            messageClass = 'positive';
+            message = `🎉 Great job! Your portfolio is outperforming the S&P 500 by ${Math.abs(difference).toFixed(2)}%.`;
+        } else if (difference < 0) {
+            messageClass = 'negative';
+            message = `📊 Your portfolio is underperforming the S&P 500 by ${Math.abs(difference).toFixed(2)}%. Consider reviewing your holdings.`;
+        } else {
+            messageClass = 'neutral';
+            message = `📊 Your portfolio is tracking the S&P 500 exactly.`;
+        }
+
+        messageEl.textContent = message;
+        messageEl.style.background = difference > 0 ? '#d1fae5' : (difference < 0 ? '#fee2e2' : '#f3f4f6');
+        messageEl.style.color = difference > 0 ? '#065f46' : (difference < 0 ? '#991b1b' : '#374151');
+        messageEl.style.borderLeft = `4px solid ${difference > 0 ? '#10b981' : (difference < 0 ? '#ef4444' : '#9ca3af')}`;
+    }
+
+    formatGain(amount) {
+        const formatted = this.formatCurrency(Math.abs(amount));
+        return amount >= 0 ? `+${formatted}` : `-${formatted}`;
+    }
+
+    formatPercent(percent) {
+        const sign = percent >= 0 ? '+' : '-';
+        return `${sign}${Math.abs(percent).toFixed(2)}%`;
+    }
+
+    restorePortfolioDisplay() {
+        // Show Financial Planner total if available
+        this.updateFinancialPlannerStatus();
+
+        if (this.portfolioData) {
+            // Pre-fill the form
+            document.getElementById('starting-balance').value = this.portfolioData.startingBalance;
+            document.getElementById('update-date').value = this.portfolioData.updateDate;
+
+            // Show the results
+            this.renderPortfolioResults(this.portfolioData);
+        }
+    }
+
+    updateFinancialPlannerStatus() {
+        const total = this.getFinancialPlannerTotal();
+        const statusElement = document.getElementById('financial-planner-status');
+        const totalElement = document.getElementById('fp-current-total');
+
+        if (total !== null && total > 0) {
+            statusElement.style.display = 'block';
+            totalElement.textContent = this.formatCurrency(total);
+        } else {
+            statusElement.style.display = 'none';
+        }
+    }
+
     // ==================== SAVINGS CALCULATOR ====================
 
     calculateSavings(formData) {
@@ -400,9 +745,12 @@ class RetirementPlanner {
         const dashboardYears = document.getElementById('dashboard-years');
         const dashboardPensionCard = document.getElementById('dashboard-pension-card');
         const dashboardPension = document.getElementById('dashboard-pension');
+        const dashboardPortfolioCard = document.getElementById('dashboard-portfolio-card');
+        const dashboardPortfolio = document.getElementById('dashboard-portfolio');
+        const dashboardPortfolioGain = document.getElementById('dashboard-portfolio-gain');
         const dashboardEmpty = document.getElementById('dashboard-empty');
 
-        if (!this.retirement401kData && !this.savingsData) {
+        if (!this.retirement401kData && !this.savingsData && !this.portfolioData) {
             dashboardEmpty.style.display = 'block';
             document.querySelector('.retirement-dashboard').style.display = 'none';
             return;
@@ -425,6 +773,16 @@ class RetirementPlanner {
         if (this.savingsData) {
             totalSavings = this.savingsData.finalBalance;
             yearsToRetirement = this.savingsData.yearsToRetirement;
+        }
+
+        // Show portfolio card if there's portfolio data
+        if (this.portfolioData) {
+            dashboardPortfolioCard.style.display = 'block';
+            dashboardPortfolio.textContent = this.formatCurrency(this.portfolioData.currentBalance);
+            const gainClass = this.portfolioData.ytdGain >= 0 ? 'positive' : 'negative';
+            dashboardPortfolioGain.innerHTML = `<span class="${gainClass}">${this.formatGain(this.portfolioData.ytdGain)} (${this.formatPercent(this.portfolioData.ytdGainPercent)})</span>`;
+        } else {
+            dashboardPortfolioCard.style.display = 'none';
         }
 
         const combinedTotal = total401k + totalSavings;
@@ -629,6 +987,11 @@ function switchTab(tabName) {
 
     // Add active class to clicked nav tab
     event.target.classList.add('active');
+
+    // Auto-refresh Financial Planner data when switching to portfolio tab
+    if (tabName === 'portfolio') {
+        planner.updateFinancialPlannerStatus();
+    }
 }
 
 // ==================== 401K CALCULATOR HANDLERS ====================
@@ -788,4 +1151,82 @@ function clearSavings() {
     planner.updateDashboard();
     // Scroll back to top of form
     document.getElementById('savings-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ==================== PORTFOLIO TRACKER HANDLERS ====================
+
+async function handlePortfolioSubmit(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('portfolio-form');
+    const formData = new FormData(form);
+
+    const data = {
+        startingBalance: formData.get('starting-balance'),
+        updateDate: formData.get('update-date')
+    };
+
+    // Show loading indicator
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Calculating...';
+    submitButton.disabled = true;
+
+    try {
+        const result = await planner.calculatePortfolio(data);
+        if (result) {
+            planner.renderPortfolioResults(result);
+        }
+    } finally {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    }
+}
+
+function updatePortfolio() {
+    // Refresh the Financial Planner status
+    planner.updateFinancialPlannerStatus();
+
+    // Show the form again by scrolling to it
+    document.getElementById('portfolio-form').scrollIntoView({ behavior: 'smooth' });
+
+    // Pre-fill the starting balance from saved data if it exists
+    if (planner.portfolioData) {
+        document.getElementById('starting-balance').value = planner.portfolioData.startingBalance;
+    }
+
+    // Set today's date as default for update date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('update-date').value = today;
+
+    // Focus on date field
+    setTimeout(() => {
+        document.getElementById('update-date').focus();
+    }, 500);
+}
+
+function clearPortfolio() {
+    if (confirm('Are you sure you want to clear all portfolio tracking data? This cannot be undone.')) {
+        document.getElementById('portfolio-results').style.display = 'none';
+        document.getElementById('portfolio-form').reset();
+        planner.portfolioData = null;
+        planner.saveData();
+        // Scroll back to top of form
+        document.getElementById('portfolio-form').scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function refreshFinancialPlannerData() {
+    planner.updateFinancialPlannerStatus();
+
+    // Show a brief feedback
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '✓ Refreshed';
+    button.style.background = '#10b981';
+
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '#667eea';
+    }, 1500);
 }

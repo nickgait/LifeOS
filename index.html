@@ -332,9 +332,10 @@
             <div class="action-buttons">
                 <button class="action-btn" onclick="navigateToApp('Fitness')">Log Workout</button>
                 <button class="action-btn" onclick="navigateToApp('Journal')">Write Entry</button>
-                <button class="action-btn" onclick="navigateToApp('Finance')">Log Expense</button>
+                <button class="action-btn" onclick="navigateToApp('Finance and Planning')">Log Expense</button>
                 <button class="action-btn" onclick="navigateToApp('Goals')">View Goals</button>
                 <button class="action-btn" onclick="navigateToApp('TodoList')">Create Task</button>
+                <button class="action-btn" onclick="navigateToApp('Scripture Reading')">Log Reading</button>
             </div>
         </div>
 
@@ -385,22 +386,22 @@
                     </div>
                 </a>
 
-                <!-- Finance App -->
-                <a href="Finance/index.html" class="app-card">
-                    <div class="app-card-header">
+                <!-- Finance & Planning App (Consolidated) -->
+                <a href="Finance and Planning/index.html" class="app-card">
+                    <div class="app-card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                         <div class="app-icon">💰</div>
-                        <div class="app-name">Finance</div>
-                        <div class="app-subtitle">Track expenses & budgets</div>
+                        <div class="app-name">Finance & Planning</div>
+                        <div class="app-subtitle">Complete financial management</div>
                     </div>
                     <div class="app-card-body">
                         <div class="app-description">
-                            Manage expenses, create budgets, and gain insights into your spending habits.
+                            Unified financial management: Portfolio tracking, expense budgeting, retirement planning, dividend tracking, and investment research.
                         </div>
                         <ul class="app-features">
-                            <li>Expense tracking</li>
-                            <li>Budget management</li>
-                            <li>Category analysis</li>
-                            <li>Financial reports</li>
+                            <li>Portfolio & holdings</li>
+                            <li>Expense tracking & budgets</li>
+                            <li>Retirement planning</li>
+                            <li>Dividends & research</li>
                         </ul>
                         <div class="app-button">Open App →</div>
                     </div>
@@ -427,26 +428,6 @@
                     </div>
                 </a>
 
-                <!-- Investments App -->
-                <a href="Investments/index.html" class="app-card">
-                    <div class="app-card-header">
-                        <div class="app-icon">📈</div>
-                        <div class="app-name">Investments</div>
-                        <div class="app-subtitle">Portfolio & research</div>
-                    </div>
-                    <div class="app-card-body">
-                        <div class="app-description">
-                            Track your investment portfolio, record dividends, and research stocks and ETFs.
-                        </div>
-                        <ul class="app-features">
-                            <li>Portfolio tracking</li>
-                            <li>Dividend recording</li>
-                            <li>Gain/loss calculation</li>
-                            <li>Research database</li>
-                        </ul>
-                        <div class="app-button">Open App →</div>
-                    </div>
-                </a>
 
                 <!-- Todo List App -->
                 <a href="TodoList/index.html" class="app-card">
@@ -469,47 +450,67 @@
                     </div>
                 </a>
 
-                <!-- Road to Retirement App -->
-                <a href="Road to Retirement/index.html" class="app-card">
-                    <div class="app-card-header">
-                        <div class="app-icon">🛣️</div>
-                        <div class="app-name">Road to Retirement</div>
-                        <div class="app-subtitle">Retirement planning</div>
-                    </div>
-                    <div class="app-card-body">
-                        <div class="app-description">
-                            Plan your path to financial freedom with comprehensive retirement and savings calculators.
-                        </div>
-                        <ul class="app-features">
-                            <li>401k projections</li>
-                            <li>Savings calculator</li>
-                            <li>Retirement overview</li>
-                            <li>Growth visualization</li>
-                        </ul>
-                        <div class="app-button">Open App →</div>
-                    </div>
-                </a>
 
-                <!-- Financial Planner App -->
-                <a href="Financial Planner/index.html" class="app-card">
-                    <div class="app-card-header" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                        <div class="app-icon">📊</div>
-                        <div class="app-name">Financial Planner</div>
-                        <div class="app-subtitle">Comprehensive analysis</div>
+
+                <!-- Scripture Reading App -->
+                <a href="Scripture Reading/index.html" class="app-card">
+                    <div class="app-card-header" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                        <div class="app-icon">📖</div>
+                        <div class="app-name">Scripture Reading</div>
+                        <div class="app-subtitle">Bible & Quran plans</div>
                     </div>
                     <div class="app-card-body">
                         <div class="app-description">
-                            Full retirement analysis with portfolio review, stress testing, and optional Sharia-compliant mode.
+                            Track your Bible and Quran reading with customizable plans, progress tracking, and personal notes.
                         </div>
                         <ul class="app-features">
-                            <li>Portfolio analysis</li>
-                            <li>10-year projections</li>
-                            <li>Stress testing</li>
-                            <li>Sharia-compliant options</li>
+                            <li>Custom reading plans</li>
+                            <li>Progress tracking</li>
+                            <li>Auto schedule adjustment</li>
+                            <li>Journal integration</li>
                         </ul>
-                        <div class="app-button" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">Open App →</div>
+                        <div class="app-button" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">Open App →</div>
                     </div>
                 </a>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="settings-section" style="margin-bottom: 40px;">
+            <h2 style="color: #333; margin-bottom: 25px; text-align: center; font-size: 24px;">⚙️ Settings</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 30px;">
+                <!-- Import Data -->
+                <div style="background: white; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <div style="font-size: 40px; margin-bottom: 15px;">📥</div>
+                    <h3 style="margin-bottom: 10px; color: #333;">Import Data</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Restore your data from a backup file</p>
+                    <div style="position: relative;">
+                        <input type="file" id="import-file" accept=".json" style="display: none;" />
+                        <button onclick="document.getElementById('import-file').click()" class="settings-btn" style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Data -->
+                <div style="background: white; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <div style="font-size: 40px; margin-bottom: 15px;">📤</div>
+                    <h3 style="margin-bottom: 10px; color: #333;">Export Data</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Download all your data as a backup</p>
+                    <button onclick="exportAllData()" class="settings-btn" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        Export Now
+                    </button>
+                </div>
+
+                <!-- Clear All Data -->
+                <div style="background: white; border-radius: 15px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                    <div style="font-size: 40px; margin-bottom: 15px;">🗑️</div>
+                    <h3 style="margin-bottom: 10px; color: #333;">Clear All Data</h3>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Delete all data (cannot be undone)</p>
+                    <button onclick="clearAllDataWithConfirm()" class="settings-btn" style="background: #ef4444; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        Clear All
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -660,6 +661,119 @@
             document.addEventListener('DOMContentLoaded', updateDashboardStats);
         } else {
             updateDashboardStats();
+        }
+
+
+        // Export/Import functions
+        function exportAllData() {
+            try {
+                // Get all data from localStorage
+                const allData = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    allData[key] = localStorage.getItem(key);
+                }
+
+                // Create a blob and download
+                const dataStr = JSON.stringify(allData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `lifeos-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                // Show success message if FormUtils available
+                if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                    FormUtils.showNotification('Data exported successfully!', 'success');
+                } else {
+                    alert('Data exported successfully!');
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                    FormUtils.showNotification('Export failed: ' + error.message, 'error');
+                } else {
+                    alert('Export failed: ' + error.message);
+                }
+            }
+        }
+
+        function importData() {
+            const fileInput = document.getElementById('import-file');
+            if (!fileInput.files.length) return;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Import all data into localStorage
+                    Object.entries(data).forEach(([key, value]) => {
+                        localStorage.setItem(key, value);
+                    });
+
+                    if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                        FormUtils.showNotification('Data imported successfully! Refreshing page...', 'success');
+                    } else {
+                        alert('Data imported successfully! Refreshing page...');
+                    }
+
+                    // Refresh page after a short delay
+                    setTimeout(() => location.reload(), 1500);
+                } catch (error) {
+                    console.error('Import failed:', error);
+                    if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                        FormUtils.showNotification('Import failed: ' + error.message, 'error');
+                    } else {
+                        alert('Import failed: ' + error.message);
+                    }
+                }
+            };
+
+            reader.readAsText(file);
+            fileInput.value = ''; // Reset file input
+        }
+
+        function clearAllDataWithConfirm() {
+            const message = 'Are you absolutely sure? This will delete ALL data from LifeOS and cannot be undone.\nType "DELETE ALL" to confirm:';
+            const userInput = prompt(message);
+
+            if (userInput === 'DELETE ALL') {
+                try {
+                    localStorage.clear();
+                    if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                        FormUtils.showNotification('All data cleared. Refreshing page...', 'success');
+                    } else {
+                        alert('All data cleared. Refreshing page...');
+                    }
+                    setTimeout(() => location.reload(), 1500);
+                } catch (error) {
+                    console.error('Clear failed:', error);
+                    if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                        FormUtils.showNotification('Clear failed: ' + error.message, 'error');
+                    } else {
+                        alert('Clear failed: ' + error.message);
+                    }
+                }
+            } else if (userInput !== null) {
+                if (typeof FormUtils !== 'undefined' && FormUtils.showNotification) {
+                    FormUtils.showNotification('Clear cancelled - wrong confirmation text', 'error');
+                } else {
+                    alert('Clear cancelled - wrong confirmation text');
+                }
+            }
+        }
+
+        // Set up import file listener
+        const importFileInput = document.getElementById('import-file');
+        if (importFileInput) {
+            importFileInput.addEventListener('change', importData);
         }
 
         // Update stats when data changes

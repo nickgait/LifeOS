@@ -8,22 +8,22 @@ class GoalsApp extends BaseApp {
     super('goals-all');
 
     this.goals = this.data;
-    this.categories = [
-      { id: 'health', name: 'Health & Fitness', icon: '🏃', color: '#10b981' },
-      { id: 'career', name: 'Career & Work', icon: '💼', color: '#3b82f6' },
-      { id: 'personal', name: 'Personal Development', icon: '📚', color: '#f59e0b' },
-      { id: 'financial', name: 'Financial', icon: '💰', color: '#8b5cf6' },
-      { id: 'education', name: 'Education', icon: '🎓', color: '#06b6d4' },
-      { id: 'other', name: 'Other', icon: '✨', color: '#6b7280' }
-    ];
-    this.selectedCategory = 'all';
 
-    // Listen for fitness goals changes to sync them
-    StorageManager.onChange('fitness-goals', () => {
-      this.renderGoals();
-      this.updateDashboard();
-    });
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   setupEventListeners() {
     const goalForm = document.getElementById('goal-form');
@@ -59,11 +59,15 @@ class GoalsApp extends BaseApp {
     this.goals.push(goal);
     this.save();
 
-    e.target.reset();
-    this.setupDefaultDates();
-    alert('Goal created successfully!');
-    this.renderGoals();
-    this.updateDashboard();
+    FormUtils.resetFormWithSuccess(
+      e.target,
+      'Goal created successfully!',
+      () => {
+        this.setupDefaultDates();
+        this.renderGoals();
+        this.updateDashboard();
+      }
+    );
   }
 
   deleteGoal(goalId) {
@@ -99,18 +103,7 @@ class GoalsApp extends BaseApp {
     const goalsList = document.getElementById('goals-list');
     if (!goalsList) return;
 
-    // Get fitness goals and add them as health category
-    const fitnessGoals = (StorageManager.get('fitness-goals') || [])
-      .filter(g => g.status === 'active')
-      .map(g => ({
-        ...g,
-        category: 'health',
-        description: `${g.activity} - Target: ${g.target}`,
-        fromFitness: true
-      }));
-
-    // Combine with regular goals
-    const allGoals = [...this.goals, ...fitnessGoals];
+    const allGoals = [...this.goals];
 
     let filteredGoals = allGoals;
     if (this.selectedCategory !== 'all') {
@@ -156,12 +149,10 @@ class GoalsApp extends BaseApp {
               </span>
             </div>
             <div class="goal-actions">
-              ${goal.status === 'active' && !goal.fromFitness ? `
+              ${goal.status === 'active' ? `
                 <button class="goals-btn goals-btn-small" onclick="goalsApp.completeGoal(${goal.id})">Mark Complete</button>
               ` : ''}
-              ${!goal.fromFitness ? `
-                <button class="goals-btn goals-btn-small goals-btn-danger" onclick="goalsApp.deleteGoal(${goal.id})">Delete</button>
-              ` : ''}
+              <button class="goals-btn goals-btn-small goals-btn-danger" onclick="goalsApp.deleteGoal(${goal.id})">Delete</button>
             </div>
           </div>
         `;
@@ -169,14 +160,9 @@ class GoalsApp extends BaseApp {
   }
 
   updateDashboard() {
-    // Include fitness goals in counts
-    const fitnessGoals = StorageManager.get('fitness-goals') || [];
-    const activeFitnessGoals = fitnessGoals.filter(g => g.status === 'active').length;
-    const completedFitnessGoals = fitnessGoals.filter(g => g.status === 'completed').length;
-
-    const totalGoals = this.goals.length + fitnessGoals.length;
-    const activeGoals = this.goals.filter(g => g.status === 'active').length + activeFitnessGoals;
-    const completedGoals = this.goals.filter(g => g.status === 'completed').length + completedFitnessGoals;
+    const totalGoals = this.goals.length;
+    const activeGoals = this.goals.filter(g => g.status === 'active').length;
+    const completedGoals = this.goals.filter(g => g.status === 'completed').length;
 
     document.getElementById('total-goals-count').textContent = totalGoals;
     document.getElementById('active-goals-count').textContent = activeGoals;
@@ -271,28 +257,11 @@ class GoalsApp extends BaseApp {
 
 // Tab switching
 function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-
-  const tab = document.getElementById(`${tabName}-tab`);
-  if (tab) {
-    tab.classList.add('active');
-  }
-
-  if (event.target) {
-    event.target.classList.add('active');
-  }
-
-  if (tabName === 'dashboard') goalsApp.updateDashboard();
-  if (tabName === 'goals') goalsApp.renderGoals();
+  UIUtils.switchTab(tabName, goalsApp, {
+    'dashboard': () => goalsApp.updateDashboard(),
+    'goals': () => goalsApp.renderGoals()
+  });
 }
 
 // Initialize app
-let goalsApp;
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    goalsApp = new GoalsApp();
-  });
-} else {
-  goalsApp = new GoalsApp();
-}
+let goalsApp = UIUtils.initializeApp(GoalsApp, 'goalsApp');

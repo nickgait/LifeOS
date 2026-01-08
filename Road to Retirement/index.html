@@ -20,6 +20,7 @@
         <!-- Navigation Tabs -->
         <nav class="nav-tabs retirement-nav">
             <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('portfolio')">Portfolio Tracker</button>
             <button class="nav-tab" onclick="switchTab('retirement401k')">401k Calculator</button>
             <button class="nav-tab" onclick="switchTab('savings')">Savings Calculator</button>
         </nav>
@@ -31,6 +32,125 @@
                 <a href="../Financial Planner/index.html" style="color: #0284c7; font-weight: 600;">Financial Planner</a> app.
             </div>
 
+            <!-- PORTFOLIO TRACKER TAB -->
+            <div id="portfolio-tab" class="tab-content">
+                <div class="retirement-content">
+                    <h2>Portfolio Tracker 2026</h2>
+
+                    <div class="calculator-form">
+                        <div style="background: #f0f9ff; border-left: 4px solid #0284c7; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                            <strong>📊 How it works:</strong> Enter your starting portfolio balance for 2026, then use the
+                            <a href="../Financial Planner/index.html" style="color: #0284c7; font-weight: 600;">Financial Planner</a>
+                            to manage your holdings. This tracker will automatically pull your current total and calculate your gains.
+                        </div>
+
+                        <form id="portfolio-form" onsubmit="handlePortfolioSubmit(event)">
+                            <fieldset>
+                                <legend>Starting Balance (1/1/2026)</legend>
+
+                                <div class="form-group">
+                                    <label for="starting-balance">Portfolio Balance on January 1, 2026</label>
+                                    <input type="number" id="starting-balance" name="starting-balance" min="0" step="0.01" placeholder="0.00" required>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Update from Financial Planner</legend>
+
+                                <div class="form-group">
+                                    <label for="update-date">As of Date</label>
+                                    <input type="date" id="update-date" name="update-date" required>
+                                </div>
+
+                                <div id="financial-planner-status" style="display: none; padding: 1rem; background: #f9fafb; border-radius: 4px; margin-top: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                        <div style="font-size: 0.9rem; color: #6b7280;">Current Total from Financial Planner:</div>
+                                        <button type="button" onclick="refreshFinancialPlannerData()" class="btn-refresh" style="padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            🔄 Refresh
+                                        </button>
+                                    </div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #667eea;" id="fp-current-total">$0.00</div>
+                                    <small style="color: #9ca3af;">Brokerage + Retirement accounts</small>
+                                </div>
+                            </fieldset>
+
+                            <button type="submit" class="btn-primary">Track Portfolio Growth</button>
+                        </form>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="portfolio-results" style="display: none;">
+                        <h3>Portfolio Performance</h3>
+
+                        <div class="portfolio-stats-grid">
+                            <div class="portfolio-stat-card">
+                                <div class="stat-label">Current Balance</div>
+                                <div class="stat-value" id="portfolio-current">$0.00</div>
+                                <div class="stat-subtitle" id="portfolio-current-gain">+$0.00 (+0.00%)</div>
+                            </div>
+
+                            <div class="portfolio-stat-card">
+                                <div class="stat-label">Month-to-Date</div>
+                                <div class="stat-value" id="portfolio-mtd-amount">$0.00</div>
+                                <div class="stat-subtitle" id="portfolio-mtd-gain">+$0.00 (+0.00%)</div>
+                            </div>
+
+                            <div class="portfolio-stat-card">
+                                <div class="stat-label">Quarter-to-Date</div>
+                                <div class="stat-value" id="portfolio-qtd-amount">$0.00</div>
+                                <div class="stat-subtitle" id="portfolio-qtd-gain">+$0.00 (+0.00%)</div>
+                            </div>
+
+                            <div class="portfolio-stat-card accent">
+                                <div class="stat-label">Year-to-Date</div>
+                                <div class="stat-value" id="portfolio-ytd-amount">$0.00</div>
+                                <div class="stat-subtitle" id="portfolio-ytd-gain">+$0.00 (+0.00%)</div>
+                            </div>
+                        </div>
+
+                        <!-- S&P 500 Comparison -->
+                        <div id="sp500-comparison" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                            <h4 style="margin: 0 0 1rem 0; color: #374151; font-size: 1rem;">📈 Benchmark Comparison: S&P 500</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Your Portfolio (YTD)</div>
+                                    <div style="font-size: 1.25rem; font-weight: 700;" id="sp500-your-return">+0.00%</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">S&P 500 (YTD)</div>
+                                    <div style="font-size: 1.25rem; font-weight: 700;" id="sp500-benchmark-return">+0.00%</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.25rem;">Difference</div>
+                                    <div style="font-size: 1.25rem; font-weight: 700;" id="sp500-difference">+0.00%</div>
+                                </div>
+                            </div>
+                            <div id="sp500-message" style="margin-top: 1rem; padding: 0.75rem; border-radius: 4px; font-size: 0.9rem;"></div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="portfolio-table" class="projection-table">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Starting Balance</th>
+                                        <th>Current Balance</th>
+                                        <th>$ Gain/Loss</th>
+                                        <th>% Gain/Loss</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; padding: 1.5rem 0;">
+                            <button type="button" onclick="updatePortfolio()" class="btn-secondary" style="margin-right: 1rem;">Update Balance</button>
+                            <button type="button" onclick="clearPortfolio()" class="btn-secondary">Clear Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- DASHBOARD TAB -->
             <div id="dashboard-tab" class="tab-content active">
                 <div class="retirement-dashboard">
@@ -38,6 +158,11 @@
 
                     <!-- Summary Stats -->
                     <div class="stats-grid">
+                        <div class="stat-card" id="dashboard-portfolio-card" style="display: none;">
+                            <div class="stat-label">Current Portfolio (2026)</div>
+                            <div class="stat-value" id="dashboard-portfolio">$0.00</div>
+                            <div class="stat-subtitle" id="dashboard-portfolio-gain">+$0.00 (+0.00%)</div>
+                        </div>
                         <div class="stat-card">
                             <div class="stat-label">Projected 401k Balance</div>
                             <div class="stat-value" id="dashboard-401k">$0.00</div>

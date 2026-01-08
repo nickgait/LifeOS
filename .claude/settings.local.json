@@ -40,7 +40,9 @@
       "Bash(curl:*)",
       "Read(//Users/mgaither/Documents/**)",
       "Bash(cd:*)",
-      "Bash(git ls-tree -r HEAD --name-only)"
+      "Bash(git ls-tree -r HEAD --name-only)",
+      "Bash(wc:*)",
+      "Bash(__NEW_LINE__ echo \"=== FINAL VERIFICATION ===\")"
     ],
     "deny": []
   }

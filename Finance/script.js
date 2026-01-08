@@ -328,29 +328,12 @@ class FinanceApp extends BaseApp {
 
 // Tab switching
 function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-
-  const tab = document.getElementById(`${tabName}-tab`);
-  if (tab) {
-    tab.classList.add('active');
-  }
-
-  if (event.target) {
-    event.target.classList.add('active');
-  }
-
-  if (tabName === 'dashboard') financeApp.updateDashboard();
-  if (tabName === 'expenses') financeApp.renderExpenses();
-  if (tabName === 'budgets') financeApp.renderBudgets();
+  UIUtils.switchTab(tabName, financeApp, {
+    'dashboard': () => financeApp.updateDashboard(),
+    'expenses': () => financeApp.renderExpenses(),
+    'budgets': () => financeApp.renderBudgets()
+  });
 }
 
 // Initialize app
-let financeApp;
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    financeApp = new FinanceApp();
-  });
-} else {
-  financeApp = new FinanceApp();
-}
+let financeApp = UIUtils.initializeApp(FinanceApp, 'financeApp');

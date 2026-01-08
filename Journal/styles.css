@@ -326,6 +326,17 @@
     border-color: #667eea;
 }
 
+.tag-filter-btn.clear-btn {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+.tag-filter-btn.clear-btn:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
 .full-width {
     grid-column: 1 / -1;
 }
@@ -352,6 +363,23 @@
 .entries-list {
     max-height: 600px;
     overflow-y: auto;
+}
+
+.timeline-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+}
+
+.timeline-controls .form-group {
+    margin-bottom: 0;
+}
+
+#custom-date-range {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
 }
 
 @media (max-width: 768px) {

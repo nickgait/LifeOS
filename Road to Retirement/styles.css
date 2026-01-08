@@ -419,6 +419,83 @@ legend {
     margin: 0;
 }
 
+/* Portfolio Tracker Styles */
+.portfolio-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.portfolio-stat-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.portfolio-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.portfolio-stat-card.accent {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+}
+
+.portfolio-stat-card .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.portfolio-stat-card.accent .stat-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.portfolio-stat-card .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.portfolio-stat-card.accent .stat-value {
+    color: white;
+}
+
+.portfolio-stat-card .stat-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.portfolio-stat-card.accent .stat-subtitle {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.positive {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.negative {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+/* Table cell styling for gains */
+.projection-table td.positive,
+.projection-table td.negative {
+    font-weight: 600;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .app-header {
@@ -444,7 +521,8 @@ legend {
 
     .stats-grid,
     .results-summary,
-    .charts-container {
+    .charts-container,
+    .portfolio-stats-grid {
         grid-template-columns: 1fr;
     }
 

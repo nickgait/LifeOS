@@ -4,6 +4,7 @@
  */
 
 class FitnessTracker extends BaseApp {
+  // This app owns all fitness goals - Goals app no longer includes fitness
   constructor() {
     super('fitness-goals');
 
@@ -394,28 +395,13 @@ class FitnessTracker extends BaseApp {
 
 // Tab switching
 function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-
-  const tab = document.getElementById(`${tabName}-tab`);
-  if (tab) {
-    tab.classList.add('active');
-  }
-
-  event.target.classList.add('active');
-
-  if (tabName === 'dashboard') fitnessApp.updateDashboard();
-  if (tabName === 'goals') fitnessApp.renderGoals();
-  if (tabName === 'log') fitnessApp.renderActivityHistory();
-  if (tabName === 'badges') fitnessApp.renderAllBadges();
+  UIUtils.switchTab(tabName, fitnessApp, {
+    'dashboard': () => fitnessApp.updateDashboard(),
+    'goals': () => fitnessApp.renderGoals(),
+    'log': () => fitnessApp.renderActivityHistory(),
+    'badges': () => fitnessApp.renderAllBadges()
+  });
 }
 
 // Initialize app
-let fitnessApp;
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    fitnessApp = new FitnessTracker();
-  });
-} else {
-  fitnessApp = new FitnessTracker();
-}
+let fitnessApp = UIUtils.initializeApp(FitnessTracker, 'fitnessApp');

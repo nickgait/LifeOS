@@ -15,8 +15,8 @@
                 <div class="subtitle">Daily reflections and personal thoughts</div>
             </div>
             <div class="nav-tabs">
-                <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
-                <button class="nav-tab" onclick="switchTab('entries')">All Entries</button>
+                <button class="nav-tab active" onclick="switchTab('dashboard', event)">Dashboard</button>
+                <button class="nav-tab" onclick="switchTab('entries', event)">All Entries</button>
             </div>
         </div>
 
@@ -39,6 +39,14 @@
                     <div class="stat-value" id="frequent-mood">😐</div>
                     <div class="stat-label">Most Common Mood</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="current-streak">0</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="longest-streak">0</div>
+                    <div class="stat-label">Longest Streak</div>
+                </div>
             </div>
 
             <div class="journal-content">
@@ -50,6 +58,41 @@
                 <div class="journal-card">
                     <h2>😊 Mood Patterns</h2>
                     <div id="mood-chart"></div>
+                </div>
+
+                <div class="journal-card full-width">
+                    <h2>📅 On This Day</h2>
+                    <div id="on-this-day"></div>
+                </div>
+
+                <div class="journal-card full-width">
+                    <h2>📊 Timeline Analysis</h2>
+                    <div class="timeline-controls">
+                        <div class="form-group">
+                            <label>Time Period:</label>
+                            <select id="timeline-period" onchange="journalApp.updateTimeline()">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30" selected>Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="365">Last Year</option>
+                                <option value="all">All Time</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div id="custom-date-range" style="display: none;">
+                            <div class="form-group">
+                                <label>From:</label>
+                                <input type="date" id="timeline-start">
+                            </div>
+                            <div class="form-group">
+                                <label>To:</label>
+                                <input type="date" id="timeline-end">
+                            </div>
+                            <button class="journal-btn journal-btn-small" onclick="journalApp.updateTimeline()">Apply</button>
+                        </div>
+                    </div>
+                    <div id="timeline-chart"></div>
+                    <div id="timeline-insights"></div>
                 </div>
             </div>
         </div>
@@ -105,6 +148,8 @@
                         <input type="text" id="journal-search" placeholder="🔍 Search entries...">
                     </div>
 
+                    <div id="tag-filters"></div>
+
                     <div class="entries-list" id="entries-list"></div>
                 </div>
 
@@ -122,6 +167,8 @@
     <script src="../shared/theme-manager.js"></script>
     <script src="../shared/data-manager.js"></script>
     <script src="../shared/base-app.js"></script>
+    <script src="../shared/ui-utils.js"></script>
+    <script src="../shared/form-utils.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

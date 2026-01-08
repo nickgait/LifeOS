@@ -60,6 +60,12 @@ Daily journaling and reflections
 - [x] Implement search functionality
 - [x] Add journal statistics
 
+#### Journal App Enhancements (December 2024)
+- [x] **Tag Filtering System**: Click tags to filter entries, with clear filters button
+- [x] **Timeline Analysis**: View entries over custom date ranges with activity heatmap
+- [x] **Enhanced Dashboard**: Added current streak and longest streak tracking with visual indicators
+- [x] **On This Day Feature**: View entries from the same date in previous years for reflection
+
 ## Phase 6: Cross-App Integration
 
 - [x] Link fitness goals with Goals app

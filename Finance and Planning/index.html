@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance & Planning - LifeOS</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>💰 Finance & Planning</h1>
+                <p class="header-subtitle">Portfolio, Expenses, Retirement Planning & Investment Research</p>
+            </div>
+            <div class="compliance-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" id="sharia-mode" onchange="financeApp.toggleShariaMode()">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">Sharia-Compliant Mode</span>
+                </label>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="nav-tabs finance-nav">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('portfolio')">💼 Portfolio</button>
+            <button class="nav-tab" onclick="switchTab('expenses')">💰 Expenses</button>
+            <button class="nav-tab" onclick="switchTab('planning')">📈 Planning</button>
+            <button class="nav-tab" onclick="switchTab('dividends')">💵 Dividends</button>
+            <button class="nav-tab" onclick="switchTab('research')">🔍 Research</button>
+        </nav>
+
+        <main class="app-content">
+            <!-- DISCLAIMER BANNER -->
+            <div class="disclaimer-banner">
+                <strong>Educational Purposes Only:</strong> This tool is for informational and educational purposes only.
+                It does not constitute personalized financial, tax, or investment advice. Consult with a licensed financial advisor
+                before making investment decisions.
+            </div>
+
+            <!-- ============ DASHBOARD TAB ============ -->
+            <div id="dashboard-tab" class="tab-content active">
+                <div class="finance-content">
+                    <h2>Financial Dashboard</h2>
+
+                    <!-- Net Worth Summary -->
+                    <div class="dashboard-summary">
+                        <div class="summary-card large">
+                            <div class="summary-label">Net Worth</div>
+                            <div class="summary-value" id="net-worth">$0.00</div>
+                            <div class="summary-subtitle">All assets combined</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Portfolio Value</div>
+                            <div class="summary-value" id="portfolio-total">$0.00</div>
+                            <div class="summary-subtitle">Investments</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Cash Reserves</div>
+                            <div class="summary-value" id="cash-total">$0.00</div>
+                            <div class="summary-subtitle">Brokerage + Retirement</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Monthly Expenses</div>
+                            <div class="summary-value" id="monthly-spending">$0.00</div>
+                            <div class="summary-subtitle">Current month</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3>Portfolio Allocation</h3>
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Asset Breakdown</h3>
+                            <canvas id="assetChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="activity-section">
+                        <h3>Recent Activity</h3>
+                        <div id="recent-activity" class="activity-list">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Unrealized Gains</div>
+                            <div class="stat-value" id="unrealized-gains">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Dividends</div>
+                            <div class="stat-value" id="total-dividends">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Unique Holdings</div>
+                            <div class="stat-value" id="holding-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Budget Status</div>
+                            <div class="stat-value" id="budget-status">On Track</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ PORTFOLIO TAB ============ -->
+            <div id="portfolio-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Portfolio Management</h2>
+
+                    <!-- Profile Form -->
+                    <div class="form-section">
+                        <h3>Financial Profile</h3>
+                        <form id="profile-form" onsubmit="financeApp.handleProfileSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="current-age">Current Age</label>
+                                    <input type="number" id="current-age" name="current-age" min="18" max="100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="retirement-age">Target Retirement Age</label>
+                                    <input type="number" id="retirement-age" name="retirement-age" min="50" max="100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="risk-tolerance">Risk Tolerance</label>
+                                    <select id="risk-tolerance" name="risk-tolerance">
+                                        <option value="conservative">Conservative</option>
+                                        <option value="moderate" selected>Moderate</option>
+                                        <option value="aggressive">Aggressive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Profile</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Cash Holdings -->
+                    <div class="form-section">
+                        <h3>Cash Holdings</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="brokerage-cash">Brokerage Cash ($)</label>
+                                <input type="number" id="brokerage-cash" name="brokerage-cash" min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="retirement-cash">Retirement Account Cash ($)</label>
+                                <input type="number" id="retirement-cash" name="retirement-cash" min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label>Total Cash</label>
+                                <div class="form-value" id="cash-display">$0.00</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="financeApp.saveCash()">Save Cash</button>
+                    </div>
+
+                    <!-- Holdings Management -->
+                    <div class="form-section">
+                        <h3>Brokerage Holdings</h3>
+                        <p class="section-note">Add and manage your investment holdings. Click refresh (↻) to update prices.</p>
+
+                        <div class="holdings-header">
+                            <span>Ticker</span>
+                            <span>Shares</span>
+                            <span>Price</span>
+                            <span>Value</span>
+                            <span>Gain/Loss</span>
+                            <span>Updated</span>
+                            <span></span>
+                        </div>
+                        <div id="brokerage-holdings-container" class="holdings-container">
+                            <!-- Populated by script -->
+                        </div>
+
+                        <div class="holdings-actions">
+                            <button type="button" class="btn btn-secondary" onclick="financeApp.addHolding('brokerage')">+ Add Holding</button>
+                            <button type="button" class="btn btn-primary" onclick="financeApp.refreshAllPrices('brokerage')">↻ Refresh All Prices</button>
+                        </div>
+                    </div>
+
+                    <!-- Retirement Holdings -->
+                    <div class="form-section">
+                        <h3>Retirement Account Holdings (401k/IRA)</h3>
+                        <div class="holdings-header">
+                            <span>Ticker</span>
+                            <span>Shares</span>
+                            <span>Price</span>
+                            <span>Value</span>
+                            <span>Updated</span>
+                            <span></span>
+                        </div>
+                        <div id="retirement-holdings-container" class="holdings-container">
+                            <!-- Populated by script -->
+                        </div>
+
+                        <div class="holdings-actions">
+                            <button type="button" class="btn btn-secondary" onclick="financeApp.addHolding('retirement')">+ Add Holding</button>
+                            <button type="button" class="btn btn-primary" onclick="financeApp.refreshAllPrices('retirement')">↻ Refresh All Prices</button>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Analysis -->
+                    <div id="portfolio-analysis" class="form-section" style="display: none;">
+                        <h3>Portfolio Analysis</h3>
+                        <div class="analysis-grid">
+                            <div class="analysis-card">
+                                <div class="analysis-title">Concentration Risk</div>
+                                <div class="analysis-content" id="concentration-risk"></div>
+                            </div>
+                            <div class="analysis-card">
+                                <div class="analysis-title">Sector Breakdown</div>
+                                <div class="analysis-content" id="sector-breakdown"></div>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="sectorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ EXPENSES TAB ============ -->
+            <div id="expenses-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Expense Tracking & Budgeting</h2>
+
+                    <!-- Expense Summary -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">This Month</div>
+                            <div class="stat-value" id="month-total">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Monthly Average</div>
+                            <div class="stat-value" id="month-average">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Budget Status</div>
+                            <div class="stat-value" id="budget-percentage">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Expense Form -->
+                    <div class="form-section">
+                        <h3>Add Expense</h3>
+                        <form id="expense-form" onsubmit="financeApp.handleExpenseSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expense-date">Date</label>
+                                    <input type="date" id="expense-date" name="expense-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-category">Category</label>
+                                    <select id="expense-category" name="expense-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="food">🍽️ Food & Dining</option>
+                                        <option value="transport">🚗 Transportation</option>
+                                        <option value="housing">🏠 Housing</option>
+                                        <option value="utilities">⚡ Utilities</option>
+                                        <option value="health">🏥 Health & Medical</option>
+                                        <option value="entertainment">🎬 Entertainment</option>
+                                        <option value="shopping">🛍️ Shopping</option>
+                                        <option value="other">📌 Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-amount">Amount ($)</label>
+                                    <input type="number" id="expense-amount" name="expense-amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expense-description">Description</label>
+                                    <input type="text" id="expense-description" name="expense-description" placeholder="What was this for?">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Add Expense</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Expenses List -->
+                    <div class="form-section">
+                        <h3>Expenses This Month</h3>
+                        <div id="expenses-list" class="expenses-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown Chart -->
+                    <div class="chart-wrapper">
+                        <h3>Spending by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+
+                    <!-- Budget Management -->
+                    <div class="form-section">
+                        <h3>Monthly Budgets</h3>
+                        <form id="budget-form" onsubmit="financeApp.handleBudgetSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="budget-category">Category</label>
+                                    <select id="budget-category" name="budget-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="food">Food & Dining</option>
+                                        <option value="transport">Transportation</option>
+                                        <option value="housing">Housing</option>
+                                        <option value="utilities">Utilities</option>
+                                        <option value="health">Health & Medical</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="shopping">Shopping</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="budget-limit">Monthly Limit ($)</label>
+                                    <input type="number" id="budget-limit" name="budget-limit" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Set Budget</button>
+                            </div>
+                        </form>
+
+                        <div id="budgets-list" class="budgets-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ PLANNING TAB ============ -->
+            <div id="planning-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Retirement Planning & Projections</h2>
+
+                    <!-- Retirement Profile Form -->
+                    <div class="form-section">
+                        <h3>Retirement Profile</h3>
+                        <form id="retirement-form" onsubmit="financeApp.handleRetirementSubmit(event)">
+                            <fieldset>
+                                <legend>Current Situation</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="current-assets">Current Portfolio Value ($)</label>
+                                        <input type="number" id="current-assets" name="current-assets" min="0" step="100" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="annual-contribution">Annual Contribution ($)</label>
+                                        <input type="number" id="annual-contribution" name="annual-contribution" min="0" step="100" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="expected-return">Expected Annual Return (%)</label>
+                                        <input type="number" id="expected-return" name="expected-return" min="0" max="20" step="0.5" value="7.5">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Retirement Income</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="monthly-spending-retirement">Monthly Spending in Retirement ($)</label>
+                                        <input type="number" id="monthly-spending-retirement" name="monthly-spending-retirement" min="0" step="100" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="social-security">Expected Annual Social Security ($)</label>
+                                        <input type="number" id="social-security" name="social-security" min="0" step="100" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pension-income">Expected Annual Pension ($)</label>
+                                        <input type="number" id="pension-income" name="pension-income" min="0" step="100" placeholder="0">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Calculate Retirement Plan</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Readiness Score -->
+                    <div id="retirement-readiness" style="display: none;">
+                        <div class="readiness-dashboard">
+                            <div class="readiness-score-container">
+                                <div class="readiness-score" id="readiness-score">0%</div>
+                                <div class="readiness-label">Retirement Readiness</div>
+                            </div>
+                            <div class="readiness-details">
+                                <div class="detail-card">
+                                    <div class="detail-label">Projected at Retirement</div>
+                                    <div class="detail-value" id="projected-value">$0</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-label">Annual Income Needed</div>
+                                    <div class="detail-value" id="annual-need">$0</div>
+                                </div>
+                                <div class="detail-card">
+                                    <div class="detail-label">4% Withdrawal</div>
+                                    <div class="detail-value" id="withdrawal-4pct">$0</div>
+                                </div>
+                                <div class="detail-card accent">
+                                    <div class="detail-label">Total Retirement Income</div>
+                                    <div class="detail-value" id="total-income">$0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Growth Projections</h3>
+                            <div class="scenario-selector">
+                                <button class="scenario-btn active" onclick="financeApp.setProjectionScenario('conservative')" data-scenario="conservative">
+                                    <span class="scenario-rate">6%</span>
+                                    <span class="scenario-name">Conservative</span>
+                                </button>
+                                <button class="scenario-btn" onclick="financeApp.setProjectionScenario('moderate')" data-scenario="moderate">
+                                    <span class="scenario-rate">7.5%</span>
+                                    <span class="scenario-name">Moderate</span>
+                                </button>
+                                <button class="scenario-btn" onclick="financeApp.setProjectionScenario('optimistic')" data-scenario="optimistic">
+                                    <span class="scenario-rate">9%</span>
+                                    <span class="scenario-name">Optimistic</span>
+                                </button>
+                            </div>
+
+                            <div class="chart-wrapper">
+                                <canvas id="projectionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Stress Test Results</h3>
+                            <div class="stress-scenarios">
+                                <div class="stress-card" data-decline="20">
+                                    <div class="stress-header mild">
+                                        <span class="stress-icon">-20%</span>
+                                        <span class="stress-title">Mild Correction</span>
+                                    </div>
+                                    <div class="stress-body">
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Recovery Time</span>
+                                            <span class="stat-value" id="recovery-20">0 years</span>
+                                        </div>
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Value at Retirement</span>
+                                            <span class="stat-value" id="value-20">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="stress-card" data-decline="30">
+                                    <div class="stress-header moderate">
+                                        <span class="stress-icon">-30%</span>
+                                        <span class="stress-title">Bear Market</span>
+                                    </div>
+                                    <div class="stress-body">
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Recovery Time</span>
+                                            <span class="stat-value" id="recovery-30">0 years</span>
+                                        </div>
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Value at Retirement</span>
+                                            <span class="stat-value" id="value-30">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="stress-card" data-decline="40">
+                                    <div class="stress-header severe">
+                                        <span class="stress-icon">-40%</span>
+                                        <span class="stress-title">Severe Crash</span>
+                                    </div>
+                                    <div class="stress-body">
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Recovery Time</span>
+                                            <span class="stat-value" id="recovery-40">0 years</span>
+                                        </div>
+                                        <div class="stress-stat">
+                                            <span class="stat-label">Value at Retirement</span>
+                                            <span class="stat-value" id="value-40">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ DIVIDENDS TAB ============ -->
+            <div id="dividends-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Dividend Tracking</h2>
+
+                    <!-- Dividend Summary -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Dividends</div>
+                            <div class="stat-value" id="dividends-total">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">This Month</div>
+                            <div class="stat-value" id="dividends-month">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Annual Income</div>
+                            <div class="stat-value" id="dividends-annual">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Portfolio Yield</div>
+                            <div class="stat-value" id="portfolio-yield">0.00%</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Dividend Form -->
+                    <div class="form-section">
+                        <h3>Record Dividend Payment</h3>
+                        <form id="dividend-form" onsubmit="financeApp.handleDividendSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="dividend-symbol">Stock Symbol</label>
+                                    <input type="text" id="dividend-symbol" name="dividend-symbol" placeholder="AAPL" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-date">Payment Date</label>
+                                    <input type="date" id="dividend-date" name="dividend-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-amount">Amount Paid ($)</label>
+                                    <input type="number" id="dividend-amount" name="dividend-amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="dividend-drip" name="dividend-drip">
+                                        <span>Reinvested (DRIP)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Record Dividend</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Dividend History -->
+                    <div class="form-section">
+                        <h3>Dividend History</h3>
+                        <div id="dividends-list" class="dividends-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+
+                    <!-- Monthly Dividends Chart -->
+                    <div class="chart-wrapper">
+                        <h3>Monthly Dividend Income</h3>
+                        <canvas id="dividendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ RESEARCH TAB ============ -->
+            <div id="research-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Investment Research</h2>
+
+                    <!-- Add Research Entry Form -->
+                    <div class="form-section">
+                        <h3>Add Research Entry</h3>
+                        <form id="research-form" onsubmit="financeApp.handleResearchSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="research-symbol">Stock Symbol</label>
+                                    <input type="text" id="research-symbol" name="research-symbol" placeholder="AAPL" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-name">Company Name</label>
+                                    <input type="text" id="research-name" name="research-name" placeholder="Apple Inc." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-type">Type</label>
+                                    <select id="research-type" name="research-type" required>
+                                        <option value="stock">Stock</option>
+                                        <option value="etf">ETF</option>
+                                        <option value="fund">Fund</option>
+                                        <option value="crypto">Crypto</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="research-rating">Rating</label>
+                                    <select id="research-rating" name="research-rating">
+                                        <option value="">No Rating</option>
+                                        <option value="5">⭐⭐⭐⭐⭐ Strong Buy</option>
+                                        <option value="4">⭐⭐⭐⭐ Buy</option>
+                                        <option value="3">⭐⭐⭐ Hold</option>
+                                        <option value="2">⭐⭐ Avoid</option>
+                                        <option value="1">⭐ Sell</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-sector">Sector</label>
+                                    <input type="text" id="research-sector" name="research-sector" placeholder="Technology">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="research-notes">Research Notes</label>
+                                    <textarea id="research-notes" name="research-notes" rows="4" placeholder="Your research notes..."></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Research</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Research Entries -->
+                    <div class="form-section">
+                        <h3>Research Database</h3>
+                        <div class="research-filters">
+                            <button class="filter-btn active" onclick="financeApp.setResearchFilter('all')">All</button>
+                            <button class="filter-btn" onclick="financeApp.setResearchFilter('stock')">Stocks</button>
+                            <button class="filter-btn" onclick="financeApp.setResearchFilter('etf')">ETFs</button>
+                            <button class="filter-btn" onclick="financeApp.setResearchFilter('crypto')">Crypto</button>
+                        </div>
+                        <div id="research-list" class="research-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <div class="disclaimer">
+                <strong>Disclaimer:</strong> This tool is for educational and informational purposes only.
+                It does not constitute financial, tax, legal, or investment advice. Past performance does not guarantee future results.
+                Consult with qualified professionals before making any financial decisions.
+            </div>
+        </footer>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../shared/ui-utils.js"></script>
+    <script src="../shared/form-utils.js"></script>
+    <script src="../shared/storage-utils.js"></script>
+    <script src="stock-service.js"></script>
+    <script src="migration.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
