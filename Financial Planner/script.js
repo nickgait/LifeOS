@@ -659,11 +659,59 @@ class FinancialPlanner {
         this.saveData();
         this.renderHoldings(type);
 
+        // *** NEW: Update Overview totals with actual portfolio values ***
+        this.updateTotalAssetsFromPortfolio();
+
         if (statusElement) {
             statusElement.textContent = `Updated ${successCount} stock(s)${failCount > 0 ? `, ${failCount} failed` : ''}`;
             setTimeout(() => {
                 statusElement.style.display = 'none';
             }, 3000);
+        }
+    }
+
+    /**
+     * Update Overview totals based on actual portfolio prices
+     * Called after price refresh to make totals dynamic
+     */
+    updateTotalAssetsFromPortfolio() {
+        if (!this.profile) return;
+
+        // Calculate actual holdings values from current prices
+        const brokerageHoldingsValue = this.holdings.brokerage.reduce((sum, h) => {
+            return sum + ((h.shares || 0) * (h.price || 0));
+        }, 0);
+
+        const retirementHoldingsValue = this.holdings.retirement.reduce((sum, h) => {
+            return sum + ((h.shares || 0) * (h.price || 0));
+        }, 0);
+
+        // Get cash holdings
+        const brokerageCash = this.cashHoldings.brokerage || 0;
+        const retirementCash = this.cashHoldings.retirement || 0;
+        const totalCash = brokerageCash + retirementCash;
+
+        // Calculate new total assets (user-entered values + actual portfolio prices)
+        const newTotalAssets = brokerageHoldingsValue + retirementHoldingsValue + totalCash;
+
+        // Update profile with new total
+        const oldTotal = this.profile.totalAssets || 0;
+        this.profile.totalAssets = newTotalAssets;
+
+        // Update the Overview display
+        const totalAssetsElement = document.getElementById('total-assets');
+        if (totalAssetsElement) {
+            totalAssetsElement.textContent = this.formatCurrency(newTotalAssets);
+        }
+
+        console.log(`Portfolio values updated: Brokerage=$${brokerageHoldingsValue.toFixed(2)}, Retirement=$${retirementHoldingsValue.toFixed(2)}, Cash=$${totalCash.toFixed(2)}, Total=$${newTotalAssets.toFixed(2)}`);
+
+        // If prices have changed significantly, re-run analysis
+        if (oldTotal > 0 && Math.abs(newTotalAssets - oldTotal) > (oldTotal * 0.01)) {
+            // More than 1% change - update projections
+            console.log(`Significant change detected (${((newTotalAssets / oldTotal - 1) * 100).toFixed(1)}%). Updating projections...`);
+            this.runFullAnalysis();
+            this.saveData();
         }
     }
 
