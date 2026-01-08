@@ -9,19 +9,21 @@
  */
 
 class StockService {
-    // API Configuration
-    static API_KEY = 'ctra8pr1ehr6c4npc8l0'; // Finnhub API key
-    static API_ENDPOINT = 'https://finnhub.io/api/v1/quote';
+    // API Configuration - Using Yahoo Finance via CORS proxy (free, no auth required)
+    static API_ENDPOINT = 'https://query1.finance.yahoo.com/v8/finance/chart';
+    static CORS_PROXY = 'https://api.allorigins.win/raw?url=';
     static RATE_LIMIT_MS = 100; // 1 request per 100ms for rate limiting
+    static CACHE_DURATION_MS = 300000; // Cache prices for 5 minutes
+    static PRICE_CACHE = {}; // Simple in-memory cache
 
     /**
-     * Lookup stock price and basic info
+     * Lookup stock price and basic info using Yahoo Finance
      * @param {string} symbol - Stock symbol (e.g., 'AAPL')
      * @param {Object} options - Lookup options
      * @returns {Promise<Object>} Stock data { symbol, price, change, changePercent, error }
      */
     static async lookupStock(symbol, options = {}) {
-        const { timeout = 5000, retries = 2 } = options;
+        const { timeout = 5000, useCache = true } = options;
 
         try {
             // Validate symbol
@@ -36,15 +38,23 @@ class StockService {
             // Sanitize symbol (remove spaces, uppercase)
             const cleanSymbol = symbol.toUpperCase().trim();
 
-            // Make API call with timeout
+            // Check cache
+            if (useCache && this.PRICE_CACHE[cleanSymbol]) {
+                const cached = this.PRICE_CACHE[cleanSymbol];
+                if (Date.now() - cached.timestamp < this.CACHE_DURATION_MS) {
+                    console.log(`Using cached price for ${cleanSymbol}: $${cached.price}`);
+                    return cached.data;
+                }
+            }
+
+            // Make API call with timeout using CORS proxy
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-            const response = await fetch(
-                `${this.API_ENDPOINT}?symbol=${cleanSymbol}&token=${this.API_KEY}`,
-                { signal: controller.signal }
-            );
+            const yahooUrl = `${this.API_ENDPOINT}/${cleanSymbol}`;
+            const proxyUrl = this.CORS_PROXY + encodeURIComponent(yahooUrl);
 
+            const response = await fetch(proxyUrl, { signal: controller.signal });
             clearTimeout(timeoutId);
 
             if (!response.ok) {
@@ -53,37 +63,43 @@ class StockService {
 
             const data = await response.json();
 
-            // Handle API errors
-            if (data.error) {
-                return {
-                    symbol: cleanSymbol,
-                    error: data.error,
-                    price: 0
-                };
-            }
+            // Extract price from Yahoo Finance response
+            if (data.chart?.result?.[0]) {
+                const result = data.chart.result[0];
+                const meta = result.meta;
+                const regularMarketPrice = meta.regularMarketPrice;
+                const previousClose = meta.previousClose;
+                const currency = meta.currency;
 
-            // Check for valid data
-            if (!data.c || typeof data.c !== 'number') {
-                return {
-                    symbol: cleanSymbol,
-                    error: 'Invalid price data',
-                    price: 0
-                };
-            }
+                if (regularMarketPrice && regularMarketPrice > 0) {
+                    const change = regularMarketPrice - previousClose;
+                    const changePercent = previousClose ? (change / previousClose) * 100 : 0;
 
-            // Return normalized data
-            return {
-                symbol: cleanSymbol,
-                price: data.c || 0,
-                previousClose: data.pc || 0,
-                change: (data.c - (data.pc || 0)),
-                changePercent: data.pc ? ((data.c - data.pc) / data.pc * 100) : 0,
-                high: data.h || 0,
-                low: data.l || 0,
-                open: data.o || 0,
-                timestamp: new Date().toISOString(),
-                error: null
-            };
+                    const resultData = {
+                        symbol: cleanSymbol,
+                        price: regularMarketPrice,
+                        previousClose: previousClose,
+                        change: change,
+                        changePercent: changePercent,
+                        currency: currency,
+                        timestamp: new Date().toISOString(),
+                        error: null
+                    };
+
+                    // Cache the result
+                    this.PRICE_CACHE[cleanSymbol] = {
+                        data: resultData,
+                        timestamp: Date.now()
+                    };
+
+                    console.log(`Successfully got price for ${cleanSymbol}: $${regularMarketPrice}`);
+                    return resultData;
+                } else {
+                    throw new Error('Price not available - ticker may be invalid');
+                }
+            } else {
+                throw new Error('Ticker not found or invalid');
+            }
 
         } catch (error) {
             console.error(`Stock lookup failed for ${symbol}:`, error);
