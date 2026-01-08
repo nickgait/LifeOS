@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Planner - LifeOS</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Financial Planner</h1>
+                <p class="header-subtitle">Comprehensive Retirement & Investment Analysis</p>
+            </div>
+            <div class="compliance-toggle">
+                <label class="toggle-label">
+                    <input type="checkbox" id="sharia-mode" onchange="toggleShariaMode()">
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">Sharia-Compliant Mode</span>
+                </label>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs planner-nav">
+            <button class="nav-tab active" onclick="switchTab('overview')">Overview</button>
+            <button class="nav-tab" onclick="switchTab('portfolio')">Portfolio Analysis</button>
+            <button class="nav-tab" onclick="switchTab('projections')">Growth Projections</button>
+            <button class="nav-tab" onclick="switchTab('retirement')">Retirement Readiness</button>
+            <button class="nav-tab" onclick="switchTab('stress-test')">Stress Test</button>
+            <button class="nav-tab" onclick="switchTab('islamic-options')">Fixed Income Options</button>
+            <button class="nav-tab" onclick="switchTab('rebalance')">Rebalancing Plan</button>
+            <button class="nav-tab" onclick="switchTab('sensitivity')">Sensitivity Analysis</button>
+        </nav>
+
+        <main class="app-content">
+            <!-- Info Banner -->
+            <div style="background: #e0f2fe; border-left: 4px solid #0284c7; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                <strong>💡 Tip:</strong> Looking for simple 401k and savings calculators? Try the
+                <a href="../Road to Retirement/index.html" style="color: #0284c7; font-weight: 600;">Road to Retirement</a> app.
+            </div>
+
+            <!-- DISCLAIMER BANNER -->
+            <div class="disclaimer-banner">
+                <strong>Educational Purposes Only:</strong> This analysis is for informational and educational purposes only.
+                It does not constitute personalized financial, tax, or investment advice. Consult with a licensed financial advisor
+                and/or Islamic finance specialist before making investment decisions.
+            </div>
+
+            <!-- OVERVIEW TAB -->
+            <div id="overview-tab" class="tab-content active">
+                <div class="planner-content">
+                    <h2>Financial Snapshot</h2>
+
+                    <!-- Profile Form -->
+                    <div class="calculator-form">
+                        <form id="profile-form" onsubmit="handleProfileSubmit(event)">
+                            <fieldset>
+                                <legend>Personal Information</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="current-age">Current Age</label>
+                                        <input type="number" id="current-age" name="current-age" min="18" max="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="retirement-age">Target Retirement Age</label>
+                                        <input type="number" id="retirement-age" name="retirement-age" min="50" max="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="state">State of Residence</label>
+                                        <select id="state" name="state">
+                                            <option value="">Select State</option>
+                                            <option value="VA">Virginia</option>
+                                            <option value="CA">California</option>
+                                            <option value="TX">Texas</option>
+                                            <option value="FL">Florida</option>
+                                            <option value="NY">New York</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="tax-bracket">Federal Tax Bracket (%)</label>
+                                        <input type="number" id="tax-bracket" name="tax-bracket" min="0" max="50" step="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="risk-tolerance">Risk Tolerance</label>
+                                        <select id="risk-tolerance" name="risk-tolerance">
+                                            <option value="">Select Risk Tolerance</option>
+                                            <option value="conservative">Conservative</option>
+                                            <option value="moderate">Moderate</option>
+                                            <option value="aggressive">Aggressive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Current Assets</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="brokerage-balance">Brokerage Account Balance ($)</label>
+                                        <input type="number" id="brokerage-balance" name="brokerage-balance" min="0" step="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="retirement-balance">401(k)/IRA Balance ($)</label>
+                                        <input type="number" id="retirement-balance" name="retirement-balance" min="0" step="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cash-reserves">Cash Reserves ($)</label>
+                                        <input type="number" id="cash-reserves" name="cash-reserves" min="0" step="100" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="monthly-savings">Monthly Savings to Cash Reserves ($)</label>
+                                        <input type="number" id="monthly-savings" name="monthly-savings" min="0" step="50" required>
+                                        <small>Amount automatically added to cash reserves each month</small>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Annual Contributions</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="employee-contribution">Annual Employee 401(k) Contribution ($)</label>
+                                        <input type="number" id="employee-contribution" name="employee-contribution" min="0" step="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="employer-match">Annual Employer Match ($)</label>
+                                        <input type="number" id="employer-match" name="employer-match" min="0" step="100" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="employee-increase">Employee Contribution Annual Increase (%)</label>
+                                        <input type="number" id="employee-increase" name="employee-increase" min="0" max="20" step="0.5" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="employer-increase">Employer Match Annual Increase (%)</label>
+                                        <input type="number" id="employer-increase" name="employer-increase" min="0" max="20" step="0.5" required>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Retirement Income & Spending</legend>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="social-security">Expected Social Security (Annual $)</label>
+                                        <input type="number" id="social-security" name="social-security" min="0" step="100" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="monthly-spending">Planned Monthly Spending in Retirement ($)</label>
+                                        <input type="number" id="monthly-spending" name="monthly-spending" min="0" step="50" required>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Spouse Section -->
+                            <fieldset class="spouse-section">
+                                <legend>Spouse Information (Optional)</legend>
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="include-spouse" name="include-spouse" onchange="toggleSpouseFields()">
+                                        <span>Include Spouse in Retirement Plan</span>
+                                    </label>
+                                </div>
+
+                                <div id="spouse-fields" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="spouse-age">Spouse Current Age</label>
+                                            <input type="number" id="spouse-age" name="spouse-age" min="18" max="100" value="50">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="spouse-retirement-age">Spouse Retirement Age</label>
+                                            <input type="number" id="spouse-retirement-age" name="spouse-retirement-age" min="50" max="100" value="65">
+                                        </div>
+                                    </div>
+
+                                    <!-- Spouse 401(k) -->
+                                    <div class="subsection">
+                                        <h4>Spouse 401(k)</h4>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="spouse-401k-balance">Current 401(k) Balance ($)</label>
+                                                <input type="number" id="spouse-401k-balance" name="spouse-401k-balance" min="0" step="100" value="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="spouse-employee-contribution">Annual Employee Contribution ($)</label>
+                                                <input type="number" id="spouse-employee-contribution" name="spouse-employee-contribution" min="0" step="100" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="spouse-employer-match">Annual Employer Match ($)</label>
+                                                <input type="number" id="spouse-employer-match" name="spouse-employer-match" min="0" step="100" value="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="spouse-contribution-increase">Annual Contribution Increase (%)</label>
+                                                <input type="number" id="spouse-contribution-increase" name="spouse-contribution-increase" min="0" max="20" step="0.5" value="2">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Spouse Pension -->
+                                    <div class="subsection">
+                                        <h4>Spouse Pension</h4>
+                                        <div class="form-group checkbox-group">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" id="spouse-has-pension" name="spouse-has-pension" onchange="toggleSpousePension()">
+                                                <span>Spouse Has a Pension Plan</span>
+                                            </label>
+                                        </div>
+
+                                        <div id="spouse-pension-fields" style="display: none;">
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label for="spouse-pension-amount">Expected Annual Pension ($)</label>
+                                                    <input type="number" id="spouse-pension-amount" name="spouse-pension-amount" min="0" step="100" value="0">
+                                                    <small>Annual pension income at retirement</small>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="spouse-pension-start-age">Pension Start Age</label>
+                                                    <input type="number" id="spouse-pension-start-age" name="spouse-pension-start-age" min="50" max="100" value="65">
+                                                    <small>Age when pension payments begin</small>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group">
+                                                    <label for="spouse-pension-cola">Annual COLA Increase (%)</label>
+                                                    <input type="number" id="spouse-pension-cola" name="spouse-pension-cola" min="0" max="10" step="0.5" value="0">
+                                                    <small>Cost of living adjustment (0 if none)</small>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="spouse-pension-survivor">Survivor Benefit (%)</label>
+                                                    <input type="number" id="spouse-pension-survivor" name="spouse-pension-survivor" min="0" max="100" step="5" value="50">
+                                                    <small>Percentage paid to surviving spouse</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Spouse Social Security -->
+                                    <div class="subsection">
+                                        <h4>Spouse Social Security</h4>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="spouse-social-security">Expected Annual Social Security ($)</label>
+                                                <input type="number" id="spouse-social-security" name="spouse-social-security" min="0" step="100" value="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="spouse-ss-start-age">Social Security Start Age</label>
+                                                <input type="number" id="spouse-ss-start-age" name="spouse-ss-start-age" min="62" max="70" value="65">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Primary Pension Section -->
+                            <fieldset>
+                                <legend>Your Pension (Optional)</legend>
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="has-pension" name="has-pension" onchange="togglePrimaryPension()">
+                                        <span>I Have a Pension Plan</span>
+                                    </label>
+                                </div>
+
+                                <div id="pension-fields" style="display: none;">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="pension-amount">Expected Annual Pension ($)</label>
+                                            <input type="number" id="pension-amount" name="pension-amount" min="0" step="100" value="0">
+                                            <small>Annual pension income at retirement</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="pension-start-age">Pension Start Age</label>
+                                            <input type="number" id="pension-start-age" name="pension-start-age" min="50" max="100" value="65">
+                                            <small>Age when pension payments begin</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="pension-cola">Annual COLA Increase (%)</label>
+                                            <input type="number" id="pension-cola" name="pension-cola" min="0" max="10" step="0.5" value="0">
+                                            <small>Cost of living adjustment (0 if none)</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="pension-survivor">Survivor Benefit (%)</label>
+                                            <input type="number" id="pension-survivor" name="pension-survivor" min="0" max="100" step="5" value="50">
+                                            <small>Percentage paid to surviving spouse</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Generate Full Analysis</button>
+                                <button type="button" class="btn-secondary" onclick="resetProfileForm()">Reset Form</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Summary Dashboard -->
+                    <div id="summary-dashboard" style="display: none;">
+                        <h3>Financial Summary</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Current Assets</div>
+                                <div class="stat-value" id="total-assets">$0</div>
+                                <div class="stat-subtitle">All accounts combined</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Years to Retirement</div>
+                                <div class="stat-value" id="years-to-retire">0</div>
+                                <div class="stat-subtitle">Target: Age 65</div>
+                            </div>
+                            <div class="stat-card accent">
+                                <div class="stat-label">Projected at Retirement</div>
+                                <div class="stat-value" id="projected-total">$0</div>
+                                <div class="stat-subtitle">7.5% moderate growth</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Annual Retirement Income</div>
+                                <div class="stat-value" id="retirement-income">$0</div>
+                                <div class="stat-subtitle">4% withdrawal + SS + Pension</div>
+                            </div>
+                            <div class="stat-card" id="pension-stat-card" style="display: none;">
+                                <div class="stat-label">Annual Pension Income</div>
+                                <div class="stat-value" id="total-pension">$0</div>
+                                <div class="stat-subtitle">Combined household pension</div>
+                            </div>
+                            <div class="stat-card" id="spouse-stat-card" style="display: none;">
+                                <div class="stat-label">Spouse 401(k) Projected</div>
+                                <div class="stat-value" id="spouse-projected">$0</div>
+                                <div class="stat-subtitle">At spouse's retirement</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Projected Cash Reserves</div>
+                                <div class="stat-value" id="projected-cash">$0</div>
+                                <div class="stat-subtitle">With monthly savings</div>
+                            </div>
+                        </div>
+
+                        <div class="charts-container">
+                            <div class="chart-wrapper">
+                                <h3>Asset Allocation</h3>
+                                <canvas id="allocationChart"></canvas>
+                            </div>
+                            <div class="chart-wrapper">
+                                <h3>Projected Growth</h3>
+                                <canvas id="growthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PORTFOLIO ANALYSIS TAB -->
+            <div id="portfolio-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Portfolio Analysis</h2>
+
+                    <div class="analysis-section">
+                        <h3>Cash Holdings</h3>
+                        <div class="holdings-input">
+                            <p class="section-note">Enter your uninvested cash balances to include in portfolio allocation analysis.</p>
+                            <div class="cash-input-row">
+                                <label>Brokerage Cash:</label>
+                                <input type="number" id="brokerage-cash" placeholder="0.00" step="0.01" onchange="planner.updateCashHolding('brokerage', parseFloat(this.value) || 0)">
+                                <label>401(k) Cash:</label>
+                                <input type="number" id="retirement-cash" placeholder="0.00" step="0.01" onchange="planner.updateCashHolding('retirement', parseFloat(this.value) || 0)">
+                                <label>Total Cash:</label>
+                                <div id="total-cash-display" class="cash-total">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h3>Brokerage Account Holdings</h3>
+                        <div class="holdings-input">
+                            <p class="section-note">Enter your ticker symbol and number of shares. Click the refresh button (↻) to fetch current prices. <strong>Note:</strong> Prices do not auto-update - use the refresh buttons to get the latest market prices.</p>
+                            <div class="holdings-header">
+                                <span>Ticker</span>
+                                <span>Name</span>
+                                <span>Shares</span>
+                                <span>Price</span>
+                                <span>Value</span>
+                                <span>Updated</span>
+                                <span>Sector</span>
+                                <span class="sharia-only">Compliant</span>
+                                <span></span>
+                            </div>
+                            <div id="brokerage-holdings-container">
+                                <!-- Holdings will be dynamically added -->
+                            </div>
+                            <div class="holdings-actions">
+                                <button type="button" class="btn-secondary" onclick="planner.addHolding('brokerage')">+ Add Holding</button>
+                                <button type="button" class="btn-primary" onclick="planner.refreshAllPrices('brokerage')">↻ Refresh All Prices</button>
+                            </div>
+                            <div id="brokerage-refresh-status" class="refresh-status" style="display: none;"></div>
+                        </div>
+
+                        <div id="brokerage-analysis" class="analysis-results" style="display: none;">
+                            <h4>Analysis Results</h4>
+                            <div class="analysis-grid">
+                                <div class="analysis-card">
+                                    <div class="analysis-title">Concentration Risk</div>
+                                    <div id="concentration-risk" class="analysis-content"></div>
+                                </div>
+                                <div class="analysis-card">
+                                    <div class="analysis-title">Sector Breakdown</div>
+                                    <div id="sector-breakdown" class="analysis-content"></div>
+                                </div>
+                                <div class="analysis-card sharia-only">
+                                    <div class="analysis-title">Compliance Status</div>
+                                    <div id="compliance-status" class="analysis-content"></div>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="sectorChart"></canvas>
+                            </div>
+
+                            <!-- Cash Rebalancing Recommendations -->
+                            <div id="cash-rebalancing" style="margin-top: 2rem; display: none;">
+                                <h4>Cash Investment Recommendations</h4>
+                                <div class="analysis-card">
+                                    <div class="analysis-title">Suggested Purchases to Rebalance</div>
+                                    <div id="rebalancing-suggestions" class="analysis-content"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-section">
+                        <h3>401(k) Holdings</h3>
+                        <div class="holdings-input">
+                            <div class="holdings-header">
+                                <span>Ticker</span>
+                                <span>Name</span>
+                                <span>Shares</span>
+                                <span>Price</span>
+                                <span>Value</span>
+                                <span>Updated</span>
+                                <span>Sector</span>
+                                <span class="sharia-only">Compliant</span>
+                                <span></span>
+                            </div>
+                            <div id="retirement-holdings-container">
+                                <!-- Holdings will be dynamically added -->
+                            </div>
+                            <div class="holdings-actions">
+                                <button type="button" class="btn-secondary" onclick="planner.addHolding('retirement')">+ Add Holding</button>
+                                <button type="button" class="btn-primary" onclick="planner.refreshAllPrices('retirement')">↻ Refresh All Prices</button>
+                            </div>
+                            <div id="retirement-refresh-status" class="refresh-status" style="display: none;"></div>
+                        </div>
+
+                        <div id="retirement-analysis" class="analysis-results" style="display: none;">
+                            <h4>401(k) Analysis</h4>
+                            <div class="analysis-grid">
+                                <div class="analysis-card">
+                                    <div class="analysis-title">Fund Allocation</div>
+                                    <div id="fund-allocation" class="analysis-content"></div>
+                                </div>
+                                <div class="analysis-card sharia-only">
+                                    <div class="analysis-title">Compliance Concerns</div>
+                                    <div id="retirement-compliance" class="analysis-content"></div>
+                                </div>
+                                <div class="analysis-card sharia-only">
+                                    <div class="analysis-title">SDBA Recommendation</div>
+                                    <div id="sdba-recommendation" class="analysis-content"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-primary" onclick="analyzePortfolio()">Analyze Portfolio</button>
+                        <button type="button" class="btn-secondary" onclick="resetPortfolioHoldings()">Reset Holdings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GROWTH PROJECTIONS TAB -->
+            <div id="projections-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>10-Year Growth Projections</h2>
+
+                    <div class="scenario-selector">
+                        <h3>Select Return Scenario</h3>
+                        <div class="scenario-buttons">
+                            <button class="scenario-btn active" onclick="setScenario('conservative')" data-scenario="conservative">
+                                <span class="scenario-rate">6%</span>
+                                <span class="scenario-name">Conservative</span>
+                            </button>
+                            <button class="scenario-btn" onclick="setScenario('moderate')" data-scenario="moderate">
+                                <span class="scenario-rate">7.5%</span>
+                                <span class="scenario-name">Moderate</span>
+                            </button>
+                            <button class="scenario-btn" onclick="setScenario('optimistic')" data-scenario="optimistic">
+                                <span class="scenario-rate">9%</span>
+                                <span class="scenario-name">Optimistic</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="projections-results">
+                        <div class="projection-summary">
+                            <div class="summary-card large">
+                                <div class="summary-label">Projected Value at Age 65</div>
+                                <div class="summary-value" id="projection-final">$0</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Total Contributions</div>
+                                <div class="summary-value" id="projection-contributions">$0</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Investment Growth</div>
+                                <div class="summary-value" id="projection-growth">$0</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-wrapper full-width">
+                            <h3>Year-by-Year Projection</h3>
+                            <canvas id="projectionChart"></canvas>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table id="projection-table" class="projection-table">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Age</th>
+                                        <th>Starting Balance</th>
+                                        <th>Contributions</th>
+                                        <th>Growth</th>
+                                        <th>Ending Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projection-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="table-actions">
+                            <button type="button" class="btn-secondary" onclick="clearProjectionTable()">Clear Table</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RETIREMENT READINESS TAB -->
+            <div id="retirement-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Retirement Readiness Analysis</h2>
+
+                    <div class="readiness-dashboard">
+                        <div class="readiness-score-container">
+                            <div class="readiness-score" id="readiness-score">0%</div>
+                            <div class="readiness-label">Retirement Readiness Score</div>
+                        </div>
+
+                        <div class="readiness-details">
+                            <div class="detail-card">
+                                <div class="detail-label">Annual Spending Need</div>
+                                <div class="detail-value" id="annual-need">$0</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label">Social Security Income</div>
+                                <div class="detail-value" id="ss-income">$0</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label">4% Withdrawal Amount</div>
+                                <div class="detail-value" id="withdrawal-amount">$0</div>
+                            </div>
+                            <div class="detail-card accent">
+                                <div class="detail-label">Annual Surplus/Shortfall</div>
+                                <div class="detail-value" id="annual-surplus">$0</div>
+                            </div>
+                            <div class="detail-card">
+                                <div class="detail-label">Cash Reserves at Retirement</div>
+                                <div class="detail-value" id="projected-retirement-cash">$0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cashflow-section">
+                        <h3>Retirement Cash Flow (Ages 65-90)</h3>
+                        <div class="chart-wrapper full-width">
+                            <canvas id="cashflowChart"></canvas>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="projection-table">
+                                <thead>
+                                    <tr>
+                                        <th>Age</th>
+                                        <th>Year</th>
+                                        <th>Portfolio Value</th>
+                                        <th>4% Withdrawal</th>
+                                        <th>Social Security</th>
+                                        <th>Pension</th>
+                                        <th>Total Income</th>
+                                        <th>Spending</th>
+                                        <th>Surplus/Deficit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashflow-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STRESS TEST TAB -->
+            <div id="stress-test-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Market Stress Test</h2>
+
+                    <p class="section-note">Analyze how your portfolio would perform during market downturns and assess recovery potential before retirement.</p>
+
+                    <div class="stress-scenarios">
+                        <div class="stress-card" data-decline="20">
+                            <div class="stress-header mild">
+                                <span class="stress-icon">-20%</span>
+                                <span class="stress-title">Mild Correction</span>
+                            </div>
+                            <div class="stress-body">
+                                <div class="stress-stat">
+                                    <span class="stat-label">Portfolio Loss</span>
+                                    <span class="stat-value" id="loss-20">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">New Balance</span>
+                                    <span class="stat-value" id="balance-20">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Recovery Time (7.5%)</span>
+                                    <span class="stat-value" id="recovery-20">0 years</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Value at Retirement</span>
+                                    <span class="stat-value" id="retirement-20">$0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stress-card" data-decline="30">
+                            <div class="stress-header moderate">
+                                <span class="stress-icon">-30%</span>
+                                <span class="stress-title">Bear Market</span>
+                            </div>
+                            <div class="stress-body">
+                                <div class="stress-stat">
+                                    <span class="stat-label">Portfolio Loss</span>
+                                    <span class="stat-value" id="loss-30">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">New Balance</span>
+                                    <span class="stat-value" id="balance-30">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Recovery Time (7.5%)</span>
+                                    <span class="stat-value" id="recovery-30">0 years</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Value at Retirement</span>
+                                    <span class="stat-value" id="retirement-30">$0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stress-card" data-decline="40">
+                            <div class="stress-header severe">
+                                <span class="stress-icon">-40%</span>
+                                <span class="stress-title">Severe Crash</span>
+                            </div>
+                            <div class="stress-body">
+                                <div class="stress-stat">
+                                    <span class="stat-label">Portfolio Loss</span>
+                                    <span class="stat-value" id="loss-40">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">New Balance</span>
+                                    <span class="stat-value" id="balance-40">$0</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Recovery Time (7.5%)</span>
+                                    <span class="stat-value" id="recovery-40">0 years</span>
+                                </div>
+                                <div class="stress-stat">
+                                    <span class="stat-label">Value at Retirement</span>
+                                    <span class="stat-value" id="retirement-40">$0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stress-analysis">
+                        <h3>Risk Assessment</h3>
+                        <div id="risk-assessment" class="assessment-content">
+                            <p>Complete the profile form in the Overview tab to generate stress test analysis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ISLAMIC/FIXED INCOME OPTIONS TAB -->
+            <div id="islamic-options-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2 id="fixed-income-title">Fixed Income & Savings Options</h2>
+
+                    <div class="options-section sharia-only">
+                        <h3>Sukuk (Islamic Bonds)</h3>
+                        <p class="section-note">Sukuk are Sharia-compliant fixed-income instruments backed by tangible assets. Unlike conventional bonds, sukuk represent ownership in an underlying asset and generate returns through profit-sharing rather than interest.</p>
+
+                        <div class="options-grid">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <span class="option-ticker">SPSK</span>
+                                    <span class="option-name">SP Funds Dow Jones Global Sukuk ETF</span>
+                                </div>
+                                <div class="option-details">
+                                    <div class="detail-row">
+                                        <span>Expense Ratio:</span>
+                                        <span>0.55%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Expected Yield:</span>
+                                        <span>4.0-5.0%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Assets:</span>
+                                        <span>Global Investment-Grade Sukuk</span>
+                                    </div>
+                                </div>
+                                <div class="option-description">
+                                    <strong>How it works:</strong> Invests in investment-grade sukuk issued by governments and corporations worldwide. Returns are generated through lease payments, profit-sharing, or asset ownership rather than interest.
+                                </div>
+                                <div class="option-pros-cons">
+                                    <div class="pros">
+                                        <strong>Advantages:</strong>
+                                        <ul>
+                                            <li>Fully Sharia-compliant</li>
+                                            <li>Lower volatility than equities</li>
+                                            <li>Global diversification</li>
+                                            <li>Regular income distribution</li>
+                                        </ul>
+                                    </div>
+                                    <div class="cons">
+                                        <strong>Considerations:</strong>
+                                        <ul>
+                                            <li>Higher expense ratio than conventional bond ETFs</li>
+                                            <li>Currency risk from international holdings</li>
+                                            <li>Limited liquidity compared to conventional bonds</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="options-section conventional-only">
+                        <h3>Bond ETFs & Fixed Income</h3>
+                        <p class="section-note">Traditional fixed income options for portfolio diversification and income generation.</p>
+
+                        <div class="options-grid">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <span class="option-ticker">BND</span>
+                                    <span class="option-name">Vanguard Total Bond Market ETF</span>
+                                </div>
+                                <div class="option-details">
+                                    <div class="detail-row">
+                                        <span>Expense Ratio:</span>
+                                        <span>0.03%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>SEC Yield:</span>
+                                        <span>4.5-5.0%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Assets:</span>
+                                        <span>U.S. Investment-Grade Bonds</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <span class="option-ticker">AGG</span>
+                                    <span class="option-name">iShares Core U.S. Aggregate Bond ETF</span>
+                                </div>
+                                <div class="option-details">
+                                    <div class="detail-row">
+                                        <span>Expense Ratio:</span>
+                                        <span>0.03%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>SEC Yield:</span>
+                                        <span>4.5-5.0%</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Assets:</span>
+                                        <span>U.S. Investment-Grade Bonds</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="options-section">
+                        <h3 id="savings-title">Savings Account Options</h3>
+
+                        <div class="sharia-only">
+                            <p class="section-note">Islamic savings accounts operate on profit-sharing (Mudarabah) or cost-plus (Murabaha) principles rather than interest. Your deposits are invested in Sharia-compliant activities.</p>
+
+                            <div class="options-grid">
+                                <div class="option-card">
+                                    <div class="option-header">
+                                        <span class="option-ticker">UIF</span>
+                                        <span class="option-name">University Islamic Financial (UIF)</span>
+                                    </div>
+                                    <div class="option-details">
+                                        <div class="detail-row">
+                                            <span>Expected Return:</span>
+                                            <span>3.0-4.5% APY</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>FDIC Insured:</span>
+                                            <span>Yes (up to $250,000)</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>Minimum Deposit:</span>
+                                            <span>$100</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>Liquidity:</span>
+                                            <span>High - No lock-up period</span>
+                                        </div>
+                                    </div>
+                                    <div class="option-description">
+                                        Based in Michigan. Offers Sharia-compliant checking, savings, and CD alternatives.
+                                    </div>
+                                    <div class="contact-info">
+                                        <strong>Contact:</strong> uifinancial.com | (866) 217-9724
+                                    </div>
+                                </div>
+
+                                <div class="option-card">
+                                    <div class="option-header">
+                                        <span class="option-ticker">SALAAM</span>
+                                        <span class="option-name">Salaam Bank (formerly Devon Bank)</span>
+                                    </div>
+                                    <div class="option-details">
+                                        <div class="detail-row">
+                                            <span>Expected Return:</span>
+                                            <span>3.0-4.0% APY</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>FDIC Insured:</span>
+                                            <span>Yes (up to $250,000)</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>Minimum Deposit:</span>
+                                            <span>$500</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>Liquidity:</span>
+                                            <span>High - No lock-up period</span>
+                                        </div>
+                                    </div>
+                                    <div class="option-description">
+                                        Chicago-based Islamic bank offering profit-sharing savings accounts and home financing.
+                                    </div>
+                                    <div class="contact-info">
+                                        <strong>Contact:</strong> salaambank.com | (773) 465-2500
+                                    </div>
+                                </div>
+
+                                <div class="option-card">
+                                    <div class="option-header">
+                                        <span class="option-ticker">SATURNA</span>
+                                        <span class="option-name">Saturna Capital (Amana Funds)</span>
+                                    </div>
+                                    <div class="option-details">
+                                        <div class="detail-row">
+                                            <span>Products:</span>
+                                            <span>Islamic Mutual Funds</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>Track Record:</span>
+                                            <span>30+ years</span>
+                                        </div>
+                                    </div>
+                                    <div class="option-description">
+                                        Offers Amana Growth, Income, and Developing World funds - among the oldest Islamic mutual funds in the US.
+                                    </div>
+                                    <div class="contact-info">
+                                        <strong>Contact:</strong> saturna.com | (800) 728-8762
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="conventional-only">
+                            <div class="options-grid">
+                                <div class="option-card">
+                                    <div class="option-header">
+                                        <span class="option-ticker">HYSA</span>
+                                        <span class="option-name">High-Yield Savings Accounts</span>
+                                    </div>
+                                    <div class="option-details">
+                                        <div class="detail-row">
+                                            <span>Current Rates:</span>
+                                            <span>4.5-5.0% APY</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span>FDIC Insured:</span>
+                                            <span>Yes (up to $250,000)</span>
+                                        </div>
+                                    </div>
+                                    <div class="option-description">
+                                        Popular options include Marcus by Goldman Sachs, Ally Bank, and Discover Bank.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="options-section">
+                        <h3>Brokerage Availability</h3>
+
+                        <div class="info-box">
+                            <p><strong>Major Brokerages:</strong> While none of the major U.S. brokerages (Fidelity, Vanguard, Charles Schwab, E*TRADE, TD Ameritrade, Interactive Brokers, Robinhood) offer their own Sharia-compliant ETF products, all of them provide access to third-party Islamic ETFs including SPUS, HLAL, SPSK, and SPRE through standard brokerage accounts with commission-free trading.</p>
+
+                            <p class="sharia-only"><strong>For 401(k) Accounts:</strong> If your employer's 401(k) plan includes a Self-Directed Brokerage Account (SDBA) option through providers like Fidelity, Schwab, or Empower, you can typically access these Sharia-compliant ETFs within your retirement account.</p>
+
+                            <p><strong>Note:</strong> Most brokerage-branded ETFs (like Vanguard's own funds) are not fully halal as they may include interest-based or non-compliant stocks. Focus on the dedicated Islamic ETFs mentioned above.</p>
+                        </div>
+
+                        <div class="info-box" style="margin-top: 15px;">
+                            <p><strong>Specialized Islamic Platforms:</strong> For investors seeking deeper Shariah compliance insights, dedicated Islamic investing platforms like <strong>Zoya</strong> provide detailed compliance information, full holdings lists with purification calculations, and portfolio screening tools that traditional brokerages typically don't offer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REBALANCING PLAN TAB -->
+            <div id="rebalance-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Rebalancing Action Plan</h2>
+
+                    <div class="target-allocation">
+                        <h3>Target Allocation</h3>
+                        <p class="section-note">Recommended allocation based on your age, risk tolerance, and time to retirement.</p>
+
+                        <div class="allocation-grid">
+                            <div class="allocation-item">
+                                <div class="allocation-label">Equities</div>
+                                <div class="allocation-bar">
+                                    <div class="bar-fill equity" id="equity-bar" style="width: 70%"></div>
+                                </div>
+                                <div class="allocation-value" id="equity-target">70%</div>
+                            </div>
+                            <div class="allocation-item">
+                                <div class="allocation-label" id="fixed-income-label">Fixed Income</div>
+                                <div class="allocation-bar">
+                                    <div class="bar-fill fixed" id="fixed-bar" style="width: 20%"></div>
+                                </div>
+                                <div class="allocation-value" id="fixed-target">20%</div>
+                            </div>
+                            <div class="allocation-item">
+                                <div class="allocation-label">Cash</div>
+                                <div class="allocation-bar">
+                                    <div class="bar-fill cash" id="cash-bar" style="width: 10%"></div>
+                                </div>
+                                <div class="allocation-value" id="cash-target">10%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sdba-plan sharia-only">
+                        <h3>SDBA Reallocation Strategy</h3>
+                        <div class="plan-steps">
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Open SDBA Account</h4>
+                                    <p>Contact Empower (or your 401k provider) to open a Self-Directed Brokerage Account within your 401(k).</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>Transfer Non-Compliant Funds</h4>
+                                    <p id="transfer-amount">Transfer $181,433 from index funds to SDBA for Sharia-compliant reinvestment.</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>Allocate to Compliant Funds</h4>
+                                    <div class="recommended-allocation" id="sdba-allocation">
+                                        <!-- Will be populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>Redirect Future Contributions</h4>
+                                    <p>Set future 401(k) contributions to flow into the SDBA with your chosen allocation.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-checklist">
+                        <h3>Action Checklist</h3>
+
+                        <div class="checklist-section">
+                            <h4>Immediate Actions (This Week)</h4>
+                            <div class="checklist-items" id="immediate-actions">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="checklist-section">
+                            <h4>Short-Term Actions (1-3 Months)</h4>
+                            <div class="checklist-items" id="short-term-actions">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="checklist-section">
+                            <h4>Ongoing Actions (Quarterly)</h4>
+                            <div class="checklist-items" id="ongoing-actions">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rebalance-trades">
+                        <h3>Recommended Trades</h3>
+                        <div class="trades-container">
+                            <div class="trades-section sell">
+                                <h4>Sell / Trim</h4>
+                                <div id="sell-recommendations">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                            <div class="trades-section buy">
+                                <h4>Buy / Add</h4>
+                                <div id="buy-recommendations">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SENSITIVITY ANALYSIS TAB -->
+            <div id="sensitivity-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Sensitivity Analysis</h2>
+
+                    <p class="section-note">Explore how changes in key variables affect your retirement readiness.</p>
+
+                    <div class="sensitivity-scenarios">
+                        <div class="sensitivity-card">
+                            <h3>Early Retirement (Age 63)</h3>
+                            <div class="sensitivity-inputs">
+                                <div class="input-group">
+                                    <label>Retirement Age:</label>
+                                    <input type="number" id="early-retire-age" value="63" min="55" max="70">
+                                </div>
+                            </div>
+                            <div class="sensitivity-results" id="early-retirement-results">
+                                <div class="result-item">
+                                    <span class="result-label">Projected Portfolio:</span>
+                                    <span class="result-value" id="early-portfolio">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Years of Contributions Lost:</span>
+                                    <span class="result-value" id="early-years-lost">2 years</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Opportunity Cost:</span>
+                                    <span class="result-value" id="early-cost">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Sustainability:</span>
+                                    <span class="result-value" id="early-sustainable">Calculating...</span>
+                                </div>
+                            </div>
+                            <button class="btn-secondary" onclick="calculateEarlyRetirement()">Recalculate</button>
+                        </div>
+
+                        <div class="sensitivity-card">
+                            <h3>Lower Returns (5% vs 7.5%)</h3>
+                            <div class="sensitivity-inputs">
+                                <div class="input-group">
+                                    <label>Annual Return:</label>
+                                    <input type="number" id="lower-return-rate" value="5" min="0" max="15" step="0.5">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="sensitivity-results" id="lower-returns-results">
+                                <div class="result-item">
+                                    <span class="result-label">Projected Portfolio:</span>
+                                    <span class="result-value" id="lower-portfolio">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Difference from Baseline:</span>
+                                    <span class="result-value" id="lower-difference">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">4% Withdrawal Amount:</span>
+                                    <span class="result-value" id="lower-withdrawal">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Income Gap:</span>
+                                    <span class="result-value" id="lower-gap">$0</span>
+                                </div>
+                            </div>
+                            <button class="btn-secondary" onclick="calculateLowerReturns()">Recalculate</button>
+                        </div>
+
+                        <div class="sensitivity-card">
+                            <h3>Higher Spending ($5,000/month)</h3>
+                            <div class="sensitivity-inputs">
+                                <div class="input-group">
+                                    <label>Monthly Spending:</label>
+                                    <span>$</span>
+                                    <input type="number" id="higher-spending" value="5000" min="1000" max="20000" step="100">
+                                </div>
+                            </div>
+                            <div class="sensitivity-results" id="higher-spending-results">
+                                <div class="result-item">
+                                    <span class="result-label">Annual Need:</span>
+                                    <span class="result-value" id="higher-annual">$60,000</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Required Portfolio (4% rule):</span>
+                                    <span class="result-value" id="higher-required">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Shortfall at Retirement:</span>
+                                    <span class="result-value" id="higher-shortfall">$0</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Years Portfolio Lasts:</span>
+                                    <span class="result-value" id="higher-years">0 years</span>
+                                </div>
+                            </div>
+                            <button class="btn-secondary" onclick="calculateHigherSpending()">Recalculate</button>
+                        </div>
+                    </div>
+
+                    <div class="safe-retirement-calculator">
+                        <h3>When Can You Safely Retire?</h3>
+                        <div class="safe-retire-results">
+                            <div class="safe-retire-card">
+                                <div class="safe-retire-age" id="safe-retire-age">65</div>
+                                <div class="safe-retire-label">Earliest Safe Retirement Age</div>
+                                <div class="safe-retire-details" id="safe-retire-details">
+                                    Based on $39,000/year spending and 4% withdrawal rule
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="retire-timeline">
+                            <h4>Retirement Age Comparison</h4>
+                            <div class="timeline-items" id="retire-timeline">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <div class="disclaimer">
+                <strong>Disclaimer:</strong> This tool is for educational and informational purposes only.
+                It does not constitute financial, tax, legal, or investment advice. Past performance does not guarantee future results.
+                Consult with qualified professionals before making any financial decisions.
+                The user assumes all responsibility for any decisions made based on this analysis.
+            </div>
+        </footer>
+    </div>
+
+    <script src="../shared/storage-utils.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

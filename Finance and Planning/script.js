@@ -642,12 +642,16 @@ class FinancePlanningApp {
 
         const results = await StockService.lookupMultiple(symbols);
 
+        let updateCount = 0;
         for (const holding of holdings) {
-            const ticker = holding.ticker || holding.symbol;
+            const ticker = (holding.ticker || holding.symbol || '').toUpperCase().trim();
             const result = results[ticker];
             if (result && result.price) {
                 holding.currentPrice = result.price;
                 holding.lastUpdated = new Date().toLocaleString();
+                updateCount++;
+            } else if (result && result.error) {
+                console.warn(`Failed to update ${ticker}: ${result.error}`);
             }
         }
 
@@ -655,7 +659,7 @@ class FinancePlanningApp {
         this.renderPortfolioHoldings(type);
         this.updateDashboard();
 
-        UIUtils.showNotification('Prices updated', 'success', 2000);
+        UIUtils.showNotification(`Prices updated (${updateCount}/${holdings.length})`, 'success', 2000);
     }
 
     /**

@@ -118,7 +118,9 @@ class StockService {
             }
 
             const result = await this.lookupStock(symbol);
-            results[symbol] = result;
+            // Store results by the cleaned/normalized symbol to ensure consistent lookup
+            const cleanSymbol = (symbol || '').toUpperCase().trim();
+            results[cleanSymbol] = result;
             delayTime += this.RATE_LIMIT_MS;
         }
 
