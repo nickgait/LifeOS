@@ -41,6 +41,7 @@ class FinancialPlanner {
         this.attachEventListeners();
         this.initializeHoldings();
         this.updateShariaVisibility();
+        this.loadDisplayMode();
     }
 
     loadData() {
@@ -85,6 +86,13 @@ class FinancialPlanner {
             this.cashHoldings = savedCashHoldings;
             this.updateCashDisplay();
         }
+    }
+
+    loadDisplayMode() {
+        // Load display mode preference from localStorage
+        const savedMode = localStorage.getItem('planner-display-mode') || 'simple';
+        this.displayMode = savedMode;
+        this.setDisplayMode(savedMode);
     }
 
     migrateHoldingsToSharesBased(holdings) {
@@ -2246,6 +2254,319 @@ class FinancialPlanner {
                 }
             }
         });
+    }
+
+    // ==================== DISPLAY MODE ==================
+
+    setDisplayMode(mode) {
+        this.displayMode = mode;
+        localStorage.setItem('planner-display-mode', mode);
+
+        // Update button states
+        const simpleBtn = document.getElementById('simple-mode-btn');
+        const advancedBtn = document.getElementById('advanced-mode-btn');
+
+        if (mode === 'simple') {
+            simpleBtn.classList.add('active');
+            advancedBtn.classList.remove('active');
+        } else {
+            simpleBtn.classList.remove('active');
+            advancedBtn.classList.add('active');
+        }
+
+        // Show/hide tabs based on mode
+        this.updateTabsForMode();
+    }
+
+    updateTabsForMode() {
+        const tabs = document.querySelectorAll('.nav-tab');
+
+        if (this.displayMode === 'simple') {
+            // Show: Overview, Portfolio, Planning (basic)
+            // Hide: Projections, Retirement, Stress Test, Fixed Income, Rebalancing, Sensitivity, Expenses, Dividends, Research
+            const simpleTabs = ['overview', 'portfolio', 'planning'];
+            tabs.forEach(tab => {
+                const tabName = tab.getAttribute('onclick').match(/switchTab\('([^']+)'\)/)[1];
+                if (simpleTabs.includes(tabName)) {
+                    tab.style.display = 'block';
+                } else {
+                    tab.style.display = 'none';
+                }
+            });
+        } else {
+            // Show all tabs
+            tabs.forEach(tab => tab.style.display = 'block');
+        }
+    }
+
+    // ==================== EXPENSES METHODS ==================
+
+    handleExpenseSubmit(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const expense = {
+            id: 'expense-' + Date.now(),
+            date: form['expense-date'].value,
+            category: form['expense-category'].value,
+            amount: parseFloat(form['expense-amount'].value),
+            description: form['expense-description'].value,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!this.expenses) this.expenses = [];
+        this.expenses.push(expense);
+        this.saveData();
+        this.renderExpenses();
+        form.reset();
+        this.setupDefaultDates();
+
+        UIUtils.showNotification('Expense added', 'success', 2000);
+    }
+
+    deleteExpense(id) {
+        this.expenses = this.expenses.filter(e => e.id !== id);
+        this.saveData();
+        this.renderExpenses();
+        UIUtils.showNotification('Expense deleted', 'success', 2000);
+    }
+
+    renderExpenses() {
+        const container = document.getElementById('expenses-list');
+        if (!container) return;
+
+        if (!this.expenses || this.expenses.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No expenses recorded</p>';
+            return;
+        }
+
+        const monthExpenses = this.expenses.filter(e => {
+            const expenseDate = new Date(e.date);
+            const now = new Date();
+            return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+        });
+
+        if (monthExpenses.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No expenses this month</p>';
+            return;
+        }
+
+        const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+        container.innerHTML = `
+            <div style="margin-bottom: 1rem; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                <strong>Total this month:</strong> ${this.formatCurrency(total)}
+            </div>
+            ${monthExpenses.map(expense => `
+                <div class="expense-item">
+                    <div class="expense-date">${this.formatDate(expense.date)}</div>
+                    <div class="expense-category">${expense.category}</div>
+                    <div>${expense.description || '-'}</div>
+                    <div class="expense-amount">${this.formatCurrency(expense.amount)}</div>
+                    <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteExpense('${expense.id}')">Delete</button>
+                </div>
+            `).join('')}
+        `;
+    }
+
+    handleBudgetSubmit(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const budget = {
+            id: 'budget-' + Date.now(),
+            category: form['budget-category'].value,
+            limit: parseFloat(form['budget-limit'].value),
+            month: new Date().toISOString().slice(0, 7),
+            createdAt: new Date().toISOString()
+        };
+
+        if (!this.budgets) this.budgets = [];
+        this.budgets.push(budget);
+        this.saveData();
+        this.renderBudgets();
+        form.reset();
+
+        UIUtils.showNotification('Budget set', 'success', 2000);
+    }
+
+    deleteBudget(id) {
+        this.budgets = this.budgets.filter(b => b.id !== id);
+        this.saveData();
+        this.renderBudgets();
+        UIUtils.showNotification('Budget deleted', 'success', 2000);
+    }
+
+    renderBudgets() {
+        const container = document.getElementById('budgets-list');
+        if (!container) return;
+
+        if (!this.budgets) this.budgets = [];
+
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const monthBudgets = this.budgets.filter(b => b.month === currentMonth);
+
+        if (monthBudgets.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No budgets set for this month</p>';
+            return;
+        }
+
+        container.innerHTML = monthBudgets.map(budget => {
+            const spent = (this.expenses || [])
+                .filter(e => e.category === budget.category && e.date.startsWith(currentMonth))
+                .reduce((sum, e) => sum + e.amount, 0);
+
+            const percent = Math.min(100, (spent / budget.limit) * 100);
+            const status = spent > budget.limit ? 'Over budget' : 'On track';
+
+            return `
+                <div style="margin-bottom: 1rem; padding: 1rem; background: white; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong>${budget.category}</strong>
+                        <span>${this.formatCurrency(spent)} / ${this.formatCurrency(budget.limit)}</span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem;">
+                        <div style="height: 100%; width: ${percent}%; background: ${spent > budget.limit ? '#ef4444' : '#10b981'};"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <small style="color: ${spent > budget.limit ? '#ef4444' : '#10b981'};">${status}</small>
+                        <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteBudget('${budget.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ==================== DIVIDENDS METHODS ==================
+
+    handleDividendSubmit(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const dividend = {
+            id: 'dividend-' + Date.now(),
+            symbol: form['dividend-symbol'].value.toUpperCase(),
+            date: form['dividend-date'].value,
+            amount: parseFloat(form['dividend-amount'].value),
+            reinvested: form['dividend-drip'].checked,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!this.dividends) this.dividends = [];
+        this.dividends.push(dividend);
+        this.saveData();
+        this.renderDividends();
+        form.reset();
+        this.setupDefaultDates();
+
+        UIUtils.showNotification('Dividend recorded', 'success', 2000);
+    }
+
+    deleteDividend(id) {
+        this.dividends = this.dividends.filter(d => d.id !== id);
+        this.saveData();
+        this.renderDividends();
+        UIUtils.showNotification('Dividend deleted', 'success', 2000);
+    }
+
+    renderDividends() {
+        const container = document.getElementById('dividends-list');
+        if (!container) return;
+
+        if (!this.dividends || this.dividends.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No dividends recorded</p>';
+            return;
+        }
+
+        const sorted = [...this.dividends].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        container.innerHTML = sorted.map(dividend => `
+            <div class="dividend-item">
+                <div class="dividend-symbol">${dividend.symbol}</div>
+                <div>${this.formatDate(dividend.date)}</div>
+                <div class="dividend-amount">${this.formatCurrency(dividend.amount)}</div>
+                ${dividend.reinvested ? '<span class="drip-badge">DRIP</span>' : '<span>Received</span>'}
+                <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteDividend('${dividend.id}')">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    // ==================== RESEARCH METHODS ==================
+
+    handleResearchSubmit(e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const research = {
+            id: 'research-' + Date.now(),
+            symbol: form['research-symbol'].value.toUpperCase(),
+            name: form['research-name'].value,
+            type: form['research-type'].value,
+            rating: form['research-rating'].value,
+            sector: form['research-sector'].value,
+            notes: form['research-notes'].value,
+            createdAt: new Date().toISOString()
+        };
+
+        if (!this.research) this.research = [];
+        this.research.push(research);
+        this.saveData();
+        this.renderResearch();
+        form.reset();
+
+        UIUtils.showNotification('Research entry saved', 'success', 2000);
+    }
+
+    deleteResearch(id) {
+        this.research = this.research.filter(r => r.id !== id);
+        this.saveData();
+        this.renderResearch();
+        UIUtils.showNotification('Research deleted', 'success', 2000);
+    }
+
+    setResearchFilter(filter) {
+        this.researchFilter = filter;
+
+        // Update active button
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        this.renderResearch();
+    }
+
+    renderResearch() {
+        const container = document.getElementById('research-list');
+        if (!container) return;
+
+        if (!this.research) this.research = [];
+
+        let entries = this.research;
+
+        if (this.researchFilter !== 'all') {
+            entries = entries.filter(r => r.type === this.researchFilter);
+        }
+
+        if (entries.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No research entries</p>';
+            return;
+        }
+
+        container.innerHTML = entries.map(research => `
+            <div class="research-card">
+                <div class="research-header">
+                    <div>
+                        <div class="research-symbol">${research.symbol}</div>
+                        <div class="research-name">${research.name}</div>
+                    </div>
+                    <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteResearch('${research.id}')">×</button>
+                </div>
+                ${research.rating ? `<div class="research-rating">${research.rating}</div>` : ''}
+                ${research.sector ? `<small>${research.sector}</small>` : ''}
+                ${research.notes ? `<div class="research-notes">${research.notes}</div>` : ''}
+            </div>
+        `).join('');
     }
 
     // ==================== UTILITIES ====================

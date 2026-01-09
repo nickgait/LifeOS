@@ -15,12 +15,18 @@
                 <h1>Financial Planner</h1>
                 <p class="header-subtitle">Comprehensive Retirement & Investment Analysis</p>
             </div>
-            <div class="compliance-toggle">
-                <label class="toggle-label">
-                    <input type="checkbox" id="sharia-mode" onchange="toggleShariaMode()">
-                    <span class="toggle-slider"></span>
-                    <span class="toggle-text">Sharia-Compliant Mode</span>
-                </label>
+            <div class="header-controls">
+                <div class="mode-toggle" style="margin-right: 20px;">
+                    <button id="simple-mode-btn" class="mode-btn active" onclick="planner.setDisplayMode('simple')">Simple Mode</button>
+                    <button id="advanced-mode-btn" class="mode-btn" onclick="planner.setDisplayMode('advanced')">Advanced Mode</button>
+                </div>
+                <div class="compliance-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="sharia-mode" onchange="toggleShariaMode()">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Sharia-Compliant Mode</span>
+                    </label>
+                </div>
             </div>
         </header>
 
@@ -34,6 +40,9 @@
             <button class="nav-tab" onclick="switchTab('islamic-options')">Fixed Income Options</button>
             <button class="nav-tab" onclick="switchTab('rebalance')">Rebalancing Plan</button>
             <button class="nav-tab" onclick="switchTab('sensitivity')">Sensitivity Analysis</button>
+            <button class="nav-tab" onclick="switchTab('expenses')">💰 Expenses</button>
+            <button class="nav-tab" onclick="switchTab('dividends')">💵 Dividends</button>
+            <button class="nav-tab" onclick="switchTab('research')">🔍 Research</button>
         </nav>
 
         <main class="app-content">
@@ -1185,6 +1194,263 @@
                             <div class="timeline-items" id="retire-timeline">
                                 <!-- Populated dynamically -->
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ EXPENSES TAB ============ -->
+            <div id="expenses-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Expense Tracking & Budgeting</h2>
+
+                    <!-- Expense Summary -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">This Month</div>
+                            <div class="stat-value" id="month-total">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Monthly Average</div>
+                            <div class="stat-value" id="month-average">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Budget Status</div>
+                            <div class="stat-value" id="budget-percentage">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Expense Form -->
+                    <div class="form-section">
+                        <h3>Add Expense</h3>
+                        <form id="expense-form" onsubmit="planner.handleExpenseSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expense-date">Date</label>
+                                    <input type="date" id="expense-date" name="expense-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-category">Category</label>
+                                    <select id="expense-category" name="expense-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="food">🍽️ Food & Dining</option>
+                                        <option value="transport">🚗 Transportation</option>
+                                        <option value="housing">🏠 Housing</option>
+                                        <option value="utilities">⚡ Utilities</option>
+                                        <option value="health">🏥 Health & Medical</option>
+                                        <option value="entertainment">🎬 Entertainment</option>
+                                        <option value="shopping">🛍️ Shopping</option>
+                                        <option value="other">📌 Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-amount">Amount ($)</label>
+                                    <input type="number" id="expense-amount" name="expense-amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expense-description">Description</label>
+                                    <input type="text" id="expense-description" name="expense-description" placeholder="What was this for?">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Add Expense</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Expenses List -->
+                    <div class="form-section">
+                        <h3>Expenses This Month</h3>
+                        <div id="expenses-list" class="expenses-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown Chart -->
+                    <div class="chart-wrapper">
+                        <h3>Spending by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+
+                    <!-- Budget Management -->
+                    <div class="form-section">
+                        <h3>Monthly Budgets</h3>
+                        <form id="budget-form" onsubmit="planner.handleBudgetSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="budget-category">Category</label>
+                                    <select id="budget-category" name="budget-category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="food">Food & Dining</option>
+                                        <option value="transport">Transportation</option>
+                                        <option value="housing">Housing</option>
+                                        <option value="utilities">Utilities</option>
+                                        <option value="health">Health & Medical</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="shopping">Shopping</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="budget-limit">Monthly Limit ($)</label>
+                                    <input type="number" id="budget-limit" name="budget-limit" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Set Budget</button>
+                            </div>
+                        </form>
+
+                        <div id="budgets-list" class="budgets-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ DIVIDENDS TAB ============ -->
+            <div id="dividends-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Dividend Tracking</h2>
+
+                    <!-- Dividend Summary -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Dividends</div>
+                            <div class="stat-value" id="dividends-total">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">This Month</div>
+                            <div class="stat-value" id="dividends-month">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Annual Income</div>
+                            <div class="stat-value" id="dividends-annual">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Portfolio Yield</div>
+                            <div class="stat-value" id="portfolio-yield">0.00%</div>
+                        </div>
+                    </div>
+
+                    <!-- Add Dividend Form -->
+                    <div class="form-section">
+                        <h3>Record Dividend Payment</h3>
+                        <form id="dividend-form" onsubmit="planner.handleDividendSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="dividend-symbol">Stock Symbol</label>
+                                    <input type="text" id="dividend-symbol" name="dividend-symbol" placeholder="AAPL" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-date">Payment Date</label>
+                                    <input type="date" id="dividend-date" name="dividend-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-amount">Amount Paid ($)</label>
+                                    <input type="number" id="dividend-amount" name="dividend-amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="dividend-drip" name="dividend-drip">
+                                        <span>Reinvested (DRIP)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Record Dividend</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Dividend History -->
+                    <div class="form-section">
+                        <h3>Dividend History</h3>
+                        <div id="dividends-list" class="dividends-container">
+                            <!-- Populated by script -->
+                        </div>
+                    </div>
+
+                    <!-- Monthly Dividends Chart -->
+                    <div class="chart-wrapper">
+                        <h3>Monthly Dividend Income</h3>
+                        <canvas id="dividendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ RESEARCH TAB ============ -->
+            <div id="research-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Investment Research</h2>
+
+                    <!-- Add Research Entry Form -->
+                    <div class="form-section">
+                        <h3>Add Research Entry</h3>
+                        <form id="research-form" onsubmit="planner.handleResearchSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="research-symbol">Stock Symbol</label>
+                                    <input type="text" id="research-symbol" name="research-symbol" placeholder="AAPL" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-name">Company Name</label>
+                                    <input type="text" id="research-name" name="research-name" placeholder="Apple Inc." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-type">Type</label>
+                                    <select id="research-type" name="research-type" required>
+                                        <option value="stock">Stock</option>
+                                        <option value="etf">ETF</option>
+                                        <option value="fund">Fund</option>
+                                        <option value="crypto">Crypto</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="research-rating">Rating</label>
+                                    <select id="research-rating" name="research-rating">
+                                        <option value="">No Rating</option>
+                                        <option value="5">⭐⭐⭐⭐⭐ Strong Buy</option>
+                                        <option value="4">⭐⭐⭐⭐ Buy</option>
+                                        <option value="3">⭐⭐⭐ Hold</option>
+                                        <option value="2">⭐⭐ Avoid</option>
+                                        <option value="1">⭐ Sell</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="research-sector">Sector</label>
+                                    <input type="text" id="research-sector" name="research-sector" placeholder="Technology">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="research-notes">Research Notes</label>
+                                    <textarea id="research-notes" name="research-notes" rows="4" placeholder="Your research notes..."></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Research</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Research Entries -->
+                    <div class="form-section">
+                        <h3>Research Database</h3>
+                        <div class="research-filters">
+                            <button class="filter-btn active" onclick="planner.setResearchFilter('all')">All</button>
+                            <button class="filter-btn" onclick="planner.setResearchFilter('stock')">Stocks</button>
+                            <button class="filter-btn" onclick="planner.setResearchFilter('etf')">ETFs</button>
+                            <button class="filter-btn" onclick="planner.setResearchFilter('crypto')">Crypto</button>
+                        </div>
+                        <div id="research-list" class="research-container">
+                            <!-- Populated by script -->
                         </div>
                     </div>
                 </div>
