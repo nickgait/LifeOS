@@ -1136,8 +1136,37 @@ class FinancialPlanner {
 
     renderProjectionResults(projection) {
         document.getElementById('projection-final').textContent = this.formatCurrency(projection.finalValue);
+        document.getElementById('projection-cash').textContent = this.formatCurrency(projection.finalCashBalance);
+
+        const totalNetWorth = projection.finalValue + projection.finalCashBalance;
+        document.getElementById('projection-total').textContent = this.formatCurrency(totalNetWorth);
+
         document.getElementById('projection-contributions').textContent = this.formatCurrency(projection.totalContributions);
         document.getElementById('projection-growth').textContent = this.formatCurrency(projection.totalGrowth);
+
+        // Calculate "what if cash was invested" scenario
+        const rates = {
+            conservative: 0.06,
+            moderate: 0.075,
+            optimistic: 0.09
+        };
+        const rate = rates[this.projectionScenario];
+        const investedScenario = this.calculateIfCashWasInvested(rate);
+
+        // Populate comparison cards
+        document.getElementById('current-investments').textContent = this.formatCurrency(projection.finalValue);
+        document.getElementById('current-cash').textContent = this.formatCurrency(projection.finalCashBalance);
+        document.getElementById('current-total').textContent = this.formatCurrency(totalNetWorth);
+
+        document.getElementById('invested-total').textContent = this.formatCurrency(investedScenario.totalInvested);
+        document.getElementById('invested-emergency-fund').textContent = this.formatCurrency(investedScenario.emergencyFund);
+        document.getElementById('invested-grand-total').textContent = this.formatCurrency(investedScenario.totalNetWorth);
+
+        const difference = investedScenario.totalNetWorth - totalNetWorth;
+        const percentDifference = (difference / totalNetWorth * 100).toFixed(1);
+
+        document.getElementById('difference-amount').textContent = this.formatCurrency(difference);
+        document.getElementById('difference-percent').textContent = `+${percentDifference}%`;
 
         // Populate table
         const tbody = document.getElementById('projection-tbody');
@@ -1151,6 +1180,51 @@ class FinancialPlanner {
                 <td><strong>${this.formatCurrency(data.endBalance)}</strong></td>
             </tr>
         `).join('');
+    }
+
+    calculateIfCashWasInvested(annualReturn) {
+        // Calculate what would happen if excess cash (beyond 6-month emergency fund) + monthly savings were invested
+        const years = this.profile.yearsToRetirement;
+
+        // Calculate 6-month emergency fund requirement
+        const monthlyExpenses = this.profile.monthlySpending || 0;
+        const emergencyFund = monthlyExpenses * 6;
+
+        // Only invest cash above the emergency fund threshold
+        const excessCash = Math.max(0, this.profile.cashReserves - emergencyFund);
+
+        // Start with investment assets + excess cash
+        let balance = this.profile.brokerageBalance + this.profile.retirementBalance + excessCash;
+        let employeeContrib = this.profile.employeeContribution;
+        let employerContrib = this.profile.employerMatch;
+        let monthlySavings = this.profile.monthlySavings || 0;
+        const savingsIncreaseRate = 0.03;
+
+        // Track emergency fund growth with monthly savings
+        const cashGrowthRate = this.shariaMode ? 0 : 0.02;
+        let emergencyFundBalance = emergencyFund;
+
+        for (let year = 1; year <= years; year++) {
+            // Add 401k contributions + monthly savings to investments
+            const annualContribution = employeeContrib + employerContrib + (monthlySavings * 12);
+
+            // Grow the investment balance
+            balance = (balance + annualContribution) * (1 + annualReturn);
+
+            // Emergency fund grows at savings rate (minimal growth)
+            emergencyFundBalance = emergencyFundBalance * (1 + cashGrowthRate);
+
+            // Increase contributions for next year
+            employeeContrib *= (1 + this.profile.employeeIncrease);
+            employerContrib *= (1 + this.profile.employerIncrease);
+            monthlySavings *= (1 + savingsIncreaseRate);
+        }
+
+        return {
+            totalInvested: balance,
+            emergencyFund: emergencyFundBalance,
+            totalNetWorth: balance + emergencyFundBalance
+        };
     }
 
     setScenario(scenario) {
@@ -1186,8 +1260,8 @@ class FinancialPlanner {
         const annualWithdrawal = portfolioAtRetirement * 0.04;
 
         // Calculate equivalent annual income from cash reserves
-        // Assume cash is spread over 25 years of retirement (age 65-90)
-        const yearsInRetirement = 25;
+        // Assume cash is spread over 35 years of retirement (age 65-100)
+        const yearsInRetirement = 35;
         const annualCashAvailable = projection.finalCashBalance / yearsInRetirement;
 
         const totalIncome = annualWithdrawal + annualCashAvailable + this.profile.totalSocialSecurity + this.profile.totalPensionIncome;
@@ -1216,7 +1290,7 @@ class FinancialPlanner {
 
     generateCashFlowProjection(startingPortfolio, startingCash = 0) {
         const retirementAge = this.profile.retirementAge;
-        const endAge = 90;
+        const endAge = 100;
         const annualSpending = this.profile.annualSpending;
         const inflationRate = 0.025; // 2.5% inflation
         const withdrawalGrowth = 0.03; // 3% conservative growth in retirement
@@ -1246,22 +1320,14 @@ class FinancialPlanner {
             }
 
             const guaranteedIncome = ssIncome + pensionIncome;
-            const neededFromPortfolio = Math.max(0, inflatedSpending - guaranteedIncome);
 
-            // Use cash reserves first, then portfolio withdrawals
-            let withdrawal = 0;
-            let cashUsed = 0;
+            // Apply 4% withdrawal rule to portfolio each year
+            const withdrawal = portfolio > 0 ? portfolio * 0.04 : 0;
 
-            if (neededFromPortfolio > 0) {
-                // First, use cash reserves if available
-                cashUsed = Math.min(cashReserves, neededFromPortfolio);
-                const remainingNeed = neededFromPortfolio - cashUsed;
-
-                // Then withdraw from portfolio if still needed
-                if (remainingNeed > 0) {
-                    withdrawal = Math.min(portfolio * 0.04, remainingNeed);
-                }
-            }
+            // Calculate how much additional funding is needed from cash reserves
+            const totalIncomeBeforeCash = withdrawal + guaranteedIncome;
+            const cashNeeded = Math.max(0, inflatedSpending - totalIncomeBeforeCash);
+            const cashUsed = Math.min(cashReserves, cashNeeded);
 
             const totalIncome = withdrawal + cashUsed + guaranteedIncome;
             const surplus = totalIncome - inflatedSpending;
@@ -1330,9 +1396,33 @@ class FinancialPlanner {
             document.getElementById(`retirement-${decline}`).textContent = this.formatCurrency(projection);
         });
 
-        // Risk assessment
-        const normalProjection = this.calculateFutureValue(0.06).finalValue;
-        const worstCase = this.calculateFutureValueFromBalance(currentTotal * 0.6, 0.06, years);
+        // Risk assessment with comprehensive income analysis
+        const normalProjection = this.calculateFutureValue(0.06);
+        const normalPortfolio = normalProjection.finalValue;
+        const normalCash = normalProjection.finalCashBalance;
+        const worstCasePortfolio = this.calculateFutureValueFromBalance(currentTotal * 0.6, 0.06, years);
+
+        // Calculate retirement income for both scenarios
+        const normalWithdrawal = normalPortfolio * 0.04;
+        const normalTotalIncome = normalWithdrawal + this.profile.totalSocialSecurity + this.profile.totalPensionIncome;
+        const normalCashAnnual = normalCash / 35; // Spread over 35 years
+
+        const worstCaseWithdrawal = worstCasePortfolio * 0.04;
+        const worstCaseTotalIncome = worstCaseWithdrawal + this.profile.totalSocialSecurity + this.profile.totalPensionIncome;
+
+        const annualNeed = this.profile.annualSpending;
+
+        // Calculate for invested cash scenario
+        const rates = { conservative: 0.06, moderate: 0.075, optimistic: 0.09 };
+        const investedScenario = this.calculateIfCashWasInvested(0.06);
+        const investedWithdrawal = investedScenario.totalInvested * 0.04;
+        const investedTotalIncome = investedWithdrawal + this.profile.totalSocialSecurity + this.profile.totalPensionIncome;
+
+        // Worst case for invested scenario (40% crash on invested amount)
+        const investedWorstCase = investedScenario.totalInvested * 0.6;
+        const investedWorstCaseProjection = this.calculateFutureValueFromBalance(investedWorstCase, 0.06, years);
+        const investedWorstCaseWithdrawal = investedWorstCaseProjection * 0.04;
+        const investedWorstCaseTotalIncome = investedWorstCaseWithdrawal + this.profile.totalSocialSecurity + this.profile.totalPensionIncome;
 
         let assessment = '';
         if (years >= 10) {
@@ -1361,11 +1451,114 @@ class FinancialPlanner {
             `;
         }
 
+        // Current Strategy Assessment
         assessment += `
-            <div class="assessment-stats">
-                <p><strong>Baseline projection:</strong> ${this.formatCurrency(normalProjection)}</p>
-                <p><strong>After 40% crash:</strong> ${this.formatCurrency(worstCase)}</p>
-                <p><strong>Potential shortfall:</strong> ${this.formatCurrency(normalProjection - worstCase)}</p>
+            <div class="stress-comparison-cards">
+                <div class="stress-scenario-card">
+                    <h4>Current Strategy (Separate Cash & Investments)</h4>
+                    <div class="assessment-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Normal Scenario:</span>
+                            <span class="stat-value">${this.formatCurrency(normalPortfolio + normalCash)}</span>
+                        </div>
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Portfolio (4% withdrawal):</span>
+                            <span class="stat-value">${this.formatCurrency(normalWithdrawal)}/year</span>
+                        </div>
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Social Security:</span>
+                            <span class="stat-value">${this.formatCurrency(this.profile.totalSocialSecurity)}/year</span>
+                        </div>
+                        ${this.profile.totalPensionIncome > 0 ? `
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Pension:</span>
+                            <span class="stat-value">${this.formatCurrency(this.profile.totalPensionIncome)}/year</span>
+                        </div>
+                        ` : ''}
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Cash Reserves (annual):</span>
+                            <span class="stat-value">${this.formatCurrency(normalCashAnnual)}/year</span>
+                        </div>
+                        <div class="stat-row total">
+                            <span class="stat-label">Total Annual Income:</span>
+                            <span class="stat-value ${normalTotalIncome + normalCashAnnual >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(normalTotalIncome + normalCashAnnual)}/year</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Annual Need:</span>
+                            <span class="stat-value">${this.formatCurrency(annualNeed)}/year</span>
+                        </div>
+                        <div class="stat-row surplus">
+                            <span class="stat-label">Surplus/Deficit:</span>
+                            <span class="stat-value ${normalTotalIncome + normalCashAnnual >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency((normalTotalIncome + normalCashAnnual) - annualNeed)}/year</span>
+                        </div>
+                    </div>
+
+                    <div class="assessment-stats" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
+                        <div class="stat-row">
+                            <span class="stat-label">After 40% Crash:</span>
+                            <span class="stat-value">${this.formatCurrency(worstCasePortfolio + normalCash)}</span>
+                        </div>
+                        <div class="stat-row total">
+                            <span class="stat-label">Total Annual Income:</span>
+                            <span class="stat-value ${worstCaseTotalIncome + normalCashAnnual >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(worstCaseTotalIncome + normalCashAnnual)}/year</span>
+                        </div>
+                        <div class="stat-row surplus">
+                            <span class="stat-label">Surplus/Deficit:</span>
+                            <span class="stat-value ${worstCaseTotalIncome + normalCashAnnual >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency((worstCaseTotalIncome + normalCashAnnual) - annualNeed)}/year</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stress-scenario-card alternative">
+                    <h4>If Cash Was Invested (Keep 6-mo Emergency Fund)</h4>
+                    <div class="assessment-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Normal Scenario:</span>
+                            <span class="stat-value">${this.formatCurrency(investedScenario.totalNetWorth)}</span>
+                        </div>
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Portfolio (4% withdrawal):</span>
+                            <span class="stat-value">${this.formatCurrency(investedWithdrawal)}/year</span>
+                        </div>
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Social Security:</span>
+                            <span class="stat-value">${this.formatCurrency(this.profile.totalSocialSecurity)}/year</span>
+                        </div>
+                        ${this.profile.totalPensionIncome > 0 ? `
+                        <div class="stat-row breakdown">
+                            <span class="stat-label">• Pension:</span>
+                            <span class="stat-value">${this.formatCurrency(this.profile.totalPensionIncome)}/year</span>
+                        </div>
+                        ` : ''}
+                        <div class="stat-row total">
+                            <span class="stat-label">Total Annual Income:</span>
+                            <span class="stat-value ${investedTotalIncome >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(investedTotalIncome)}/year</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Annual Need:</span>
+                            <span class="stat-value">${this.formatCurrency(annualNeed)}/year</span>
+                        </div>
+                        <div class="stat-row surplus">
+                            <span class="stat-label">Surplus/Deficit:</span>
+                            <span class="stat-value ${investedTotalIncome >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(investedTotalIncome - annualNeed)}/year</span>
+                        </div>
+                    </div>
+
+                    <div class="assessment-stats" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0;">
+                        <div class="stat-row">
+                            <span class="stat-label">After 40% Crash:</span>
+                            <span class="stat-value">${this.formatCurrency(investedWorstCaseProjection + investedScenario.emergencyFund)}</span>
+                        </div>
+                        <div class="stat-row total">
+                            <span class="stat-label">Total Annual Income:</span>
+                            <span class="stat-value ${investedWorstCaseTotalIncome >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(investedWorstCaseTotalIncome)}/year</span>
+                        </div>
+                        <div class="stat-row surplus">
+                            <span class="stat-label">Surplus/Deficit:</span>
+                            <span class="stat-value ${investedWorstCaseTotalIncome >= annualNeed ? 'positive' : 'negative'}">${this.formatCurrency(investedWorstCaseTotalIncome - annualNeed)}/year</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 

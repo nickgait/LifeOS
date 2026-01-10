@@ -525,9 +525,23 @@
                     <div id="projections-results">
                         <div class="projection-summary">
                             <div class="summary-card large">
-                                <div class="summary-label">Projected Value at Age 65</div>
+                                <div class="summary-label">Projected Investments at Age 65</div>
                                 <div class="summary-value" id="projection-final">$0</div>
+                                <div class="stat-subtitle">Investment accounts only</div>
                             </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Projected Cash Reserves</div>
+                                <div class="summary-value" id="projection-cash">$0</div>
+                                <div class="stat-subtitle">With monthly savings</div>
+                            </div>
+                            <div class="summary-card accent">
+                                <div class="summary-label">Total Net Worth</div>
+                                <div class="summary-value" id="projection-total">$0</div>
+                                <div class="stat-subtitle">Investments + Cash</div>
+                            </div>
+                        </div>
+
+                        <div class="projection-summary" style="margin-top: 1rem;">
                             <div class="summary-card">
                                 <div class="summary-label">Total Contributions</div>
                                 <div class="summary-value" id="projection-contributions">$0</div>
@@ -535,6 +549,66 @@
                             <div class="summary-card">
                                 <div class="summary-label">Investment Growth</div>
                                 <div class="summary-value" id="projection-growth">$0</div>
+                            </div>
+                        </div>
+
+                        <div class="comparison-section">
+                            <h3>💡 What If You Invested Your Cash?</h3>
+                            <p class="section-note">See how your wealth would grow if you invested your cash reserves and monthly savings instead of keeping them in savings accounts.</p>
+
+                            <div class="comparison-cards">
+                                <div class="comparison-card current">
+                                    <div class="comparison-header">Current Strategy</div>
+                                    <div class="comparison-body">
+                                        <div class="comparison-item">
+                                            <span class="label">Investments:</span>
+                                            <span class="value" id="current-investments">$0</span>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <span class="label">Cash Reserves:</span>
+                                            <span class="value" id="current-cash">$0</span>
+                                        </div>
+                                        <div class="comparison-item total">
+                                            <span class="label">Total:</span>
+                                            <span class="value" id="current-total">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="comparison-card alternative">
+                                    <div class="comparison-header">If Cash Was Invested</div>
+                                    <div class="comparison-body">
+                                        <div class="comparison-item">
+                                            <span class="label">Investments:</span>
+                                            <span class="value" id="invested-total">$0</span>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <span class="label">Emergency Fund (6mo):</span>
+                                            <span class="value" id="invested-emergency-fund">$0</span>
+                                        </div>
+                                        <div class="comparison-item total">
+                                            <span class="label">Total:</span>
+                                            <span class="value" id="invested-grand-total">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="comparison-card difference">
+                                    <div class="comparison-header">Difference</div>
+                                    <div class="comparison-body">
+                                        <div class="comparison-item highlight">
+                                            <span class="label">Potential Gain:</span>
+                                            <span class="value" id="difference-amount">$0</span>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <span class="label">Percentage:</span>
+                                            <span class="value" id="difference-percent">0%</span>
+                                        </div>
+                                        <div class="comparison-note" id="difference-note">
+                                            Note: This maintains a 6-month emergency fund (based on your monthly spending) and invests all excess cash plus monthly savings at the selected return rate.
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -603,7 +677,7 @@
                     </div>
 
                     <div class="cashflow-section">
-                        <h3>Retirement Cash Flow (Ages 65-90)</h3>
+                        <h3>Retirement Cash Flow (Ages 65-100)</h3>
                         <div class="chart-wrapper full-width">
                             <canvas id="cashflowChart"></canvas>
                         </div>

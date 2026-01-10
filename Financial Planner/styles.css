@@ -1106,7 +1106,7 @@ legend {
 /* Stress Test */
 .stress-scenarios {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -1934,6 +1934,207 @@ legend {
     color: #92400e;
 }
 
+/* Cash Investment Comparison */
+.comparison-section {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    border: 2px solid #0284c7;
+}
+
+.comparison-section h3 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.section-note {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem 0;
+    font-size: 0.95rem;
+}
+
+.comparison-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.comparison-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-header {
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: white;
+    text-align: center;
+}
+
+.comparison-card.current .comparison-header {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.comparison-card.alternative .comparison-header {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+}
+
+.comparison-card.difference .comparison-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.comparison-body {
+    padding: 1.5rem;
+}
+
+.comparison-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.comparison-item:last-of-type {
+    border-bottom: none;
+}
+
+.comparison-item.total {
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.comparison-item.highlight {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    margin: -0.5rem -1.5rem 0.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: none;
+}
+
+.comparison-item .label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.comparison-item.total .label,
+.comparison-item.highlight .label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.comparison-item .value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.comparison-item.highlight .value {
+    color: #059669;
+    font-size: 1.5rem;
+}
+
+.comparison-note {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f0fdf4;
+    border-left: 3px solid #10b981;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #065f46;
+    line-height: 1.5;
+}
+
+/* Stress Test Comparison Cards */
+.stress-comparison-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.stress-scenario-card {
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stress-scenario-card.alternative {
+    border-color: #0284c7;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.stress-scenario-card h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.assessment-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.stat-row.breakdown {
+    padding-left: 1rem;
+    font-size: 0.9rem;
+}
+
+.stat-row.total {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--border-color);
+    font-weight: 700;
+}
+
+.stat-row.surplus {
+    padding-top: 0.5rem;
+    font-weight: 600;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.stat-row.total .stat-label,
+.stat-row.surplus .stat-label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.stat-value.positive {
+    color: var(--planner-success);
+}
+
+.stat-value.negative {
+    color: var(--planner-danger);
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .readiness-dashboard {
@@ -1991,7 +2192,9 @@ legend {
     .charts-container,
     .options-grid,
     .stress-scenarios,
-    .sensitivity-scenarios {
+    .sensitivity-scenarios,
+    .comparison-cards,
+    .stress-comparison-cards {
         grid-template-columns: 1fr;
     }
 
