@@ -125,19 +125,21 @@ class GoalsApp extends BaseApp {
       .map(goal => {
         const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
         const color = this.getCategoryColor(goal.category);
+        const safeName = Sanitizer.escapeHTML(goal.name);
+        const safeDescription = Sanitizer.escapeHTML(goal.description);
 
         return `
           <div class="goal-item">
             <div style="display: flex; justify-content: space-between; align-items: start;">
               <div style="flex: 1;">
-                <h3>${goal.name}</h3>
+                <h3>${safeName}</h3>
                 <div class="goal-meta">
-                  <span class="category-badge category-${goal.category}">
+                  <span class="category-badge category-${Sanitizer.escapeHTML(goal.category)}">
                     ${this.getCategoryLabel(goal.category)}
                   </span>
-                  <span style="color: #999;">Due: ${goal.targetDate}</span>
+                  <span style="color: #999;">Due: ${Sanitizer.escapeHTML(goal.targetDate)}</span>
                 </div>
-                ${goal.description ? `<p style="margin: 8px 0; color: #666; font-size: 13px;">${goal.description}</p>` : ''}
+                ${goal.description ? `<p style="margin: 8px 0; color: #666; font-size: 13px;">${safeDescription}</p>` : ''}
               </div>
             </div>
             <div>
@@ -193,14 +195,15 @@ class GoalsApp extends BaseApp {
 
     dashboardGoals.innerHTML = recentGoals.map(goal => {
       const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
+      const safeName = Sanitizer.escapeHTML(goal.name);
       return `
         <div class="goal-item">
-          <h3 style="margin-bottom: 5px;">${goal.name}</h3>
+          <h3 style="margin-bottom: 5px;">${safeName}</h3>
           <div style="font-size: 12px; color: #666; margin-bottom: 10px;">
-            <span class="category-badge category-${goal.category}">${this.getCategoryLabel(goal.category)}</span>
+            <span class="category-badge category-${Sanitizer.escapeHTML(goal.category)}">${this.getCategoryLabel(goal.category)}</span>
           </div>
           <div style="font-size: 13px; color: #999;">
-            ${Math.max(daysLeft, 0)} days remaining • Due ${goal.targetDate}
+            ${Math.max(daysLeft, 0)} days remaining • Due ${Sanitizer.escapeHTML(goal.targetDate)}
           </div>
         </div>
       `;

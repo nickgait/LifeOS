@@ -206,12 +206,13 @@ class FitnessTracker extends BaseApp {
       .map(goal => {
         const progress = goal.target > 0 ? (goal.current / goal.target * 100) : 0;
         const daysLeft = this.daysBetween(new Date(), new Date(goal.targetDate));
+        const safeName = Sanitizer.escapeHTML(goal.name);
 
         return `
           <div class="fitness-goal-item">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
               <div>
-                <h3 style="margin-bottom: 5px;">${goal.name}</h3>
+                <h3 style="margin-bottom: 5px;">${safeName}</h3>
                 <div style="font-size: 13px; color: #666;">
                   ${this.getActivityLabel(goal.activity)} • Target: ${goal.target} ${this.getActivityUnit(goal.activity)}
                 </div>
@@ -229,7 +230,7 @@ class FitnessTracker extends BaseApp {
 
             <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; color: #666;">
               <span>${goal.current} / ${goal.target} ${this.getActivityUnit(goal.activity)}</span>
-              <span>${goal.status === 'active' ? `${Math.max(daysLeft, 0)} days left` : `Completed ${goal.completedDate}`}</span>
+              <span>${goal.status === 'active' ? `${Math.max(daysLeft, 0)} days left` : `Completed ${Sanitizer.escapeHTML(goal.completedDate)}`}</span>
             </div>
 
             <button class="fitness-btn fitness-btn-small fitness-btn-danger" style="margin-top: 10px;" onclick="fitnessApp.deleteGoal(${goal.id})">Delete</button>
@@ -255,7 +256,9 @@ class FitnessTracker extends BaseApp {
     historyList.innerHTML = this.activities
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 20)
-      .map(activity => `
+      .map(activity => {
+        const safeNotes = Sanitizer.escapeHTML(activity.notes);
+        return `
         <div class="activity-item">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -264,7 +267,7 @@ class FitnessTracker extends BaseApp {
               </div>
               <div style="font-size: 13px; color: #666;">
                 ${activity.amount} ${this.getActivityUnit(activity.type)}
-                ${activity.notes ? ` • ${activity.notes}` : ''}
+                ${activity.notes ? ` • ${safeNotes}` : ''}
               </div>
             </div>
             <div style="text-align: right;">
@@ -275,7 +278,8 @@ class FitnessTracker extends BaseApp {
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
   }
 
   renderAllBadges() {
@@ -291,9 +295,9 @@ class FitnessTracker extends BaseApp {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
           ${earnedBadges.map(badge => `
             <div class="badge-card earned">
-              <div class="badge-icon">${badge.icon}</div>
-              <div class="badge-name">${badge.name}</div>
-              <div class="badge-requirement">${badge.requirement}</div>
+              <div class="badge-icon">${Sanitizer.escapeHTML(badge.icon)}</div>
+              <div class="badge-name">${Sanitizer.escapeHTML(badge.name)}</div>
+              <div class="badge-requirement">${Sanitizer.escapeHTML(badge.requirement)}</div>
               <div style="font-size: 11px; color: #10b981; margin-top: 5px;">
                 Earned ${this.formatDate(badge.earnedDate)}
               </div>
@@ -307,9 +311,9 @@ class FitnessTracker extends BaseApp {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
           ${unearnedBadges.map(badge => `
             <div class="badge-card">
-              <div class="badge-icon" style="opacity: 0.3;">${badge.icon}</div>
-              <div class="badge-name" style="color: #999;">${badge.name}</div>
-              <div class="badge-requirement">${badge.requirement}</div>
+              <div class="badge-icon" style="opacity: 0.3;">${Sanitizer.escapeHTML(badge.icon)}</div>
+              <div class="badge-name" style="color: #999;">${Sanitizer.escapeHTML(badge.name)}</div>
+              <div class="badge-requirement">${Sanitizer.escapeHTML(badge.requirement)}</div>
             </div>
           `).join('')}
         </div>
@@ -378,8 +382,8 @@ class FitnessTracker extends BaseApp {
 
     badgesDiv.innerHTML = earned.map(badge => `
       <div class="badge-card earned" style="text-align: center;">
-        <div style="font-size: 40px; margin-bottom: 5px;">${badge.icon}</div>
-        <div style="font-weight: 600; color: #333; font-size: 14px;">${badge.name}</div>
+        <div style="font-size: 40px; margin-bottom: 5px;">${Sanitizer.escapeHTML(badge.icon)}</div>
+        <div style="font-weight: 600; color: #333; font-size: 14px;">${Sanitizer.escapeHTML(badge.name)}</div>
       </div>
     `).join('');
   }

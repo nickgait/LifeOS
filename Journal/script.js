@@ -243,18 +243,23 @@ class JournalApp extends BaseApp {
 
     entriesList.innerHTML = filtered
       .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .map(entry => `
+      .map(entry => {
+        const safeTitle = Sanitizer.escapeHTML(entry.title);
+        const safeContent = Sanitizer.escapeHTML(entry.content);
+        const safeTags = entry.tags.map(t => Sanitizer.escapeHTML(t)).join(', ');
+
+        return `
         <div class="entry-item">
           <div style="display: flex; justify-content: space-between; align-items: start;">
             <div style="flex: 1; cursor: pointer;" onclick="journalApp.viewEntry(${entry.id})">
               <div class="entry-date">${this.formatDate(entry.date)}</div>
-              ${entry.title ? `<div style="font-weight: 600; color: #333; margin-bottom: 5px;">${entry.title}</div>` : ''}
-              <div class="entry-preview">${entry.content}</div>
+              ${entry.title ? `<div style="font-weight: 600; color: #333; margin-bottom: 5px;">${safeTitle}</div>` : ''}
+              <div class="entry-preview">${safeContent}</div>
             </div>
-            <div class="entry-mood" title="${entry.mood}">${this.getMoodEmoji(entry.mood)}</div>
+            <div class="entry-mood" title="${Sanitizer.escapeHTML(entry.mood)}">${this.getMoodEmoji(entry.mood)}</div>
           </div>
           <div class="entry-meta">
-            ${entry.tags.length > 0 ? `<span>${entry.tags.join(', ')}</span>` : ''}
+            ${entry.tags.length > 0 ? `<span>${safeTags}</span>` : ''}
             ${entry.tags.length > 0 ? ' • ' : ''}
             <span>${this.getWordCount(entry.content)} words</span>
           </div>
@@ -263,7 +268,8 @@ class JournalApp extends BaseApp {
             <button class="journal-btn journal-btn-small journal-btn-danger" onclick="journalApp.deleteEntry(${entry.id})">Delete</button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
   }
 
   renderEntryDetail() {
@@ -281,23 +287,26 @@ class JournalApp extends BaseApp {
     }
 
     const entry = this.selectedEntry;
+    const safeTitle = Sanitizer.escapeHTML(entry.title) || 'Untitled Entry';
+    const safeContent = Sanitizer.escapeHTML(entry.content);
+
     detailDiv.innerHTML = `
       <div class="entry-detail">
         <div style="display: flex; justify-content: space-between; align-items: start;">
           <div>
-            <h3>${entry.title || 'Untitled Entry'}</h3>
+            <h3>${safeTitle}</h3>
             <div class="entry-detail-date">${this.formatDate(entry.date)}</div>
           </div>
           <div class="entry-detail-mood">${this.getMoodEmoji(entry.mood)}</div>
         </div>
 
-        <div class="entry-detail-content">${entry.content}</div>
+        <div class="entry-detail-content">${safeContent}</div>
 
         ${entry.tags.length > 0 ? `
           <div style="margin-bottom: 15px;">
             ${entry.tags.map(tag => `
               <span style="display: inline-block; background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-right: 8px; margin-bottom: 8px;">
-                ${tag}
+                ${Sanitizer.escapeHTML(tag)}
               </span>
             `).join('')}
           </div>
@@ -370,17 +379,20 @@ class JournalApp extends BaseApp {
       return;
     }
 
-    recentDiv.innerHTML = recent.map(entry => `
+    recentDiv.innerHTML = recent.map(entry => {
+      const safeTitle = Sanitizer.escapeHTML(entry.title);
+      return `
       <div class="entry-item" style="margin-bottom: 10px;" onclick="journalApp.viewEntry(${entry.id})">
         <div style="display: flex; justify-content: space-between;">
           <div>
             <div class="entry-date" style="margin-bottom: 3px;">${this.formatDate(entry.date)}</div>
-            ${entry.title ? `<div style="font-weight: 500; color: #333; font-size: 13px;">${entry.title}</div>` : ''}
+            ${entry.title ? `<div style="font-weight: 500; color: #333; font-size: 13px;">${safeTitle}</div>` : ''}
           </div>
           <div style="font-size: 20px;">${this.getMoodEmoji(entry.mood)}</div>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   renderMoodChart() {
@@ -439,14 +451,19 @@ class JournalApp extends BaseApp {
 
     tagFilterDiv.innerHTML = `
       <div class="tag-filter">
-        ${allTags.map(tag => `
+        ${allTags.map(tag => {
+          const safeTag = Sanitizer.escapeHTML(tag);
+          // Use data attribute for the tag value to avoid injection in onclick
+          return `
           <button
             class="tag-filter-btn ${this.selectedTags.has(tag) ? 'active' : ''}"
-            onclick="journalApp.toggleTagFilter('${tag}')"
+            data-tag="${safeTag}"
+            onclick="journalApp.toggleTagFilter(this.dataset.tag)"
           >
-            ${tag}
+            ${safeTag}
           </button>
-        `).join('')}
+        `;
+        }).join('')}
         ${this.selectedTags.size > 0 ? `
           <button class="tag-filter-btn clear-btn" onclick="journalApp.clearTagFilters()">
             Clear Filters
@@ -643,6 +660,9 @@ class JournalApp extends BaseApp {
       ${historicalEntries.map(entry => {
         const entryYear = new Date(entry.date).getFullYear();
         const yearsAgo = today.getFullYear() - entryYear;
+        const safeTitle = Sanitizer.escapeHTML(entry.title);
+        const safeContent = Sanitizer.escapeHTML(entry.content);
+        const safeTags = entry.tags.map(t => Sanitizer.escapeHTML(t)).join(', ');
 
         return `
           <div class="entry-item" style="margin-bottom: 15px; cursor: pointer;" onclick="journalApp.viewEntry(${entry.id})">
@@ -651,14 +671,14 @@ class JournalApp extends BaseApp {
                 <div style="font-weight: 600; color: #667eea; font-size: 14px;">
                   ${yearsAgo} ${yearsAgo === 1 ? 'year' : 'years'} ago (${entryYear})
                 </div>
-                ${entry.title ? `<div style="font-weight: 500; color: #333; margin-top: 3px;">${entry.title}</div>` : ''}
+                ${entry.title ? `<div style="font-weight: 500; color: #333; margin-top: 3px;">${safeTitle}</div>` : ''}
               </div>
               <div style="font-size: 20px;">${this.getMoodEmoji(entry.mood)}</div>
             </div>
-            <div class="entry-preview" style="margin-bottom: 8px;">${entry.content}</div>
+            <div class="entry-preview" style="margin-bottom: 8px;">${safeContent}</div>
             ${entry.tags.length > 0 ? `
               <div style="font-size: 11px; color: #999;">
-                ${entry.tags.join(', ')}
+                ${safeTags}
               </div>
             ` : ''}
           </div>

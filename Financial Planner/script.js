@@ -367,12 +367,14 @@ class FinancialPlanner {
             const price = holding.price || 0;
             const value = shares * price;
             const lastUpdated = holding.lastUpdated ? new Date(holding.lastUpdated).toLocaleString() : 'Never';
+            const safeTicker = Sanitizer.escapeHTML(holding.ticker);
+            const safeName = Sanitizer.escapeHTML(holding.name);
 
             return `
             <div class="holding-row" data-index="${index}">
-                <input type="text" class="holding-ticker" value="${holding.ticker}"
+                <input type="text" class="holding-ticker" value="${safeTicker}"
                        placeholder="Ticker" onchange="planner.updateHolding('${type}', ${index}, 'ticker', this.value)">
-                <input type="text" class="holding-name" value="${holding.name}"
+                <input type="text" class="holding-name" value="${safeName}"
                        placeholder="Name" onchange="planner.updateHolding('${type}', ${index}, 'name', this.value)">
                 <input type="number" class="holding-shares" value="${shares}" step="0.0001"
                        placeholder="Shares" onchange="planner.updateHolding('${type}', ${index}, 'shares', parseFloat(this.value) || 0); planner.renderHoldings('${type}');">
