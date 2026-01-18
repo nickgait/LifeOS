@@ -60,7 +60,8 @@ class JournalApp extends BaseApp {
   handleEntrySubmit(e) {
     e.preventDefault();
 
-    const entry = this.createItem({
+    // Extract and validate journal entry data
+    const rawEntryData = {
       date: document.getElementById('entry-date').value,
       title: document.getElementById('entry-title').value,
       content: document.getElementById('entry-content').value,
@@ -69,7 +70,18 @@ class JournalApp extends BaseApp {
         .split(',')
         .map(t => t.trim())
         .filter(t => t)
-    });
+    };
+
+    // Validate the entry data using predefined schema
+    const validation = Validator.journalSchema.safeParse(rawEntryData);
+    if (!validation.success) {
+      const errorMessages = validation.errors.map(err => err.message).join('\n');
+      alert('Validation Error:\n' + errorMessages);
+      return;
+    }
+
+    // Create entry with validated data
+    const entry = this.createItem(validation.data);
 
     this.entries.push(entry);
     this.save();

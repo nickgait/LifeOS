@@ -45,11 +45,25 @@ class GoalsApp extends BaseApp {
   handleGoalSubmit(e) {
     e.preventDefault();
 
-    const goal = this.createItem({
+    // Extract and validate goal data
+    const rawGoalData = {
       name: document.getElementById('goal-name').value,
       description: document.getElementById('goal-description').value,
       category: document.getElementById('goal-category').value,
-      targetDate: document.getElementById('goal-target-date').value,
+      targetDate: document.getElementById('goal-target-date').value
+    };
+
+    // Validate the goal data using predefined schema
+    const validation = Validator.goalSchema.safeParse(rawGoalData);
+    if (!validation.success) {
+      const errorMessages = validation.errors.map(err => err.message).join('\n');
+      FormUtils.showNotification('Validation Error: ' + errorMessages, 'error');
+      return;
+    }
+
+    // Create goal with validated data
+    const goal = this.createItem({
+      ...validation.data,
       createdDate: new Date().toISOString().split('T')[0],
       status: 'active',
       milestones: [],

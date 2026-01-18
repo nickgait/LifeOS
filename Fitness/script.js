@@ -54,12 +54,24 @@ class FitnessTracker extends BaseApp {
   handleActivitySubmit(e) {
     e.preventDefault();
 
-    const activity = this.createItem({
+    // Extract and validate activity data
+    const rawActivityData = {
       type: document.getElementById('activity-type').value,
       amount: parseFloat(document.getElementById('activity-amount').value),
       date: document.getElementById('activity-date').value,
       notes: document.getElementById('activity-notes').value
-    });
+    };
+
+    // Validate the activity data using predefined schema
+    const validation = Validator.activitySchema.safeParse(rawActivityData);
+    if (!validation.success) {
+      const errorMessages = validation.errors.map(err => err.message).join('\n');
+      alert('Validation Error:\n' + errorMessages);
+      return;
+    }
+
+    // Create activity with validated data
+    const activity = this.createItem(validation.data);
 
     this.activities.push(activity);
     StorageManager.set('fitness-activities', this.activities);

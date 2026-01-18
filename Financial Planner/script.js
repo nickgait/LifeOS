@@ -36,15 +36,15 @@ class FinancialPlanner {
         this.init();
     }
 
-    init() {
-        this.loadData();
+    async init() {
+        await this.loadData();
         this.attachEventListeners();
         this.initializeHoldings();
         this.updateShariaVisibility();
         this.loadDisplayMode();
     }
 
-    loadData() {
+    async loadData() {
         // One-time migration: Clear old hardcoded default data
         const migrationKey = 'financial-planner-migrated-v3';
         if (!StorageManager.get(migrationKey)) {
@@ -53,9 +53,32 @@ class FinancialPlanner {
             StorageManager.set(migrationKey, true);
         }
 
-        const savedProfile = StorageManager.get('financial-planner-profile');
-        const savedHoldings = StorageManager.get('financial-planner-holdings');
+        // Load non-sensitive data normally
         const savedShariaMode = StorageManager.get('financial-planner-sharia-mode');
+        if (savedShariaMode !== null) {
+            this.shariaMode = savedShariaMode;
+            document.getElementById('sharia-mode').checked = this.shariaMode;
+        }
+
+        // Try to load encrypted data first, fallback to regular storage
+        let savedProfile, savedHoldings, savedCashHoldings;
+
+        if (EncryptedStorage.isInitialized()) {
+            savedProfile = await EncryptedStorage.get('financial-profile');
+            savedHoldings = await EncryptedStorage.get('financial-holdings');
+            savedCashHoldings = await EncryptedStorage.get('financial-cash');
+        }
+
+        // Fallback to regular storage if encrypted data not available
+        if (!savedProfile) {
+            savedProfile = StorageManager.get('financial-planner-profile');
+        }
+        if (!savedHoldings) {
+            savedHoldings = StorageManager.get('financial-planner-holdings');
+        }
+        if (!savedCashHoldings) {
+            savedCashHoldings = StorageManager.get('financial-planner-cash');
+        }
 
         if (savedProfile) {
             this.profile = savedProfile;
@@ -76,12 +99,6 @@ class FinancialPlanner {
             this.holdings.retirement = [];
         }
 
-        if (savedShariaMode !== null) {
-            this.shariaMode = savedShariaMode;
-            document.getElementById('sharia-mode').checked = this.shariaMode;
-        }
-
-        const savedCashHoldings = StorageManager.get('financial-planner-cash');
         if (savedCashHoldings) {
             this.cashHoldings = savedCashHoldings;
             this.updateCashDisplay();
@@ -115,11 +132,21 @@ class FinancialPlanner {
         this.saveData();
     }
 
-    saveData() {
-        StorageManager.set('financial-planner-profile', this.profile);
-        StorageManager.set('financial-planner-holdings', this.holdings);
+    async saveData() {
+        // Save non-sensitive data normally
         StorageManager.set('financial-planner-sharia-mode', this.shariaMode);
-        StorageManager.set('financial-planner-cash', this.cashHoldings);
+        
+        // Save sensitive financial data with encryption if available
+        if (EncryptedStorage.isInitialized()) {
+            await EncryptedStorage.set('financial-profile', this.profile);
+            await EncryptedStorage.set('financial-holdings', this.holdings);
+            await EncryptedStorage.set('financial-cash', this.cashHoldings);
+        } else {
+            // Fallback to regular storage if encryption not set up
+            StorageManager.set('financial-planner-profile', this.profile);
+            StorageManager.set('financial-planner-holdings', this.holdings);
+            StorageManager.set('financial-planner-cash', this.cashHoldings);
+        }
     }
 
     attachEventListeners() {
@@ -175,8 +202,26 @@ class FinancialPlanner {
 
         const form = document.getElementById('profile-form');
         const formData = new FormData(form);
+        
+        // Create validation schema for financial profile
+        const profileSchema = Validator.schema({
+            currentAge: Validator.number({ min: 18, max: 100, integer: true }),
+            retirementAge: Validator.number({ min: 50, max: 100, integer: true }),
+            state: Validator.string({ min: 2, max: 50 }),
+            taxBracket: Validator.number({ min: 0, max: 0.5 }),
+            riskTolerance: Validator.enum(['low', 'medium', 'high']),
+            brokerageBalance: Validator.number({ min: 0, max: 100000000 }),
+            retirementBalance: Validator.number({ min: 0, max: 100000000 }),
+            cashReserves: Validator.number({ min: 0, max: 100000000 }),
+            monthlySavings: Validator.number({ min: 0, max: 50000 }),
+            employeeContribution: Validator.number({ min: 0, max: 100000 }),
+            employerMatch: Validator.number({ min: 0, max: 100000 }),
+            socialSecurity: Validator.number({ min: 0, max: 10000 }),
+            monthlySpending: Validator.number({ min: 100, max: 50000 })
+        });
 
-        this.profile = {
+        // Extract and validate core profile data
+        const rawProfileData = {
             currentAge: parseInt(formData.get('current-age')),
             retirementAge: parseInt(formData.get('retirement-age')),
             state: formData.get('state'),
@@ -188,10 +233,28 @@ class FinancialPlanner {
             monthlySavings: parseFloat(formData.get('monthly-savings')),
             employeeContribution: parseFloat(formData.get('employee-contribution')),
             employerMatch: parseFloat(formData.get('employer-match')),
+            socialSecurity: parseFloat(formData.get('social-security')),
+            monthlySpending: parseFloat(formData.get('monthly-spending'))
+        };
+
+        // Validate the data
+        const validation = profileSchema.safeParse(rawProfileData);
+        if (!validation.success) {
+            const errorMessages = validation.errors.map(err => err.message).join('\n');
+            alert('Validation Error:\n' + errorMessages);
+            return;
+        }
+
+        // Use validated data
+        const validatedData = validation.data;
+
+        this.profile = {
+            // Use validated data for core fields
+            ...validatedData,
+            
+            // Add additional fields with validation
             employeeIncrease: parseFloat(formData.get('employee-increase')) / 100,
             employerIncrease: parseFloat(formData.get('employer-increase')) / 100,
-            socialSecurity: parseFloat(formData.get('social-security')),
-            monthlySpending: parseFloat(formData.get('monthly-spending')),
 
             // Primary Pension
             hasPension: formData.get('has-pension') === 'on',
@@ -2776,11 +2839,7 @@ class FinancialPlanner {
     }
 }
 
-// Initialize planner
-let planner;
-window.addEventListener('DOMContentLoaded', () => {
-    planner = new FinancialPlanner();
-});
+// Initialize planner (will be done in security initialization)
 
 // ==================== TAB SWITCHING ====================
 
@@ -2964,3 +3023,107 @@ function resetPortfolioHoldings() {
     // Scroll to top of section
     document.querySelector('#portfolio-tab .planner-content').scrollIntoView({ behavior: 'smooth' });
 }
+
+// ==================== SECURITY UTILITIES ====================
+
+class FinancialPlannerSecurity {
+    static async initializeEncryption() {
+        // Check if user wants to set up encryption
+        if (!EncryptedStorage.hasExistingData() && !EncryptedStorage.isInitialized()) {
+            const useEncryption = confirm(
+                '🔒 Financial Data Protection\n\n' +
+                'Would you like to password-protect your sensitive financial data?\n\n' +
+                'This will encrypt your account balances, holdings, and financial details.\n\n' +
+                'Click OK to set up encryption, or Cancel to continue without encryption.'
+            );
+
+            if (useEncryption) {
+                const password = prompt(
+                    '🔐 Set Encryption Password\n\n' +
+                    'Enter a strong password to protect your financial data.\n' +
+                    'Keep this password safe - it cannot be recovered if lost!'
+                );
+
+                if (password && password.length >= 6) {
+                    const success = await EncryptedStorage.initialize(password);
+                    if (success) {
+                        alert('✅ Encryption enabled! Your financial data is now protected.');
+                        return true;
+                    } else {
+                        alert('❌ Encryption setup failed. Your data will be stored normally.');
+                        return false;
+                    }
+                }
+            }
+        } else if (EncryptedStorage.hasExistingData() && !EncryptedStorage.isInitialized()) {
+            // Data exists but not unlocked
+            return await this.promptForPassword();
+        }
+        return EncryptedStorage.isInitialized();
+    }
+
+    static async promptForPassword() {
+        const password = prompt(
+            '🔐 Financial Data Protection\n\n' +
+            'Enter your password to access encrypted financial data:'
+        );
+
+        if (password) {
+            const success = await EncryptedStorage.initialize(password);
+            if (!success) {
+                alert('❌ Incorrect password. Data will be stored normally until correct password is entered.');
+                return false;
+            }
+            alert('✅ Financial data unlocked successfully!');
+            return true;
+        }
+        return false;
+    }
+
+    static sanitizeFinancialDisplay(value, type = 'text') {
+        if (value === null || value === undefined) return '';
+        
+        switch (type) {
+            case 'currency':
+                // Validate it's a number and format safely
+                const num = parseFloat(value);
+                if (isNaN(num)) return '$0';
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                }).format(num);
+            
+            case 'percentage':
+                const pct = parseFloat(value);
+                if (isNaN(pct)) return '0%';
+                return `${pct.toFixed(2)}%`;
+            
+            case 'number':
+                const number = parseFloat(value);
+                if (isNaN(number)) return '0';
+                return number.toLocaleString();
+                
+            default:
+                return Sanitizer.escapeHTML(value);
+        }
+    }
+
+    static validateAndSanitizeHolding(holding) {
+        // Use the predefined holding validator
+        const validation = Validator.holdingSchema.safeParse(holding);
+        if (!validation.success) {
+            console.error('Invalid holding data:', validation.errors);
+            return null;
+        }
+        return validation.data;
+    }
+}
+
+// Initialize encryption when the app loads
+window.addEventListener('DOMContentLoaded', async () => {
+    // Initialize security features
+    await FinancialPlannerSecurity.initializeEncryption();
+    
+    // Initialize the planner
+    window.planner = new FinancialPlanner();
+});
