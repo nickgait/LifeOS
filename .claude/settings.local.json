@@ -43,7 +43,8 @@
       "Bash(git ls-tree -r HEAD --name-only)",
       "Bash(wc:*)",
       "Bash(__NEW_LINE__ echo \"=== FINAL VERIFICATION ===\")",
-      "Bash(comm -23:*)"
+      "Bash(comm -23:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }
