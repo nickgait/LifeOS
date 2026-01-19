@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - LifeOS</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <div class="header-content">
+                <button class="back-btn" onclick="window.location.href='../index.html'">
+                    ← Back to LifeOS
+                </button>
+                <h1>📊 Analytics Dashboard</h1>
+                <button class="refresh-btn" onclick="refreshAnalytics()">
+                    🔄 Refresh
+                </button>
+            </div>
+        </header>
+
+        <main class="analytics-main">
+            <!-- Loading State -->
+            <div id="loading" class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your data...</p>
+            </div>
+
+            <!-- Analytics Content -->
+            <div id="analytics-content" class="analytics-content" style="display: none;">
+                <!-- Overview Section -->
+                <section class="analytics-section">
+                    <h2>📈 Overview</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-activities">-</div>
+                            <div class="stat-label">Total Activities</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-entries">-</div>
+                            <div class="stat-label">Journal Entries</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="active-goals">-</div>
+                            <div class="stat-label">Active Goals</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-expenses">-</div>
+                            <div class="stat-label">Total Expenses</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Fitness Analytics -->
+                <section class="analytics-section">
+                    <h2>🏃 Fitness Insights</h2>
+                    <div id="fitness-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Goals Analytics -->
+                <section class="analytics-section">
+                    <h2>🎯 Goals Analysis</h2>
+                    <div id="goals-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Journal Analytics -->
+                <section class="analytics-section">
+                    <h2>📔 Journal Insights</h2>
+                    <div id="journal-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Finance Analytics -->
+                <section class="analytics-section">
+                    <h2>💰 Financial Analysis</h2>
+                    <div id="finance-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Correlation Insights -->
+                <section class="analytics-section">
+                    <h2>🔗 Cross-App Correlations</h2>
+                    <div id="correlation-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Trends -->
+                <section class="analytics-section">
+                    <h2>📊 Trends</h2>
+                    <div class="trends-controls">
+                        <button class="trend-btn active" data-timeframe="week">This Week</button>
+                        <button class="trend-btn" data-timeframe="month">This Month</button>
+                        <button class="trend-btn" data-timeframe="3months">3 Months</button>
+                        <button class="trend-btn" data-timeframe="6months">6 Months</button>
+                    </div>
+                    <div id="trends-analytics" class="analytics-grid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- No Data State -->
+            <div id="no-data" class="no-data-state" style="display: none;">
+                <div class="no-data-icon">📊</div>
+                <h3>Not Enough Data Yet</h3>
+                <p>Start using the apps to see analytics and insights here!</p>
+                <div class="quick-actions">
+                    <a href="../Fitness/index.html" class="action-btn">Log a Workout</a>
+                    <a href="../Journal/index.html" class="action-btn">Write in Journal</a>
+                    <a href="../Goals/index.html" class="action-btn">Set a Goal</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/data-manager.js"></script>
+    <script src="../shared/analytics.js"></script>
+    <script src="../shared/theme-manager.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
