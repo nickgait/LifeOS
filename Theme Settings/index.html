@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Settings - LifeOS</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div class="container">
+        <header class="app-header">
+            <div class="header-content">
+                <button class="back-btn" onclick="window.location.href='../index.html'" aria-label="Back to LifeOS">
+                    ← Back to LifeOS
+                </button>
+                <h1>🎨 Theme Settings</h1>
+                <button class="reset-btn" onclick="resetToDefaults()" aria-label="Reset all settings to default">
+                    🔄 Reset
+                </button>
+            </div>
+        </header>
+
+        <main id="main-content" class="settings-main">
+            <!-- Preview Section -->
+            <section class="settings-section" aria-labelledby="preview-heading">
+                <h2 id="preview-heading">👁️ Live Preview</h2>
+                <div class="preview-container">
+                    <div class="preview-card">
+                        <div class="preview-header">
+                            <div class="preview-avatar"></div>
+                            <div class="preview-info">
+                                <h3>Sample App Card</h3>
+                                <p>This shows how your theme looks</p>
+                            </div>
+                        </div>
+                        <div class="preview-content">
+                            <div class="preview-stat">
+                                <div class="stat-number">42</div>
+                                <div class="stat-label">Sample Data</div>
+                            </div>
+                            <div class="preview-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                                <small>75% Complete</small>
+                            </div>
+                            <button class="preview-button">Sample Button</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Theme Selection -->
+            <section class="settings-section" aria-labelledby="theme-heading">
+                <h2 id="theme-heading">🌈 Choose Your Theme</h2>
+                <div class="theme-grid" role="radiogroup" aria-labelledby="theme-heading">
+                    <!-- Themes will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Accessibility Settings -->
+            <section class="settings-section" aria-labelledby="accessibility-heading">
+                <h2 id="accessibility-heading">♿ Accessibility Options</h2>
+                <div class="accessibility-options">
+                    <div class="option-group">
+                        <h3>Visual Preferences</h3>
+                        
+                        <label class="option-label">
+                            <input type="checkbox" id="reduceMotion" data-pref="reduceMotion" aria-describedby="motion-desc">
+                            <span class="checkbox-custom"></span>
+                            Reduce motion and animations
+                        </label>
+                        <p id="motion-desc" class="option-description">
+                            Disables animations and smooth transitions for users sensitive to motion.
+                        </p>
+
+                        <label class="option-label">
+                            <input type="checkbox" id="highContrast" data-pref="highContrast" aria-describedby="contrast-desc">
+                            <span class="checkbox-custom"></span>
+                            High contrast mode
+                        </label>
+                        <p id="contrast-desc" class="option-description">
+                            Increases contrast and border visibility for better readability.
+                        </p>
+
+                        <label class="option-label">
+                            <input type="checkbox" id="autoTheme" data-pref="autoTheme" aria-describedby="auto-desc">
+                            <span class="checkbox-custom"></span>
+                            Automatic theme switching
+                        </label>
+                        <p id="auto-desc" class="option-description">
+                            Follows your system's dark/light mode preference automatically.
+                        </p>
+                    </div>
+
+                    <div class="option-group">
+                        <h3>Text Size</h3>
+                        <div class="font-size-options" role="radiogroup" aria-labelledby="font-size-heading">
+                            <label class="font-size-option">
+                                <input type="radio" name="fontSize" value="small" data-pref="fontSize">
+                                <span class="radio-custom"></span>
+                                <span class="font-preview small-text">Small (14px)</span>
+                            </label>
+                            <label class="font-size-option">
+                                <input type="radio" name="fontSize" value="normal" data-pref="fontSize" checked>
+                                <span class="radio-custom"></span>
+                                <span class="font-preview normal-text">Normal (16px)</span>
+                            </label>
+                            <label class="font-size-option">
+                                <input type="radio" name="fontSize" value="large" data-pref="fontSize">
+                                <span class="radio-custom"></span>
+                                <span class="font-preview large-text">Large (18px)</span>
+                            </label>
+                            <label class="font-size-option">
+                                <input type="radio" name="fontSize" value="xl" data-pref="fontSize">
+                                <span class="radio-custom"></span>
+                                <span class="font-preview xl-text">Extra Large (20px)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="settings-section" aria-labelledby="actions-heading">
+                <h2 id="actions-heading">⚡ Quick Actions</h2>
+                <div class="quick-actions-grid">
+                    <button class="action-card" onclick="toggleDarkMode()" aria-label="Toggle between light and dark themes">
+                        <div class="action-icon">🌙</div>
+                        <h3>Toggle Dark Mode</h3>
+                        <p>Quick switch to dark theme</p>
+                    </button>
+                    
+                    <button class="action-card" onclick="exportThemeSettings()" aria-label="Export current theme settings">
+                        <div class="action-icon">📤</div>
+                        <h3>Export Settings</h3>
+                        <p>Save your theme preferences</p>
+                    </button>
+                    
+                    <button class="action-card" onclick="showImportDialog()" aria-label="Import theme settings">
+                        <div class="action-icon">📥</div>
+                        <h3>Import Settings</h3>
+                        <p>Load saved preferences</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Theme Info -->
+            <section class="settings-section" aria-labelledby="info-heading">
+                <h2 id="info-heading">ℹ️ Theme Information</h2>
+                <div class="theme-info">
+                    <div class="info-item">
+                        <strong>Current Theme:</strong>
+                        <span id="current-theme-name">LifeOS</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Theme Type:</strong>
+                        <span id="current-theme-type">Light</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Accessibility Features:</strong>
+                        <span id="accessibility-status">Standard</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Import Dialog -->
+        <div id="import-dialog" class="modal" role="dialog" aria-labelledby="import-title" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="import-title">Import Theme Settings</h3>
+                    <button class="close-btn" onclick="hideImportDialog()" aria-label="Close dialog">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>Paste your exported theme settings below:</p>
+                    <textarea id="import-textarea" rows="10" placeholder='{"theme":"lifeos","preferences":{...}}'></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="hideImportDialog()">Cancel</button>
+                    <button class="btn btn-primary" onclick="importThemeSettings()">Import</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container" role="region" aria-live="polite" aria-label="Notifications">
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../shared/storage-utils.js"></script>
+    <script src="../shared/data-manager.js"></script>
+    <script src="../shared/advanced-theme-manager.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
