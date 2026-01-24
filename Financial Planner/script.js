@@ -1,6 +1,400 @@
 // Financial Planner Module - Main JavaScript
 // Comprehensive retirement planning with optional Sharia-compliance mode
 
+/**
+ * Monte Carlo simulation engine
+ */
+class MonteCarloEngine {
+    constructor(profile) {
+        this.profile = profile;
+        this.iterations = 1000;
+        this.results = [];
+    }
+
+    /**
+     * Generate random normal distribution using Box-Muller transform
+     */
+    generateNormalRandom(mean, stdDev) {
+        if (this.spare !== undefined) {
+            const temp = this.spare;
+            this.spare = undefined;
+            return temp * stdDev + mean;
+        }
+
+        const u1 = Math.random();
+        const u2 = Math.random();
+        
+        const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        this.spare = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+        
+        return z0 * stdDev + mean;
+    }
+
+    /**
+     * Run Monte Carlo simulation
+     */
+    runSimulation(iterations = 1000) {
+        this.iterations = iterations;
+        this.results = [];
+
+        const expectedReturn = this.profile.expectedReturn || 0.075;
+        const volatility = this.profile.marketVolatility || 0.15;
+        const inflationRate = this.profile.inflationRate || 0.03;
+
+        for (let i = 0; i < iterations; i++) {
+            const result = this.runSingleSimulation(expectedReturn, volatility, inflationRate);
+            this.results.push(result);
+        }
+
+        return this.analyzeResults();
+    }
+
+    /**
+     * Run single simulation iteration
+     */
+    runSingleSimulation(expectedReturn, volatility, inflationRate) {
+        const years = this.profile.yearsToRetirement;
+        let portfolioBalance = this.profile.brokerageBalance + this.profile.retirementBalance;
+        let employeeContrib = this.profile.employeeContribution;
+        let employerContrib = this.profile.employerMatch;
+        
+        // Spouse 401(k) if applicable
+        let spouseBalance = this.profile.includeSpouse ? (this.profile.spouse401kBalance || 0) : 0;
+        let spouseEmployeeContrib = this.profile.includeSpouse ? (this.profile.spouseEmployeeContribution || 0) : 0;
+        let spouseEmployerContrib = this.profile.includeSpouse ? (this.profile.spouseEmployerMatch || 0) : 0;
+        const spouseYears = this.profile.includeSpouse ? 
+            (this.profile.spouseRetirementAge - this.profile.spouseAge) : 0;
+
+        const yearlyData = [];
+
+        // Accumulation phase
+        for (let year = 1; year <= years; year++) {
+            // Generate random return for this year
+            const annualReturn = this.generateNormalRandom(expectedReturn, volatility);
+            
+            // Main portfolio growth
+            const annualContribution = employeeContrib + employerContrib;
+            portfolioBalance = (portfolioBalance + annualContribution) * (1 + annualReturn);
+            
+            // Spouse portfolio growth (if still accumulating)
+            if (year <= spouseYears) {
+                const spouseAnnualContrib = spouseEmployeeContrib + spouseEmployerContrib;
+                spouseBalance = (spouseBalance + spouseAnnualContrib) * (1 + annualReturn);
+                
+                // Increase spouse contributions
+                spouseEmployeeContrib *= (1 + (this.profile.spouseContributionIncrease || 0.02));
+                spouseEmployerContrib *= (1 + (this.profile.spouseContributionIncrease || 0.02));
+            }
+
+            yearlyData.push({
+                year,
+                age: this.profile.currentAge + year,
+                return: annualReturn,
+                portfolioBalance,
+                spouseBalance
+            });
+
+            // Increase contributions for next year
+            employeeContrib *= (1 + this.profile.employeeIncrease);
+            employerContrib *= (1 + this.profile.employerIncrease);
+        }
+
+        const totalPortfolioAtRetirement = portfolioBalance + spouseBalance;
+        
+        // Withdrawal phase simulation (simplified - just check if portfolio survives to age 100)
+        const survivalResult = this.simulateWithdrawalPhase(
+            totalPortfolioAtRetirement, 
+            expectedReturn, 
+            volatility, 
+            inflationRate
+        );
+
+        return {
+            finalPortfolio: totalPortfolioAtRetirement,
+            survives: survivalResult.survives,
+            depletion_age: survivalResult.depletionAge,
+            yearlyData
+        };
+    }
+
+    /**
+     * Simulate withdrawal phase using selected strategy
+     */
+    simulateWithdrawalPhase(startingPortfolio, expectedReturn, volatility, inflationRate) {
+        const strategy = this.profile.withdrawalStrategy || 'fixed';
+        
+        switch (strategy) {
+            case 'guardrails':
+                return this.simulateGuardrailsStrategy(startingPortfolio, expectedReturn, volatility, inflationRate);
+            case 'dynamic':
+                return this.simulateDynamicStrategy(startingPortfolio, expectedReturn, volatility, inflationRate);
+            case 'bucket':
+                return this.simulateBucketStrategy(startingPortfolio, expectedReturn, volatility, inflationRate);
+            default:
+                return this.simulateFixedStrategy(startingPortfolio, expectedReturn, volatility, inflationRate);
+        }
+    }
+
+    /**
+     * Fixed 4% rule strategy
+     */
+    simulateFixedStrategy(startingPortfolio, expectedReturn, volatility, inflationRate) {
+        let portfolio = startingPortfolio;
+        const retirementAge = this.profile.retirementAge;
+        const endAge = 100;
+        let currentSpending = this.profile.annualSpending || (this.profile.monthlySpending * 12);
+        
+        const ssIncome = this.profile.totalSocialSecurity || this.profile.socialSecurity || 0;
+        const pensionIncome = this.profile.totalPensionIncome || 0;
+        const guaranteedIncome = ssIncome + pensionIncome;
+
+        for (let age = retirementAge; age <= endAge; age++) {
+            const annualReturn = this.generateNormalRandom(expectedReturn, volatility);
+            const yearsInRetirement = age - retirementAge;
+            const inflatedSpending = currentSpending * Math.pow(1 + inflationRate, yearsInRetirement);
+            const withdrawalNeeded = Math.max(0, inflatedSpending - guaranteedIncome);
+            const withdrawalRate = portfolio > 0 ? withdrawalNeeded / portfolio : 0;
+            
+            if (withdrawalRate > 0.10) {
+                return { survives: false, depletionAge: age };
+            }
+
+            portfolio = (portfolio - withdrawalNeeded) * (1 + annualReturn);
+            
+            if (portfolio <= 0) {
+                return { survives: false, depletionAge: age };
+            }
+        }
+
+        return { survives: true, depletionAge: null };
+    }
+
+    /**
+     * Guardrails strategy (Guyton-Klinger rules)
+     */
+    simulateGuardrailsStrategy(startingPortfolio, expectedReturn, volatility, inflationRate) {
+        let portfolio = startingPortfolio;
+        const retirementAge = this.profile.retirementAge;
+        const endAge = 100;
+        let baseSpending = this.profile.annualSpending || (this.profile.monthlySpending * 12);
+        let currentSpending = baseSpending;
+        
+        const ssIncome = this.profile.totalSocialSecurity || this.profile.socialSecurity || 0;
+        const pensionIncome = this.profile.totalPensionIncome || 0;
+        const guaranteedIncome = ssIncome + pensionIncome;
+        
+        const initialWithdrawalRate = 0.04;
+
+        for (let age = retirementAge; age <= endAge; age++) {
+            const annualReturn = this.generateNormalRandom(expectedReturn, volatility);
+            const yearsInRetirement = age - retirementAge;
+            
+            // Inflate base spending
+            const inflatedBaseSpending = baseSpending * Math.pow(1 + inflationRate, yearsInRetirement);
+            
+            // Calculate current withdrawal rate
+            const currentWithdrawalRate = portfolio > 0 ? (currentSpending - guaranteedIncome) / portfolio : 0;
+            
+            // Apply guardrails rules
+            const upperGuardrail = initialWithdrawalRate * 1.2; // 20% above initial rate
+            const lowerGuardrail = initialWithdrawalRate * 0.8; // 20% below initial rate
+            
+            if (currentWithdrawalRate > upperGuardrail && yearsInRetirement > 0) {
+                // Cut spending by 10%
+                currentSpending = Math.max(currentSpending * 0.9, inflatedBaseSpending * 0.7);
+            } else if (currentWithdrawalRate < lowerGuardrail && yearsInRetirement > 0) {
+                // Increase spending by 10%
+                currentSpending = Math.min(currentSpending * 1.1, inflatedBaseSpending * 1.3);
+            } else {
+                // Normal inflation adjustment
+                currentSpending = inflatedBaseSpending;
+            }
+            
+            const withdrawalNeeded = Math.max(0, currentSpending - guaranteedIncome);
+            
+            if (currentWithdrawalRate > 0.15) { // Emergency threshold higher for guardrails
+                return { survives: false, depletionAge: age };
+            }
+
+            portfolio = (portfolio - withdrawalNeeded) * (1 + annualReturn);
+            
+            if (portfolio <= 0) {
+                return { survives: false, depletionAge: age };
+            }
+        }
+
+        return { survives: true, depletionAge: null };
+    }
+
+    /**
+     * Dynamic spending strategy (performance-based adjustments)
+     */
+    simulateDynamicStrategy(startingPortfolio, expectedReturn, volatility, inflationRate) {
+        let portfolio = startingPortfolio;
+        const retirementAge = this.profile.retirementAge;
+        const endAge = 100;
+        let baseSpending = this.profile.annualSpending || (this.profile.monthlySpending * 12);
+        
+        const ssIncome = this.profile.totalSocialSecurity || this.profile.socialSecurity || 0;
+        const pensionIncome = this.profile.totalPensionIncome || 0;
+        const guaranteedIncome = ssIncome + pensionIncome;
+
+        for (let age = retirementAge; age <= endAge; age++) {
+            const annualReturn = this.generateNormalRandom(expectedReturn, volatility);
+            const yearsInRetirement = age - retirementAge;
+            
+            // Dynamic spending based on portfolio performance
+            let currentSpending;
+            if (yearsInRetirement === 0) {
+                currentSpending = baseSpending;
+            } else {
+                // Adjust spending based on portfolio performance vs expected
+                const expectedPortfolio = startingPortfolio * Math.pow(1.06, yearsInRetirement);
+                const performanceRatio = portfolio / expectedPortfolio;
+                
+                // Adjust spending between 70% and 130% of base
+                const adjustmentFactor = Math.min(1.3, Math.max(0.7, performanceRatio));
+                currentSpending = baseSpending * adjustmentFactor * Math.pow(1 + inflationRate, yearsInRetirement);
+            }
+            
+            const withdrawalNeeded = Math.max(0, currentSpending - guaranteedIncome);
+            
+            portfolio = (portfolio - withdrawalNeeded) * (1 + annualReturn);
+            
+            if (portfolio <= 0) {
+                return { survives: false, depletionAge: age };
+            }
+        }
+
+        return { survives: true, depletionAge: null };
+    }
+
+    /**
+     * Bucket strategy (simplified - cash/bonds/stocks allocation)
+     */
+    simulateBucketStrategy(startingPortfolio, expectedReturn, volatility, inflationRate) {
+        // Simplified bucket allocation: 20% cash, 30% bonds, 50% stocks
+        let cashBucket = startingPortfolio * 0.2;
+        let bondsBucket = startingPortfolio * 0.3;
+        let stocksBucket = startingPortfolio * 0.5;
+        
+        const retirementAge = this.profile.retirementAge;
+        const endAge = 100;
+        let baseSpending = this.profile.annualSpending || (this.profile.monthlySpending * 12);
+        
+        const ssIncome = this.profile.totalSocialSecurity || this.profile.socialSecurity || 0;
+        const pensionIncome = this.profile.totalPensionIncome || 0;
+        const guaranteedIncome = ssIncome + pensionIncome;
+
+        for (let age = retirementAge; age <= endAge; age++) {
+            const yearsInRetirement = age - retirementAge;
+            const inflatedSpending = baseSpending * Math.pow(1 + inflationRate, yearsInRetirement);
+            const withdrawalNeeded = Math.max(0, inflatedSpending - guaranteedIncome);
+            
+            // Withdraw from cash first, then bonds, then stocks
+            let remaining = withdrawalNeeded;
+            
+            // From cash (no growth)
+            const fromCash = Math.min(remaining, cashBucket);
+            cashBucket -= fromCash;
+            remaining -= fromCash;
+            
+            // From bonds (moderate growth)
+            if (remaining > 0) {
+                const bondsReturn = this.generateNormalRandom(0.04, 0.05); // Lower return, lower volatility
+                bondsBucket *= (1 + bondsReturn);
+                const fromBonds = Math.min(remaining, bondsBucket);
+                bondsBucket -= fromBonds;
+                remaining -= fromBonds;
+            } else {
+                const bondsReturn = this.generateNormalRandom(0.04, 0.05);
+                bondsBucket *= (1 + bondsReturn);
+            }
+            
+            // From stocks (higher growth)
+            if (remaining > 0) {
+                const stocksReturn = this.generateNormalRandom(expectedReturn, volatility);
+                stocksBucket *= (1 + stocksReturn);
+                const fromStocks = Math.min(remaining, stocksBucket);
+                stocksBucket -= fromStocks;
+                remaining -= fromStocks;
+            } else {
+                const stocksReturn = this.generateNormalRandom(expectedReturn, volatility);
+                stocksBucket *= (1 + stocksReturn);
+            }
+            
+            // If we couldn't meet withdrawal needs, portfolio failed
+            if (remaining > 0) {
+                return { survives: false, depletionAge: age };
+            }
+            
+            // Simple rebalancing every 5 years
+            if (yearsInRetirement % 5 === 0 && yearsInRetirement > 0) {
+                const totalPortfolio = cashBucket + bondsBucket + stocksBucket;
+                if (totalPortfolio > 0) {
+                    cashBucket = totalPortfolio * 0.2;
+                    bondsBucket = totalPortfolio * 0.3;
+                    stocksBucket = totalPortfolio * 0.5;
+                }
+            }
+        }
+
+        return { survives: true, depletionAge: null };
+    }
+
+    /**
+     * Analyze simulation results
+     */
+    analyzeResults() {
+        if (this.results.length === 0) return null;
+
+        // Sort results by final portfolio value
+        const sortedPortfolios = this.results
+            .map(r => r.finalPortfolio)
+            .sort((a, b) => a - b);
+
+        // Calculate success rate
+        const successfulRuns = this.results.filter(r => r.survives).length;
+        const successRate = successfulRuns / this.results.length;
+
+        // Calculate percentiles
+        const getPercentile = (arr, percentile) => {
+            const index = Math.floor((percentile / 100) * arr.length);
+            return arr[Math.min(index, arr.length - 1)];
+        };
+
+        // Calculate failure statistics
+        const failedRuns = this.results.filter(r => !r.survives);
+        const averageFailureAge = failedRuns.length > 0 
+            ? failedRuns.reduce((sum, r) => sum + r.depletion_age, 0) / failedRuns.length 
+            : null;
+
+        return {
+            successRate,
+            iterations: this.iterations,
+            percentiles: {
+                p10: getPercentile(sortedPortfolios, 10),
+                p25: getPercentile(sortedPortfolios, 25),
+                p50: getPercentile(sortedPortfolios, 50),
+                p75: getPercentile(sortedPortfolios, 75),
+                p90: getPercentile(sortedPortfolios, 90)
+            },
+            statistics: {
+                mean: sortedPortfolios.reduce((a, b) => a + b, 0) / sortedPortfolios.length,
+                min: sortedPortfolios[0],
+                max: sortedPortfolios[sortedPortfolios.length - 1]
+            },
+            failureStats: {
+                failureRate: 1 - successRate,
+                averageFailureAge,
+                totalFailures: failedRuns.length
+            },
+            rawResults: this.results,
+            portfolioValues: sortedPortfolios
+        };
+    }
+}
+
 class FinancialPlanner {
     constructor() {
         this.shariaMode = false;
@@ -59,6 +453,10 @@ class FinancialPlanner {
             this.shariaMode = savedShariaMode;
             document.getElementById('sharia-mode').checked = this.shariaMode;
         }
+
+        // Load scenarios and market preset
+        this.scenarios = StorageManager.get('financial-planner-scenarios') || [];
+        this.marketPreset = StorageManager.get('financial-planner-market-preset') || 'moderate';
 
         // Try to load encrypted data first, fallback to regular storage
         let savedProfile, savedHoldings, savedCashHoldings;
@@ -135,6 +533,8 @@ class FinancialPlanner {
     async saveData() {
         // Save non-sensitive data normally
         StorageManager.set('financial-planner-sharia-mode', this.shariaMode);
+        StorageManager.set('financial-planner-scenarios', this.scenarios || []);
+        StorageManager.set('financial-planner-market-preset', this.marketPreset || 'moderate');
         
         // Save sensitive financial data with encryption if available
         if (EncryptedStorage.isInitialized()) {
@@ -195,6 +595,61 @@ class FinancialPlanner {
         });
     }
 
+    // ==================== MARKET ASSUMPTIONS ====================
+
+    setMarketPreset(preset) {
+        const presets = {
+            conservative: {
+                expectedReturn: 5.0,
+                volatility: 10.0,
+                inflation: 2.5
+            },
+            moderate: {
+                expectedReturn: 7.5,
+                volatility: 15.0,
+                inflation: 3.0
+            },
+            aggressive: {
+                expectedReturn: 9.0,
+                volatility: 20.0,
+                inflation: 3.5
+            }
+        };
+
+        const config = presets[preset];
+        if (!config) return;
+
+        // Update form values
+        document.getElementById('expected-return').value = config.expectedReturn;
+        document.getElementById('market-volatility').value = config.volatility;
+        document.getElementById('inflation-rate').value = config.inflation;
+
+        // Update button states
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[onclick="setMarketPreset('${preset}')"]`).classList.add('active');
+
+        // Save preference
+        this.marketPreset = preset;
+        this.saveData();
+
+        UIUtils.showNotification(`${preset.charAt(0).toUpperCase() + preset.slice(1)} preset applied`, 'success', 2000);
+    }
+
+    getMarketAssumptions() {
+        // Get values from form, with fallbacks
+        const expectedReturn = parseFloat(document.getElementById('expected-return')?.value) || 7.5;
+        const volatility = parseFloat(document.getElementById('market-volatility')?.value) || 15.0;
+        const inflation = parseFloat(document.getElementById('inflation-rate')?.value) || 3.0;
+
+        return {
+            expectedReturn: expectedReturn / 100, // Convert to decimal
+            volatility: volatility / 100,
+            inflation: inflation / 100
+        };
+    }
+
     // ==================== PROFILE MANAGEMENT ====================
 
     handleProfileSubmit(event) {
@@ -216,7 +671,7 @@ class FinancialPlanner {
             monthlySavings: Validator.number({ min: 0, max: 50000 }),
             employeeContribution: Validator.number({ min: 0, max: 100000 }),
             employerMatch: Validator.number({ min: 0, max: 100000 }),
-            socialSecurity: Validator.number({ min: 0, max: 10000 }),
+            socialSecurity: Validator.number({ min: 0, max: 50000 }),
             monthlySpending: Validator.number({ min: 100, max: 50000 })
         });
 
@@ -225,7 +680,7 @@ class FinancialPlanner {
             currentAge: parseInt(formData.get('current-age')),
             retirementAge: parseInt(formData.get('retirement-age')),
             state: formData.get('state'),
-            taxBracket: parseFloat(formData.get('tax-bracket')),
+            taxBracket: parseFloat(formData.get('tax-bracket')) / 100,
             riskTolerance: formData.get('risk-tolerance'),
             brokerageBalance: parseFloat(formData.get('brokerage-balance')),
             retirementBalance: parseFloat(formData.get('retirement-balance')),
@@ -281,7 +736,13 @@ class FinancialPlanner {
 
             // Spouse Social Security
             spouseSocialSecurity: parseFloat(formData.get('spouse-social-security')) || 0,
-            spouseSsStartAge: parseInt(formData.get('spouse-ss-start-age')) || 65
+            spouseSsStartAge: parseInt(formData.get('spouse-ss-start-age')) || 65,
+
+            // Market Assumptions
+            expectedReturn: parseFloat(formData.get('expected-return')) / 100 || 0.075,
+            marketVolatility: parseFloat(formData.get('market-volatility')) / 100 || 0.15,
+            inflationRate: parseFloat(formData.get('inflation-rate')) / 100 || 0.03,
+            withdrawalStrategy: formData.get('withdrawal-strategy') || 'fixed'
         };
 
         this.profile.yearsToRetirement = this.profile.retirementAge - this.profile.currentAge;
@@ -333,6 +794,13 @@ class FinancialPlanner {
         document.getElementById('employer-increase').value = this.profile.employerIncrease * 100;
         document.getElementById('social-security').value = this.profile.socialSecurity;
         document.getElementById('monthly-spending').value = this.profile.monthlySpending;
+
+        // Market assumptions
+        if (this.profile.expectedReturn !== undefined) {
+            document.getElementById('expected-return').value = this.profile.expectedReturn * 100;
+            document.getElementById('market-volatility').value = this.profile.marketVolatility * 100;
+            document.getElementById('inflation-rate').value = this.profile.inflationRate * 100;
+        }
     }
 
     runFullAnalysis() {
@@ -342,6 +810,11 @@ class FinancialPlanner {
         this.runStressTests();
         this.generateRebalancingPlan();
         this.runSensitivityAnalysis();
+        
+        // Run Monte Carlo simulation (in background to avoid blocking UI)
+        setTimeout(() => {
+            this.runMonteCarloSimulation(1000);
+        }, 100);
     }
 
     // ==================== SUMMARY DASHBOARD ====================
@@ -355,13 +828,14 @@ class FinancialPlanner {
         document.getElementById('total-assets').textContent = this.formatCurrency(this.profile.totalAssets);
         document.getElementById('years-to-retire').textContent = this.profile.yearsToRetirement;
 
-        // Calculate conservative projection (primary)
-        const projection = this.calculateFutureValue(0.06);
+        // Calculate projection using profile's expected return
+        const expectedReturn = this.profile.expectedReturn || 0.075;
+        const projection = this.calculateFutureValue(expectedReturn);
 
         // Calculate spouse projection if applicable
         let spouseProjection = 0;
         if (this.profile.includeSpouse && this.profile.spouse401kBalance > 0) {
-            spouseProjection = this.calculateSpouseFutureValue(0.06);
+            spouseProjection = this.calculateSpouseFutureValue(expectedReturn);
         }
 
         // Include cash reserves in total projected assets
@@ -2827,6 +3301,784 @@ class FinancialPlanner {
         `).join('');
     }
 
+    // ==================== MONTE CARLO SIMULATION ====================
+
+    /**
+     * Run Monte Carlo simulation for current profile
+     */
+    runMonteCarloSimulation(iterations = 1000) {
+        if (!this.profile) {
+            UIUtils.showNotification('Please complete your profile first', 'warning');
+            return null;
+        }
+
+        try {
+            UIUtils.showNotification('Running Monte Carlo simulation...', 'info', 1000);
+            
+            const engine = new MonteCarloEngine(this.profile);
+            const results = engine.runSimulation(iterations);
+            
+            this.monteCarloResults = results;
+            this.renderMonteCarloResults(results);
+            
+            UIUtils.showNotification(`Simulation complete: ${(results.successRate * 100).toFixed(0)}% success rate`, 'success');
+            
+            return results;
+        } catch (error) {
+            console.error('Monte Carlo simulation error:', error);
+            UIUtils.showNotification('Simulation failed. Please try again.', 'error');
+            return null;
+        }
+    }
+
+    /**
+     * Render Monte Carlo results in UI
+     */
+    renderMonteCarloResults(results) {
+        if (!results) return;
+
+        // Update success rate display (if element exists)
+        const successRateElement = document.getElementById('success-rate');
+        if (successRateElement) {
+            const percentage = Math.round(results.successRate * 100);
+            successRateElement.textContent = `${percentage}%`;
+            
+            // Color coding
+            successRateElement.className = 'success-rate';
+            if (percentage >= 90) {
+                successRateElement.classList.add('excellent');
+            } else if (percentage >= 75) {
+                successRateElement.classList.add('good');
+            } else if (percentage >= 50) {
+                successRateElement.classList.add('fair');
+            } else {
+                successRateElement.classList.add('poor');
+            }
+        }
+
+        // Update percentiles display (if elements exist)
+        const percentiles = results.percentiles;
+        if (document.getElementById('mc-p10')) {
+            document.getElementById('mc-p10').textContent = this.formatCurrency(percentiles.p10);
+            document.getElementById('mc-p25').textContent = this.formatCurrency(percentiles.p25);
+            document.getElementById('mc-p50').textContent = this.formatCurrency(percentiles.p50);
+            document.getElementById('mc-p75').textContent = this.formatCurrency(percentiles.p75);
+            document.getElementById('mc-p90').textContent = this.formatCurrency(percentiles.p90);
+        }
+
+        // Show percentile analysis section
+        const percentileSection = document.getElementById('percentile-analysis');
+        if (percentileSection) {
+            percentileSection.style.display = 'block';
+        }
+
+        // Update confidence ranges
+        const range50Element = document.getElementById('confidence-range-50');
+        const range80Element = document.getElementById('confidence-range-80');
+        
+        if (range50Element) {
+            range50Element.textContent = `${this.formatCurrency(percentiles.p25)} - ${this.formatCurrency(percentiles.p75)}`;
+        }
+        
+        if (range80Element) {
+            range80Element.textContent = `${this.formatCurrency(percentiles.p10)} - ${this.formatCurrency(percentiles.p90)}`;
+        }
+
+        // Draw distribution chart
+        this.drawDistributionChart(results);
+
+        // Enhanced logging with percentile analysis
+        console.log('Monte Carlo Results:', {
+            ...results,
+            analysis: {
+                successRate: `${(results.successRate * 100).toFixed(1)}%`,
+                medianPortfolio: this.formatCurrency(percentiles.p50),
+                worstCase: this.formatCurrency(percentiles.p10),
+                bestCase: this.formatCurrency(percentiles.p90),
+                confidenceRange: `${this.formatCurrency(percentiles.p25)} - ${this.formatCurrency(percentiles.p75)}`
+            }
+        });
+    }
+
+    /**
+     * Draw distribution chart showing Monte Carlo outcomes
+     */
+    drawDistributionChart(results) {
+        const ctx = document.getElementById('distributionChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts && this.charts.distribution) {
+            this.charts.distribution.destroy();
+        }
+
+        if (!this.charts) this.charts = {};
+
+        // Get portfolio values and create histogram
+        const portfolioValues = results.portfolioValues || 
+                               results.rawResults?.map(r => r.finalPortfolio) || 
+                               Array.from({length: 1000}, () => Math.random() * 2000000 + 1000000); // Fallback data
+        
+        // Create histogram bins
+        const numBins = 20;
+        const min = Math.min(...portfolioValues);
+        const max = Math.max(...portfolioValues);
+        const binWidth = (max - min) / numBins;
+        
+        const bins = Array(numBins).fill(0);
+        const binLabels = [];
+        
+        // Count values in each bin
+        portfolioValues.forEach(value => {
+            const binIndex = Math.min(Math.floor((value - min) / binWidth), numBins - 1);
+            bins[binIndex]++;
+        });
+        
+        // Create bin labels (in millions for readability)
+        for (let i = 0; i < numBins; i++) {
+            const binStart = min + i * binWidth;
+            binLabels.push(`$${(binStart / 1000000).toFixed(1)}M`);
+        }
+
+        // Get percentiles for confidence bands
+        const percentiles = results.percentiles;
+        const total = portfolioValues.length;
+
+        // Color bins based on confidence intervals
+        const backgroundColors = bins.map((count, index) => {
+            const binStart = min + index * binWidth;
+            const binEnd = binStart + binWidth;
+            const binMiddle = (binStart + binEnd) / 2;
+            
+            if (binMiddle >= percentiles.p25 && binMiddle <= percentiles.p75) {
+                return 'rgba(102, 126, 234, 0.8)'; // Core confidence band (blue)
+            } else if (binMiddle >= percentiles.p10 && binMiddle <= percentiles.p90) {
+                return 'rgba(102, 126, 234, 0.5)'; // Extended confidence band (light blue)
+            } else {
+                return 'rgba(156, 163, 175, 0.4)'; // Outside confidence bands (gray)
+            }
+        });
+
+        const borderColors = bins.map((count, index) => {
+            const binStart = min + index * binWidth;
+            const binEnd = binStart + binWidth;
+            const binMiddle = (binStart + binEnd) / 2;
+            
+            if (binMiddle >= percentiles.p25 && binMiddle <= percentiles.p75) {
+                return '#667eea';
+            } else if (binMiddle >= percentiles.p10 && binMiddle <= percentiles.p90) {
+                return '#9ca3af';
+            } else {
+                return '#d1d5db';
+            }
+        });
+
+        this.charts.distribution = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: binLabels,
+                datasets: [{
+                    label: 'Number of Simulations',
+                    data: bins,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: false
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const percentage = ((context.parsed.y / total) * 100).toFixed(1);
+                                return `${context.parsed.y} simulations (${percentage}%)`;
+                            },
+                            afterLabel: (context) => {
+                                const binStart = min + context.dataIndex * binWidth;
+                                const binEnd = binStart + binWidth;
+                                return `Range: ${this.formatCurrency(binStart)} - ${this.formatCurrency(binEnd)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Portfolio Value at Retirement'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Number of Simulations'
+                        },
+                        ticks: {
+                            callback: (value) => Math.round(value)
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Run Monte Carlo simulation for current profile
+     */
+    runMonteCarloSimulation(iterations = 1000) {
+        if (!this.profile) {
+            UIUtils.showNotification('Please complete your profile first', 'warning');
+            return null;
+        }
+
+        try {
+            UIUtils.showNotification('Running Monte Carlo simulation...', 'info', 1000);
+            
+            const engine = new MonteCarloEngine(this.profile);
+            const results = engine.runSimulation(iterations);
+            
+            this.monteCarloResults = results;
+            this.renderMonteCarloResults(results);
+            
+            UIUtils.showNotification(`Simulation complete: ${(results.successRate * 100).toFixed(0)}% success rate`, 'success');
+            
+            return results;
+        } catch (error) {
+            console.error('Monte Carlo simulation error:', error);
+            UIUtils.showNotification('Simulation failed. Please try again.', 'error');
+            return null;
+        }
+    }
+
+    /**
+     * Render Monte Carlo results in UI
+     */
+    renderMonteCarloResults(results) {
+        if (!results) return;
+
+        // Update success rate display (if element exists)
+        const successRateElement = document.getElementById('success-rate');
+        if (successRateElement) {
+            const percentage = Math.round(results.successRate * 100);
+            successRateElement.textContent = `${percentage}%`;
+            
+            // Color coding
+            successRateElement.className = 'success-rate';
+            if (percentage >= 90) {
+                successRateElement.classList.add('excellent');
+            } else if (percentage >= 75) {
+                successRateElement.classList.add('good');
+            } else if (percentage >= 50) {
+                successRateElement.classList.add('fair');
+            } else {
+                successRateElement.classList.add('poor');
+            }
+        }
+
+        // Update percentiles display (if elements exist)
+        const percentiles = results.percentiles;
+        if (document.getElementById('mc-p10')) {
+            document.getElementById('mc-p10').textContent = this.formatCurrency(percentiles.p10);
+            document.getElementById('mc-p25').textContent = this.formatCurrency(percentiles.p25);
+            document.getElementById('mc-p50').textContent = this.formatCurrency(percentiles.p50);
+            document.getElementById('mc-p75').textContent = this.formatCurrency(percentiles.p75);
+            document.getElementById('mc-p90').textContent = this.formatCurrency(percentiles.p90);
+        }
+
+        console.log('Monte Carlo Results:', results);
+    }
+
+    // ==================== SCENARIO MANAGEMENT ====================
+
+    /**
+     * Save current profile as a named scenario
+     */
+    saveScenario(name) {
+        if (!this.profile) {
+            UIUtils.showNotification('Please complete your profile first', 'warning');
+            return false;
+        }
+
+        if (!name || name.trim() === '') {
+            UIUtils.showNotification('Please provide a scenario name', 'warning');
+            return false;
+        }
+
+        try {
+            // Initialize scenarios if not exists
+            if (!this.scenarios) {
+                this.scenarios = [];
+            }
+
+            // Check if name already exists
+            const existingIndex = this.scenarios.findIndex(s => s.name === name);
+            
+            const scenario = {
+                id: existingIndex >= 0 ? this.scenarios[existingIndex].id : 'scenario-' + Date.now(),
+                name: name,
+                profile: { ...this.profile }, // Deep copy
+                holdings: { 
+                    brokerage: [...this.holdings.brokerage],
+                    retirement: [...this.holdings.retirement]
+                },
+                cashHoldings: { ...this.cashHoldings },
+                marketPreset: this.marketPreset || 'moderate',
+                createdAt: existingIndex >= 0 ? this.scenarios[existingIndex].createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (existingIndex >= 0) {
+                // Update existing scenario
+                this.scenarios[existingIndex] = scenario;
+                UIUtils.showNotification(`Scenario "${name}" updated`, 'success');
+            } else {
+                // Add new scenario
+                this.scenarios.push(scenario);
+                UIUtils.showNotification(`Scenario "${name}" saved`, 'success');
+            }
+
+            this.saveData();
+            this.renderScenariosList();
+            return true;
+        } catch (error) {
+            console.error('Error saving scenario:', error);
+            UIUtils.showNotification('Failed to save scenario', 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Load a scenario by ID
+     */
+    loadScenario(scenarioId) {
+        if (!this.scenarios) return false;
+
+        const scenario = this.scenarios.find(s => s.id === scenarioId);
+        if (!scenario) {
+            UIUtils.showNotification('Scenario not found', 'error');
+            return false;
+        }
+
+        try {
+            // Load scenario data
+            this.profile = { ...scenario.profile };
+            this.holdings = {
+                brokerage: [...scenario.holdings.brokerage],
+                retirement: [...scenario.holdings.retirement]
+            };
+            this.cashHoldings = { ...scenario.cashHoldings };
+            this.marketPreset = scenario.marketPreset || 'moderate';
+
+            // Update UI
+            this.populateProfileForm();
+            this.renderHoldings('brokerage');
+            this.renderHoldings('retirement');
+            this.updateCashDisplay();
+            
+            // Set market preset
+            if (this.marketPreset) {
+                this.setMarketPreset(this.marketPreset);
+            }
+
+            // Run analysis
+            this.runFullAnalysis();
+
+            UIUtils.showNotification(`Loaded scenario "${scenario.name}"`, 'success');
+            return true;
+        } catch (error) {
+            console.error('Error loading scenario:', error);
+            UIUtils.showNotification('Failed to load scenario', 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Duplicate a scenario
+     */
+    duplicateScenario(scenarioId) {
+        if (!this.scenarios) return false;
+
+        const scenario = this.scenarios.find(s => s.id === scenarioId);
+        if (!scenario) return false;
+
+        const newName = `${scenario.name} (Copy)`;
+        
+        // Load the scenario first
+        this.loadScenario(scenarioId);
+        
+        // Then save it with new name
+        return this.saveScenario(newName);
+    }
+
+    /**
+     * Delete a scenario
+     */
+    deleteScenario(scenarioId) {
+        if (!this.scenarios) return false;
+
+        const index = this.scenarios.findIndex(s => s.id === scenarioId);
+        if (index === -1) return false;
+
+        const scenarioName = this.scenarios[index].name;
+        this.scenarios.splice(index, 1);
+        
+        this.saveData();
+        this.renderScenariosList();
+        
+        UIUtils.showNotification(`Deleted scenario "${scenarioName}"`, 'success');
+        return true;
+    }
+
+    /**
+     * Render scenarios list (placeholder - would need UI element)
+     */
+    renderScenariosList() {
+        // This would populate a scenarios dropdown/list in the UI
+        // For now, just log available scenarios
+        if (this.scenarios && this.scenarios.length > 0) {
+            console.log('Available scenarios:', this.scenarios.map(s => ({
+                id: s.id,
+                name: s.name,
+                updated: s.updatedAt
+            })));
+        }
+    }
+
+    /**
+     * Export profile and scenarios as JSON
+     */
+    exportToJSON() {
+        try {
+            const exportData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                profile: this.profile,
+                holdings: this.holdings,
+                cashHoldings: this.cashHoldings,
+                scenarios: this.scenarios || [],
+                marketPreset: this.marketPreset || 'moderate',
+                shariaMode: this.shariaMode
+            };
+
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const filename = `financial_planner_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            
+            this.downloadFile(jsonString, filename, 'application/json');
+            UIUtils.showNotification('Data exported successfully', 'success');
+            
+            return exportData;
+        } catch (error) {
+            console.error('Export error:', error);
+            UIUtils.showNotification('Export failed', 'error');
+            return null;
+        }
+    }
+
+    /**
+     * Import profile and scenarios from JSON
+     */
+    async importFromJSON(file) {
+        try {
+            const text = await file.text();
+            const importData = JSON.parse(text);
+
+            // Validate import data structure
+            if (!importData.version || !importData.profile) {
+                throw new Error('Invalid backup file format');
+            }
+
+            // Confirm before overwriting data
+            const confirmed = await UIUtils.confirmAction(
+                'This will replace all current data with the imported backup. Continue?'
+            );
+            
+            if (!confirmed) return false;
+
+            // Import data
+            this.profile = importData.profile;
+            this.holdings = importData.holdings || { brokerage: [], retirement: [] };
+            this.cashHoldings = importData.cashHoldings || { brokerage: 0, retirement: 0 };
+            this.scenarios = importData.scenarios || [];
+            this.marketPreset = importData.marketPreset || 'moderate';
+            this.shariaMode = importData.shariaMode || false;
+
+            // Update UI
+            document.getElementById('sharia-mode').checked = this.shariaMode;
+            this.updateShariaVisibility();
+            this.populateProfileForm();
+            this.renderHoldings('brokerage');
+            this.renderHoldings('retirement');
+            this.updateCashDisplay();
+            this.renderScenariosList();
+
+            if (this.marketPreset) {
+                this.setMarketPreset(this.marketPreset);
+            }
+
+            // Save imported data
+            this.saveData();
+
+            // Run analysis if profile exists
+            if (this.profile) {
+                this.runFullAnalysis();
+            }
+
+            UIUtils.showNotification('Data imported successfully', 'success');
+            return true;
+        } catch (error) {
+            console.error('Import error:', error);
+            UIUtils.showNotification('Import failed: ' + error.message, 'error');
+            return false;
+        }
+    }
+
+    /**
+     * Show scenario comparison modal
+     */
+    showScenarioComparison() {
+        if (!this.scenarios || this.scenarios.length < 1) {
+            UIUtils.showNotification('Please save at least 1 scenario to compare with current settings', 'warning');
+            return;
+        }
+
+        // Show modal
+        const modal = document.getElementById('scenario-comparison-modal');
+        modal.style.display = 'flex';
+
+        // Populate scenario checkboxes
+        this.populateScenarioCheckboxes();
+
+        // Hide results initially
+        document.getElementById('comparison-results').style.display = 'none';
+    }
+
+    /**
+     * Populate scenario checkboxes
+     */
+    populateScenarioCheckboxes() {
+        const container = document.getElementById('scenario-checkboxes');
+        if (!container) return;
+
+        // Add current scenario as option
+        let html = `
+            <div class="scenario-checkbox">
+                <input type="checkbox" id="current-scenario" value="current" checked>
+                <label for="current-scenario">Current (Unsaved)</label>
+                <div class="scenario-meta">Current form values</div>
+            </div>
+        `;
+
+        // Add saved scenarios
+        if (this.scenarios) {
+            this.scenarios.forEach((scenario, index) => {
+                const checked = index === 0 ? 'checked' : '';
+                html += `
+                    <div class="scenario-checkbox">
+                        <input type="checkbox" id="scenario-${scenario.id}" value="${scenario.id}" ${checked}>
+                        <label for="scenario-${scenario.id}">${scenario.name}</label>
+                        <div class="scenario-meta">
+                            Expected Return: ${(scenario.profile.expectedReturn * 100).toFixed(1)}%, 
+                            Withdrawal: ${scenario.profile.withdrawalStrategy || 'fixed'}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        container.innerHTML = html;
+    }
+
+    /**
+     * Generate scenario comparison
+     */
+    async generateScenarioComparison() {
+        const checkboxes = document.querySelectorAll('#scenario-checkboxes input[type="checkbox"]:checked');
+        
+        if (checkboxes.length < 2) {
+            UIUtils.showNotification('Please select at least 2 scenarios to compare', 'warning');
+            return;
+        }
+
+        if (checkboxes.length > 3) {
+            UIUtils.showNotification('Please select no more than 3 scenarios to compare', 'warning');
+            return;
+        }
+
+        UIUtils.showNotification('Generating comparison...', 'info', 2000);
+
+        const selectedScenarios = [];
+
+        // Get selected scenarios
+        for (const checkbox of checkboxes) {
+            if (checkbox.value === 'current') {
+                selectedScenarios.push({
+                    id: 'current',
+                    name: 'Current (Unsaved)',
+                    profile: this.profile,
+                    holdings: this.holdings
+                });
+            } else {
+                const scenario = this.scenarios.find(s => s.id === checkbox.value);
+                if (scenario) {
+                    selectedScenarios.push(scenario);
+                }
+            }
+        }
+
+        // Run quick projections for each scenario
+        const comparisonData = [];
+        for (const scenario of selectedScenarios) {
+            try {
+                const engine = new MonteCarloEngine(scenario.profile);
+                const results = engine.runSimulation(200); // Fewer iterations for speed
+                
+                comparisonData.push({
+                    scenario: scenario,
+                    results: results,
+                    projectedTotal: this.calculateProjectedValue(scenario.profile),
+                    annualIncome: this.calculateAnnualIncome(scenario.profile, this.calculateProjectedValue(scenario.profile))
+                });
+            } catch (error) {
+                console.error('Error running scenario simulation:', error);
+                UIUtils.showNotification(`Error analyzing ${scenario.name}`, 'error');
+                return;
+            }
+        }
+
+        // Display comparison
+        this.displayScenarioComparison(comparisonData);
+    }
+
+    /**
+     * Calculate projected value for a profile
+     */
+    calculateProjectedValue(profile) {
+        if (!profile) return 0;
+        
+        const years = profile.retirementAge - profile.currentAge;
+        const balance = (profile.brokerageBalance || 0) + (profile.retirementBalance || 0);
+        const rate = profile.expectedReturn || 0.075;
+        
+        let total = balance * Math.pow(1 + rate, years);
+        
+        // Add contributions
+        let employeeContrib = profile.employeeContribution || 0;
+        let employerContrib = profile.employerMatch || 0;
+        
+        for (let year = 1; year <= years; year++) {
+            const annualContrib = employeeContrib + employerContrib;
+            total += annualContrib * Math.pow(1 + rate, years - year);
+            
+            employeeContrib *= (1 + (profile.employeeIncrease || 0.02));
+            employerContrib *= (1 + (profile.employerIncrease || 0.02));
+        }
+
+        return total;
+    }
+
+    /**
+     * Calculate annual retirement income
+     */
+    calculateAnnualIncome(profile, portfolioValue) {
+        if (!profile) return 0;
+        
+        const withdrawal = portfolioValue * 0.04;
+        const ss = profile.socialSecurity || 0;
+        const pension = profile.pensionAmount || 0;
+        
+        return withdrawal + ss + pension;
+    }
+
+    /**
+     * Display scenario comparison results
+     */
+    displayScenarioComparison(comparisonData) {
+        // Show results section
+        document.getElementById('comparison-results').style.display = 'block';
+
+        // Build comparison table
+        const table = document.getElementById('comparison-table');
+        const thead = table.querySelector('thead tr');
+        const tbody = table.querySelector('tbody');
+
+        // Clear existing content
+        thead.innerHTML = '<th>Metric</th>';
+        tbody.innerHTML = '';
+
+        // Add scenario columns
+        comparisonData.forEach(data => {
+            const th = document.createElement('th');
+            th.textContent = data.scenario.name;
+            thead.appendChild(th);
+        });
+
+        // Define metrics to compare
+        const metrics = [
+            {
+                label: 'Portfolio at Retirement',
+                getValue: (data) => this.formatCurrency(data.projectedTotal)
+            },
+            {
+                label: 'Success Rate',
+                getValue: (data) => `${(data.results.successRate * 100).toFixed(0)}%`
+            },
+            {
+                label: 'Median Portfolio Value',
+                getValue: (data) => this.formatCurrency(data.results.percentiles.p50)
+            },
+            {
+                label: 'Expected Annual Income',
+                getValue: (data) => this.formatCurrency(data.annualIncome)
+            },
+            {
+                label: 'Expected Return',
+                getValue: (data) => `${(data.scenario.profile.expectedReturn * 100).toFixed(1)}%`
+            },
+            {
+                label: 'Withdrawal Strategy',
+                getValue: (data) => {
+                    const strategy = data.scenario.profile.withdrawalStrategy || 'fixed';
+                    return strategy.charAt(0).toUpperCase() + strategy.slice(1);
+                }
+            }
+        ];
+
+        // Build table rows
+        metrics.forEach(metric => {
+            const row = document.createElement('tr');
+            
+            const labelCell = document.createElement('td');
+            labelCell.textContent = metric.label;
+            labelCell.style.fontWeight = '600';
+            row.appendChild(labelCell);
+
+            comparisonData.forEach(data => {
+                const cell = document.createElement('td');
+                cell.textContent = metric.getValue(data);
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+        
+        UIUtils.showNotification('Comparison generated successfully', 'success');
+    }
+
     // ==================== UTILITIES ====================
 
     formatCurrency(amount) {
@@ -2836,6 +4088,203 @@ class FinancialPlanner {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(amount);
+    }
+
+    formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString();
+    }
+
+    // ==================== CSV EXPORT ====================
+
+    /**
+     * Export data to CSV file
+     * @param {Array} data - Array of objects to export
+     * @param {Array} columns - Column definitions [{ key, label }]
+     * @param {string} filename - Output filename
+     */
+    exportToCSV(data, columns, filename) {
+        if (!data || data.length === 0) {
+            UIUtils.showNotification('No data to export', 'warning');
+            return;
+        }
+
+        try {
+            // Create CSV header
+            const header = columns.map(col => `"${col.label}"`).join(',');
+            
+            // Create CSV rows
+            const rows = data.map(row => {
+                return columns.map(col => {
+                    let value = row[col.key];
+                    
+                    // Handle different data types
+                    if (value === null || value === undefined) {
+                        value = '';
+                    } else if (typeof value === 'number') {
+                        // Keep numbers as numbers for Excel
+                        value = value.toString();
+                    } else {
+                        // Escape quotes and wrap in quotes
+                        value = `"${String(value).replace(/"/g, '""')}"`;
+                    }
+                    
+                    return value;
+                }).join(',');
+            });
+
+            // Combine header and rows
+            const csv = [header, ...rows].join('\n');
+
+            // Create and download file
+            this.downloadFile(csv, filename, 'text/csv');
+            
+            UIUtils.showNotification(`${filename} exported successfully`, 'success');
+        } catch (error) {
+            console.error('CSV export error:', error);
+            UIUtils.showNotification('Export failed. Please try again.', 'error');
+        }
+    }
+
+    /**
+     * Export projection data to CSV
+     */
+    exportProjectionCSV() {
+        if (!this.profile) {
+            UIUtils.showNotification('Please generate a projection first', 'warning');
+            return;
+        }
+
+        const projection = this.calculateFutureValue(0.075); // Use moderate scenario
+        
+        const columns = [
+            { key: 'year', label: 'Year' },
+            { key: 'age', label: 'Age' },
+            { key: 'startBalance', label: 'Starting Balance' },
+            { key: 'contribution', label: 'Annual Contribution' },
+            { key: 'growth', label: 'Investment Growth' },
+            { key: 'endBalance', label: 'Ending Balance' },
+            { key: 'cashBalance', label: 'Cash Reserves' }
+        ];
+
+        const filename = `financial_projection_${new Date().toISOString().slice(0, 10)}.csv`;
+        this.exportToCSV(projection.yearlyData, columns, filename);
+    }
+
+    /**
+     * Export cash flow data to CSV
+     */
+    exportCashflowCSV() {
+        if (!this.profile) {
+            UIUtils.showNotification('Please generate retirement analysis first', 'warning');
+            return;
+        }
+
+        // Generate cash flow data
+        const projection = this.calculateFutureValue(0.06);
+        let portfolioAtRetirement = projection.finalValue;
+        
+        if (this.profile.includeSpouse && this.profile.spouse401kBalance > 0) {
+            portfolioAtRetirement += this.calculateSpouseFutureValue(0.06);
+        }
+
+        const totalAssets = portfolioAtRetirement + projection.finalCashBalance;
+        
+        // Generate cash flow data similar to generateCashFlowProjection method
+        const cashFlowData = this.generateCashFlowData(totalAssets, projection.finalCashBalance);
+
+        const columns = [
+            { key: 'age', label: 'Age' },
+            { key: 'year', label: 'Year' },
+            { key: 'portfolio', label: 'Portfolio Value' },
+            { key: 'withdrawal', label: '4% Withdrawal' },
+            { key: 'socialSecurity', label: 'Social Security' },
+            { key: 'pension', label: 'Pension Income' },
+            { key: 'totalIncome', label: 'Total Income' },
+            { key: 'spending', label: 'Annual Spending' },
+            { key: 'surplus', label: 'Surplus/Deficit' },
+            { key: 'cashReserves', label: 'Cash Reserves' }
+        ];
+
+        const filename = `retirement_cashflow_${new Date().toISOString().slice(0, 10)}.csv`;
+        this.exportToCSV(cashFlowData, columns, filename);
+    }
+
+    /**
+     * Generate cash flow data for export (similar to generateCashFlowProjection)
+     */
+    generateCashFlowData(startingPortfolio, startingCash = 0) {
+        const retirementAge = this.profile.retirementAge;
+        const endAge = 100;
+        const annualSpending = this.profile.annualSpending;
+        const inflationRate = 0.025;
+        const withdrawalGrowth = 0.03;
+
+        let portfolio = startingPortfolio - startingCash;
+        let cashReserves = startingCash;
+        const cashFlowData = [];
+
+        for (let age = retirementAge; age <= endAge; age++) {
+            const yearsInRetirement = age - retirementAge;
+            const inflatedSpending = annualSpending * Math.pow(1 + inflationRate, yearsInRetirement);
+
+            let ssIncome = this.profile.socialSecurity;
+            if (this.profile.includeSpouse && age >= this.profile.spouseSsStartAge) {
+                ssIncome += this.profile.spouseSocialSecurity;
+            }
+
+            let pensionIncome = 0;
+            if (this.profile.hasPension && age >= this.profile.pensionStartAge) {
+                pensionIncome += this.profile.pensionAmount * Math.pow(1 + this.profile.pensionCola, yearsInRetirement);
+            }
+            if (this.profile.includeSpouse && this.profile.spouseHasPension && age >= this.profile.spousePensionStartAge) {
+                pensionIncome += this.profile.spousePensionAmount * Math.pow(1 + this.profile.spousePensionCola, yearsInRetirement);
+            }
+
+            const withdrawal = portfolio > 0 ? portfolio * 0.04 : 0;
+            const totalIncomeBeforeCash = withdrawal + ssIncome + pensionIncome;
+            const cashNeeded = Math.max(0, inflatedSpending - totalIncomeBeforeCash);
+            const cashUsed = Math.min(cashReserves, cashNeeded);
+            const totalIncome = withdrawal + cashUsed + ssIncome + pensionIncome;
+            const surplus = totalIncome - inflatedSpending;
+
+            cashFlowData.push({
+                age: age,
+                year: new Date().getFullYear() + (age - this.profile.currentAge),
+                portfolio: Math.round(portfolio),
+                withdrawal: Math.round(withdrawal),
+                socialSecurity: Math.round(ssIncome),
+                pension: Math.round(pensionIncome),
+                totalIncome: Math.round(totalIncome),
+                spending: Math.round(inflatedSpending),
+                surplus: Math.round(surplus),
+                cashReserves: Math.round(cashReserves)
+            });
+
+            cashReserves = Math.max(0, cashReserves - cashUsed);
+            portfolio = Math.max(0, (portfolio - withdrawal) * (1 + withdrawalGrowth));
+        }
+
+        return cashFlowData;
+    }
+
+    /**
+     * Download file helper
+     */
+    downloadFile(content, filename, mimeType = 'text/plain') {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        URL.revokeObjectURL(url);
     }
 }
 
@@ -2871,7 +4320,21 @@ function toggleShariaMode() {
 }
 
 function handleProfileSubmit(event) {
-    planner.handleProfileSubmit(event);
+    console.log('Form submitted!', event);
+    console.log('Planner instance:', planner);
+    
+    if (!planner) {
+        console.error('Planner instance not found!');
+        alert('Error: Planner not initialized. Please refresh the page.');
+        return;
+    }
+    
+    try {
+        planner.handleProfileSubmit(event);
+    } catch (error) {
+        console.error('Error in handleProfileSubmit:', error);
+        alert('Error submitting form: ' + error.message);
+    }
 }
 
 function addHolding(type) {
@@ -2896,6 +4359,58 @@ function calculateLowerReturns() {
 
 function calculateHigherSpending() {
     planner.calculateHigherSpending();
+}
+
+function exportProjectionCSV() {
+    planner.exportProjectionCSV();
+}
+
+function exportCashflowCSV() {
+    planner.exportCashflowCSV();
+}
+
+function setMarketPreset(preset) {
+    planner.setMarketPreset(preset);
+}
+
+function runMonteCarloSimulation() {
+    planner.runMonteCarloSimulation(1000);
+}
+
+function saveScenario() {
+    const name = prompt('Enter scenario name:');
+    if (name) {
+        planner.saveScenario(name);
+    }
+}
+
+function exportJSON() {
+    planner.exportToJSON();
+}
+
+async function importJSON() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await planner.importFromJSON(file);
+        }
+    };
+    input.click();
+}
+
+function showScenarioComparison() {
+    planner.showScenarioComparison();
+}
+
+function closeScenarioComparison() {
+    document.getElementById('scenario-comparison-modal').style.display = 'none';
+}
+
+function generateComparison() {
+    planner.generateScenarioComparison();
 }
 
 function clearProjectionTable() {
@@ -2927,9 +4442,20 @@ function toggleSpousePension() {
 }
 
 function togglePrimaryPension() {
+    console.log('togglePrimaryPension called');
     const checkbox = document.getElementById('has-pension');
     const fields = document.getElementById('pension-fields');
+    
+    console.log('Checkbox:', checkbox, 'checked:', checkbox?.checked);
+    console.log('Fields element:', fields);
+    
+    if (!checkbox || !fields) {
+        console.error('Missing elements:', { checkbox, fields });
+        return;
+    }
+    
     fields.style.display = checkbox.checked ? 'block' : 'none';
+    console.log('Set fields display to:', checkbox.checked ? 'block' : 'none');
 }
 
 function resetProfileForm() {

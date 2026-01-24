@@ -17,9 +17,10 @@
 
 /* App Container */
 .app-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
+    width: 100%;
 }
 
 /* Header */
@@ -198,8 +199,9 @@
 
 /* Content Areas */
 .planner-content {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
+    width: 100%;
 }
 
 .planner-content h2 {
@@ -953,15 +955,19 @@ legend {
 .table-wrapper {
     overflow-x: auto;
     margin-bottom: 2rem;
+    width: 100%;
+    max-width: none;
 }
 
 .projection-table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
     background: white;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    table-layout: auto;
 }
 
 .projection-table thead {
@@ -969,18 +975,20 @@ legend {
 }
 
 .projection-table th {
-    padding: 1rem;
+    padding: 1.25rem 1.5rem;
     text-align: left;
     font-weight: 600;
     color: var(--text-primary);
     border-bottom: 2px solid var(--border-color);
     white-space: nowrap;
+    min-width: 120px;
 }
 
 .projection-table td {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid #eee;
     color: var(--text-secondary);
+    min-width: 120px;
 }
 
 .projection-table tbody tr:hover {
@@ -1937,10 +1945,12 @@ legend {
 /* Cash Investment Comparison */
 .comparison-section {
     margin: 2rem 0;
-    padding: 2rem;
+    padding: 2.5rem;
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     border-radius: 12px;
     border: 2px solid #0284c7;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .comparison-section h3 {
@@ -1956,9 +1966,11 @@ legend {
 
 .comparison-cards {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
     margin-top: 1.5rem;
+    max-width: 1200px;
+    width: 100%;
 }
 
 .comparison-card {
@@ -1989,7 +2001,7 @@ legend {
 }
 
 .comparison-body {
-    padding: 1.5rem;
+    padding: 2rem;
 }
 
 .comparison-item {
@@ -2156,6 +2168,22 @@ legend {
         text-align: center;
     }
 
+    /* Make tables more readable on mobile */
+    .projection-table {
+        min-width: 600px;
+        font-size: 0.875rem;
+    }
+    
+    .projection-table th,
+    .projection-table td {
+        padding: 0.75rem 1rem;
+        min-width: 100px;
+    }
+    
+    .app-container {
+        padding: 0 10px;
+    }
+
     .planner-nav {
         flex-direction: column;
     }
@@ -2193,9 +2221,14 @@ legend {
     .options-grid,
     .stress-scenarios,
     .sensitivity-scenarios,
-    .comparison-cards,
     .stress-comparison-cards {
         grid-template-columns: 1fr;
+    }
+    
+    .comparison-cards {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        max-width: none;
     }
 
     .summary-card.large {
@@ -2233,4 +2266,469 @@ legend {
     .step {
         flex-direction: column;
     }
+}
+
+/* Market Assumptions Preset Buttons */
+.preset-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.preset-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.preset-btn:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.preset-btn.active {
+    background: var(--planner-primary);
+    color: white;
+    border-color: var(--planner-primary);
+}
+
+.preset-btn.active:hover {
+    background: #5b6bc7;
+    border-color: #5b6bc7;
+}
+
+.section-note {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-light);
+    border-radius: 6px;
+    border-left: 3px solid var(--planner-primary);
+}
+
+/* Monte Carlo Success Rate Display */
+.monte-carlo-container {
+    margin-left: 2rem;
+}
+
+.success-rate-display {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    backdrop-filter: blur(5px);
+}
+
+.success-rate {
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    color: #6b7280;
+    transition: color 0.3s ease;
+}
+
+.success-rate.excellent {
+    color: var(--planner-success);
+}
+
+.success-rate.good {
+    color: #059669;
+}
+
+.success-rate.fair {
+    color: var(--planner-warning);
+}
+
+.success-rate.poor {
+    color: var(--planner-danger);
+}
+
+.success-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.mc-btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+}
+
+.readiness-dashboard {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .readiness-dashboard {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .monte-carlo-container {
+        margin-left: 0;
+    }
+    
+    .success-rate {
+        font-size: 2.5rem;
+    }
+}
+
+/* Monte Carlo Percentile Analysis */
+.percentile-analysis {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.percentile-analysis h3 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+}
+
+.percentile-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.percentile-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.percentile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.percentile-card.worst {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.percentile-card.poor {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.percentile-card.median {
+    border-color: var(--planner-primary);
+    background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+}
+
+.percentile-card.good {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.percentile-card.best {
+    border-color: #059669;
+    background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);
+    color: white;
+}
+
+.percentile-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: inherit;
+}
+
+.percentile-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: inherit;
+}
+
+.percentile-desc {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    line-height: 1.3;
+}
+
+.percentile-card.best .percentile-desc {
+    opacity: 0.9;
+}
+
+/* Confidence Summary */
+.confidence-summary {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid var(--planner-primary);
+}
+
+.confidence-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.confidence-item:last-child {
+    margin-bottom: 0;
+}
+
+.confidence-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.confidence-range {
+    font-weight: bold;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+/* Responsive Percentile Grid */
+@media (max-width: 1200px) {
+    .percentile-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .percentile-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    
+    .percentile-card {
+        padding: 1rem;
+    }
+    
+    .percentile-value {
+        font-size: 1.25rem;
+    }
+    
+    .confidence-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .percentile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Distribution Chart Section */
+.distribution-chart-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.distribution-chart-section h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.chart-note {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0 0 1rem 0;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+/* Data Management Section */
+.data-management-section h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.management-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.management-actions button {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+}
+
+@media (max-width: 600px) {
+    .management-actions {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .management-actions button {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Scenario Comparison */
+.scenario-selector {
+    margin-bottom: 2rem;
+}
+
+.scenario-checkboxes {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.scenario-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.scenario-checkbox:hover {
+    background: #f9fafb;
+    border-color: var(--planner-primary);
+}
+
+.scenario-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.scenario-checkbox label {
+    flex: 1;
+    cursor: pointer;
+    font-weight: 500;
+    margin: 0;
+}
+
+.scenario-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.comparison-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.comparison-table tr:hover {
+    background: #f9fafb;
+}
+
+.comparison-table-wrapper {
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.comparison-chart-wrapper {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fafafa;
 }

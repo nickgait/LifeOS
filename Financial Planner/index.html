@@ -100,9 +100,9 @@
                                         <label for="risk-tolerance">Risk Tolerance</label>
                                         <select id="risk-tolerance" name="risk-tolerance">
                                             <option value="">Select Risk Tolerance</option>
-                                            <option value="conservative">Conservative</option>
-                                            <option value="moderate">Moderate</option>
-                                            <option value="aggressive">Aggressive</option>
+                                            <option value="low">Conservative</option>
+                                            <option value="medium">Moderate</option>
+                                            <option value="high">Aggressive</option>
                                         </select>
                                     </div>
                                 </div>
@@ -162,11 +162,50 @@
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="social-security">Expected Social Security (Annual $)</label>
-                                        <input type="number" id="social-security" name="social-security" min="0" step="100" required>
+                                        <input type="number" id="social-security" name="social-security" min="0" max="50000" step="100" required>
                                     </div>
                                     <div class="form-group">
                                         <label for="monthly-spending">Planned Monthly Spending in Retirement ($)</label>
                                         <input type="number" id="monthly-spending" name="monthly-spending" min="0" step="50" required>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <fieldset>
+                                <legend>Market Assumptions</legend>
+                                <p class="section-note">These assumptions are used for all projections and Monte Carlo simulations.</p>
+                                
+                                <div class="preset-buttons">
+                                    <button type="button" class="preset-btn" onclick="setMarketPreset('conservative')">Conservative</button>
+                                    <button type="button" class="preset-btn active" onclick="setMarketPreset('moderate')">Moderate</button>
+                                    <button type="button" class="preset-btn" onclick="setMarketPreset('aggressive')">Aggressive</button>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="expected-return">Expected Annual Return (%)</label>
+                                        <input type="number" id="expected-return" name="expected-return" min="0" max="20" step="0.1" value="7.5" required>
+                                        <small>Historical stock market average: ~10%, Bonds: ~5%</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="market-volatility">Market Volatility (Standard Deviation %)</label>
+                                        <input type="number" id="market-volatility" name="market-volatility" min="0" max="50" step="0.1" value="15.0" required>
+                                        <small>How much returns vary year-to-year</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inflation-rate">Expected Inflation Rate (%)</label>
+                                        <input type="number" id="inflation-rate" name="inflation-rate" min="0" max="10" step="0.1" value="3.0" required>
+                                        <small>Long-term average: ~3%</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="withdrawal-strategy">Retirement Withdrawal Strategy</label>
+                                        <select id="withdrawal-strategy" name="withdrawal-strategy">
+                                            <option value="fixed">Fixed 4% Rule (Traditional)</option>
+                                            <option value="guardrails">Guardrails (Guyton-Klinger)</option>
+                                            <option value="dynamic">Dynamic Spending (Performance-based)</option>
+                                            <option value="bucket">Bucket Strategy (Cash/Bonds/Stocks)</option>
+                                        </select>
+                                        <small>How you'll withdraw money during retirement</small>
                                     </div>
                                 </div>
                             </fieldset>
@@ -314,6 +353,60 @@
                             <div class="form-actions">
                                 <button type="submit" class="btn-primary">Generate Full Analysis</button>
                                 <button type="button" class="btn-secondary" onclick="resetProfileForm()">Reset Form</button>
+                            </div>
+
+                            <!-- Scenario and Data Management -->
+                            <div class="data-management-section" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                                <h3>Scenario & Data Management</h3>
+                                <p class="section-note">Save different planning scenarios to compare options, or backup/restore your data.</p>
+                                
+                                <div class="management-actions">
+                                    <button type="button" class="btn-secondary" onclick="saveScenario()">💾 Save Scenario</button>
+                                    <button type="button" class="btn-secondary" onclick="runMonteCarloSimulation()">🎲 Run Monte Carlo</button>
+                                    <button type="button" class="btn-secondary" onclick="showScenarioComparison()">📊 Compare Scenarios</button>
+                                    <button type="button" class="btn-secondary" onclick="exportJSON()">📤 Export Backup</button>
+                                    <button type="button" class="btn-secondary" onclick="importJSON()">📥 Import Backup</button>
+                                </div>
+                                
+                                <!-- Scenario Comparison Modal -->
+                                <div id="scenario-comparison-modal" class="modal" style="display: none;">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h3>📊 Scenario Comparison</h3>
+                                            <button type="button" class="modal-close" onclick="closeScenarioComparison()">&times;</button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="scenario-selector">
+                                                <p>Select scenarios to compare (up to 3):</p>
+                                                <div id="scenario-checkboxes" class="scenario-checkboxes">
+                                                    <!-- Populated by JavaScript -->
+                                                </div>
+                                                <button type="button" class="btn-primary" onclick="generateComparison()">Generate Comparison</button>
+                                            </div>
+                                            
+                                            <div id="comparison-results" style="display: none;">
+                                                <h4>Comparison Results</h4>
+                                                <div class="comparison-table-wrapper">
+                                                    <table id="comparison-table" class="comparison-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Metric</th>
+                                                                <!-- Scenario columns added dynamically -->
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <!-- Populated by JavaScript -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                
+                                                <div class="comparison-chart-wrapper">
+                                                    <canvas id="scenarioComparisonChart" style="max-height: 300px;"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -636,6 +729,7 @@
 
                         <div class="table-actions">
                             <button type="button" class="btn-secondary" onclick="clearProjectionTable()">Clear Table</button>
+                            <button type="button" class="btn-primary" onclick="exportProjectionCSV()">📊 Export CSV</button>
                         </div>
                     </div>
                 </div>
@@ -650,6 +744,73 @@
                         <div class="readiness-score-container">
                             <div class="readiness-score" id="readiness-score">0%</div>
                             <div class="readiness-label">Retirement Readiness Score</div>
+                        </div>
+                        
+                        <div class="monte-carlo-container">
+                            <div class="success-rate-display">
+                                <div class="success-rate" id="success-rate">--%</div>
+                                <div class="success-label">Monte Carlo Success Rate</div>
+                                <button type="button" class="btn-secondary mc-btn" onclick="runMonteCarloSimulation()">🎲 Run Simulation</button>
+                            </div>
+                        </div>
+
+                        <!-- Monte Carlo Percentile Analysis -->
+                        <div class="percentile-analysis" id="percentile-analysis" style="display: none;">
+                            <h3>Portfolio Value at Retirement - Outcome Distribution</h3>
+                            <p class="section-note">These percentiles show the range of possible portfolio values at retirement based on 1000+ simulations.</p>
+                            
+                            <div class="percentile-grid">
+                                <div class="percentile-card worst">
+                                    <div class="percentile-label">10th Percentile</div>
+                                    <div class="percentile-value" id="mc-p10">$0</div>
+                                    <div class="percentile-desc">Worst-case scenario (10% of outcomes below this)</div>
+                                </div>
+                                
+                                <div class="percentile-card poor">
+                                    <div class="percentile-label">25th Percentile</div>
+                                    <div class="percentile-value" id="mc-p25">$0</div>
+                                    <div class="percentile-desc">Poor performance (25% below this)</div>
+                                </div>
+                                
+                                <div class="percentile-card median">
+                                    <div class="percentile-label">50th Percentile</div>
+                                    <div class="percentile-value" id="mc-p50">$0</div>
+                                    <div class="percentile-desc">Median outcome (most likely)</div>
+                                </div>
+                                
+                                <div class="percentile-card good">
+                                    <div class="percentile-label">75th Percentile</div>
+                                    <div class="percentile-value" id="mc-p75">$0</div>
+                                    <div class="percentile-desc">Good performance (75% below this)</div>
+                                </div>
+                                
+                                <div class="percentile-card best">
+                                    <div class="percentile-label">90th Percentile</div>
+                                    <div class="percentile-value" id="mc-p90">$0</div>
+                                    <div class="percentile-desc">Best-case scenario (90% below this)</div>
+                                </div>
+                            </div>
+
+                            <!-- Confidence Range Summary -->
+                            <div class="confidence-summary">
+                                <div class="confidence-item">
+                                    <span class="confidence-label">Likely Range (25th-75th percentile):</span>
+                                    <span class="confidence-range" id="confidence-range-50">$0 - $0</span>
+                                </div>
+                                <div class="confidence-item">
+                                    <span class="confidence-label">Possible Range (10th-90th percentile):</span>
+                                    <span class="confidence-range" id="confidence-range-80">$0 - $0</span>
+                                </div>
+                            </div>
+
+                            <!-- Distribution Chart -->
+                            <div class="distribution-chart-section">
+                                <h4>Portfolio Value Distribution at Retirement</h4>
+                                <p class="chart-note">This chart shows the probability distribution of portfolio outcomes. The darker areas represent more likely outcomes.</p>
+                                <div class="chart-wrapper">
+                                    <canvas id="distributionChart" style="max-height: 300px;"></canvas>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="readiness-details">
@@ -700,6 +861,10 @@
                                 <tbody id="cashflow-tbody">
                                 </tbody>
                             </table>
+                        </div>
+                        
+                        <div class="table-actions">
+                            <button type="button" class="btn-primary" onclick="exportCashflowCSV()">📊 Export Cashflow CSV</button>
                         </div>
                     </div>
                 </div>
@@ -1545,6 +1710,7 @@
     <script src="../shared/validator.js"></script>
     <script src="../shared/sanitizer.js"></script>
     <script src="../shared/encrypted-storage.js"></script>
+    <script src="../shared/ui-utils.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
