@@ -384,5 +384,48 @@ Validator.customActivitySchema = Validator.schema({
   category: Validator.enum(['strength', 'cardio', 'flexibility', 'sports', 'other'], { required: false })
 });
 
+// Financial transaction schema
+Validator.transactionSchema = Validator.schema({
+  ticker: Validator.string({ min: 1, max: 10, pattern: /^[A-Za-z0-9.^-]+$/ }),
+  accountType: Validator.enum(['brokerage', 'retirement']),
+  type: Validator.enum(['buy', 'sell']),
+  date: Validator.date(),
+  shares: Validator.number({ min: 0.0001, max: 1000000 }),
+  pricePerShare: Validator.number({ min: 0.01, max: 1000000 }),
+  fees: Validator.number({ min: 0, max: 10000, required: false })
+});
+
+// Performance snapshot schema
+Validator.snapshotSchema = Validator.schema({
+  date: Validator.date(),
+  brokerageValue: Validator.number({ min: 0 }),
+  retirementValue: Validator.number({ min: 0 }),
+  cashValue: Validator.number({ min: 0, required: false }),
+  contributions: Validator.number({ min: 0, required: false }),
+  withdrawals: Validator.number({ min: 0, required: false })
+});
+
+// Enhanced dividend schema
+Validator.dividendSchema = Validator.schema({
+  symbol: Validator.string({ min: 1, max: 10, pattern: /^[A-Za-z0-9.^-]+$/ }),
+  accountType: Validator.enum(['brokerage', 'retirement']),
+  date: Validator.date(),
+  amount: Validator.number({ min: 0.01, max: 1000000 }),
+  sharesOwned: Validator.number({ min: 0, required: false }),
+  taxWithheld: Validator.number({ min: 0, required: false }),
+  reinvested: Validator.boolean({ required: false })
+});
+
+// Watchlist item schema
+Validator.watchlistSchema = Validator.schema({
+  ticker: Validator.string({ min: 1, max: 10, pattern: /^[A-Za-z0-9.^-]+$/ }),
+  name: Validator.string({ min: 1, max: 200 }),
+  targetBuyPrice: Validator.number({ min: 0.01, max: 1000000, required: false }),
+  priceAlertEnabled: Validator.boolean({ required: false }),
+  priceAlertTarget: Validator.number({ min: 0.01, max: 1000000, required: false }),
+  sector: Validator.string({ max: 50, required: false }),
+  rating: Validator.enum(['1', '2', '3', '4', '5', ''], { required: false })
+});
+
 // Make available globally
 window.Validator = Validator;

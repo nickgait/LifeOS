@@ -410,6 +410,19 @@ class FinancialPlanner {
         this.projectionScenario = 'conservative';
         this.charts = {};
 
+        // New data stores
+        this.transactions = [];
+        this.performanceSnapshots = [];
+        this.dividends = [];
+        this.expenses = [];
+        this.budgets = [];
+        this.research = [];
+        this.watchlist = [];
+
+        // Filter state
+        this.transactionFilter = 'all';
+        this.watchlistFilter = 'all';
+
         // No default holdings - app starts blank
         this.defaultBrokerageHoldings = [];
         this.defaultRetirementHoldings = [];
@@ -436,6 +449,15 @@ class FinancialPlanner {
         this.initializeHoldings();
         this.updateShariaVisibility();
         this.loadDisplayMode();
+        this.renderTransactions();
+        this.renderCostBasisCards();
+        this.renderPerformanceStats();
+        this.renderDividends();
+        this.renderDividendYields();
+        this.renderDividendCalendar();
+        this.renderWatchlist();
+        this.checkPriceAlerts();
+        this.populateTransactionTickerDropdown();
     }
 
     async loadData() {
@@ -501,6 +523,51 @@ class FinancialPlanner {
             this.cashHoldings = savedCashHoldings;
             this.updateCashDisplay();
         }
+
+        // V5 migration: enhanced storage for transactions, snapshots, dividends, watchlist
+        const migrationKeyV5 = 'financial-planner-migrated-v5';
+        if (!StorageManager.get(migrationKeyV5)) {
+            // Migrate existing dividends to enhanced format if needed
+            const oldDividends = StorageManager.get('financial-planner-dividends');
+            if (oldDividends && Array.isArray(oldDividends)) {
+                this.dividends = oldDividends.map(d => ({
+                    ...d,
+                    accountType: d.accountType || 'brokerage',
+                    sharesOwned: d.sharesOwned || 0,
+                    taxWithheld: d.taxWithheld || 0,
+                    notes: d.notes || ''
+                }));
+            }
+            StorageManager.set(migrationKeyV5, true);
+        }
+
+        // Load new feature data from encrypted storage (sensitive)
+        if (EncryptedStorage.isInitialized()) {
+            const savedTransactions = await EncryptedStorage.get('financial-transactions');
+            const savedSnapshots = await EncryptedStorage.get('financial-performance-snapshots');
+            const savedDividends = await EncryptedStorage.get('financial-dividends');
+            const savedExpenses = await EncryptedStorage.get('financial-expenses');
+            const savedBudgets = await EncryptedStorage.get('financial-budgets');
+            const savedResearch = await EncryptedStorage.get('financial-research');
+
+            if (savedTransactions) this.transactions = savedTransactions;
+            if (savedSnapshots) this.performanceSnapshots = savedSnapshots;
+            if (savedDividends) this.dividends = savedDividends;
+            if (savedExpenses) this.expenses = savedExpenses;
+            if (savedBudgets) this.budgets = savedBudgets;
+            if (savedResearch) this.research = savedResearch;
+        } else {
+            // Fallback to regular storage
+            this.transactions = StorageManager.get('financial-planner-transactions') || [];
+            this.performanceSnapshots = StorageManager.get('financial-planner-snapshots') || [];
+            this.dividends = StorageManager.get('financial-planner-dividends') || this.dividends || [];
+            this.expenses = StorageManager.get('financial-planner-expenses') || [];
+            this.budgets = StorageManager.get('financial-planner-budgets') || [];
+            this.research = StorageManager.get('financial-planner-research') || [];
+        }
+
+        // Load watchlist from regular (non-encrypted) storage
+        this.watchlist = StorageManager.get('financial-watchlist') || [];
     }
 
     loadDisplayMode() {
@@ -535,17 +602,32 @@ class FinancialPlanner {
         StorageManager.set('financial-planner-sharia-mode', this.shariaMode);
         StorageManager.set('financial-planner-scenarios', this.scenarios || []);
         StorageManager.set('financial-planner-market-preset', this.marketPreset || 'moderate');
-        
+
+        // Save watchlist in regular storage (non-sensitive research data)
+        StorageManager.set('financial-watchlist', this.watchlist || []);
+
         // Save sensitive financial data with encryption if available
         if (EncryptedStorage.isInitialized()) {
             await EncryptedStorage.set('financial-profile', this.profile);
             await EncryptedStorage.set('financial-holdings', this.holdings);
             await EncryptedStorage.set('financial-cash', this.cashHoldings);
+            await EncryptedStorage.set('financial-transactions', this.transactions || []);
+            await EncryptedStorage.set('financial-performance-snapshots', this.performanceSnapshots || []);
+            await EncryptedStorage.set('financial-dividends', this.dividends || []);
+            await EncryptedStorage.set('financial-expenses', this.expenses || []);
+            await EncryptedStorage.set('financial-budgets', this.budgets || []);
+            await EncryptedStorage.set('financial-research', this.research || []);
         } else {
             // Fallback to regular storage if encryption not set up
             StorageManager.set('financial-planner-profile', this.profile);
             StorageManager.set('financial-planner-holdings', this.holdings);
             StorageManager.set('financial-planner-cash', this.cashHoldings);
+            StorageManager.set('financial-planner-transactions', this.transactions || []);
+            StorageManager.set('financial-planner-snapshots', this.performanceSnapshots || []);
+            StorageManager.set('financial-planner-dividends', this.dividends || []);
+            StorageManager.set('financial-planner-expenses', this.expenses || []);
+            StorageManager.set('financial-planner-budgets', this.budgets || []);
+            StorageManager.set('financial-planner-research', this.research || []);
         }
     }
 
@@ -1208,6 +1290,9 @@ class FinancialPlanner {
 
         // *** NEW: Update Overview totals with actual portfolio values ***
         this.updateTotalAssetsFromPortfolio();
+
+        // Auto-create performance snapshot after price refresh
+        this.autoCreatePerformanceSnapshot();
 
         if (statusElement) {
             statusElement.textContent = `Updated ${successCount} stock(s)${failCount > 0 ? `, ${failCount} failed` : ''}`;
@@ -3014,21 +3099,1193 @@ class FinancialPlanner {
         const tabs = document.querySelectorAll('.nav-tab');
 
         if (this.displayMode === 'simple') {
-            // Show: Overview, Portfolio, Planning (basic)
-            // Hide: Projections, Retirement, Stress Test, Fixed Income, Rebalancing, Sensitivity, Expenses, Dividends, Research
-            const simpleTabs = ['overview', 'portfolio', 'planning'];
+            // Show: Overview, Portfolio, Planning, Transactions, Dividends
+            // Hide: Projections, Retirement, Stress Test, Fixed Income, Rebalancing, Sensitivity, Performance, Expenses, Watchlist, Research
+            const simpleTabs = ['overview', 'portfolio', 'planning', 'transactions', 'dividends'];
             tabs.forEach(tab => {
-                const tabName = tab.getAttribute('onclick').match(/switchTab\('([^']+)'\)/)[1];
-                if (simpleTabs.includes(tabName)) {
-                    tab.style.display = 'block';
-                } else {
-                    tab.style.display = 'none';
+                const match = tab.getAttribute('onclick')?.match(/switchTab\('([^']+)'\)/);
+                if (match) {
+                    tab.style.display = simpleTabs.includes(match[1]) ? 'block' : 'none';
                 }
             });
         } else {
             // Show all tabs
             tabs.forEach(tab => tab.style.display = 'block');
         }
+    }
+
+    // ==================== TRANSACTIONS METHODS ==================
+
+    handleTransactionSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const tickerSelect = form['txn-ticker'].value;
+        const tickerCustom = form['txn-ticker-custom'].value.trim().toUpperCase();
+        const ticker = tickerSelect || tickerCustom;
+
+        if (!ticker) {
+            UIUtils.showNotification('Please select or enter a ticker', 'error');
+            return;
+        }
+
+        const transaction = {
+            id: 'txn-' + Date.now(),
+            ticker: ticker,
+            accountType: form['txn-account'].value,
+            type: form['txn-type'].value,
+            date: form['txn-date'].value,
+            shares: parseFloat(form['txn-shares'].value),
+            pricePerShare: parseFloat(form['txn-price'].value),
+            fees: parseFloat(form['txn-fees'].value) || 0,
+            totalValue: 0,
+            createdAt: new Date().toISOString()
+        };
+        transaction.totalValue = transaction.shares * transaction.pricePerShare + (transaction.type === 'buy' ? transaction.fees : -transaction.fees);
+
+        this.transactions.push(transaction);
+        this.saveData();
+        this.renderTransactions();
+        this.renderCostBasisCards();
+        this.populateTransactionTickerDropdown();
+        form.reset();
+        this.setupDefaultDates();
+
+        UIUtils.showNotification(`${transaction.type === 'buy' ? 'Buy' : 'Sell'} transaction recorded`, 'success', 2000);
+    }
+
+    deleteTransaction(id) {
+        this.transactions = this.transactions.filter(t => t.id !== id);
+        this.saveData();
+        this.renderTransactions();
+        this.renderCostBasisCards();
+        UIUtils.showNotification('Transaction deleted', 'success', 2000);
+    }
+
+    setTransactionFilter(filter) {
+        this.transactionFilter = filter;
+        document.querySelectorAll('#transactions-tab .filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        this.renderTransactions();
+    }
+
+    populateTransactionTickerDropdown() {
+        const select = document.getElementById('txn-ticker');
+        if (!select) return;
+
+        const tickers = new Set();
+        ['brokerage', 'retirement'].forEach(type => {
+            (this.holdings[type] || []).forEach(h => {
+                if (h.ticker) tickers.add(h.ticker);
+            });
+        });
+
+        select.innerHTML = '<option value="">-- Select from holdings --</option>';
+        [...tickers].sort().forEach(ticker => {
+            select.innerHTML += `<option value="${Sanitizer.escapeHTML(ticker)}">${Sanitizer.escapeHTML(ticker)}</option>`;
+        });
+    }
+
+    renderTransactions() {
+        const tbody = document.getElementById('transactions-tbody');
+        if (!tbody) return;
+
+        let filtered = [...this.transactions];
+
+        if (this.transactionFilter === 'buy') filtered = filtered.filter(t => t.type === 'buy');
+        else if (this.transactionFilter === 'sell') filtered = filtered.filter(t => t.type === 'sell');
+        else if (this.transactionFilter === 'brokerage') filtered = filtered.filter(t => t.accountType === 'brokerage');
+        else if (this.transactionFilter === 'retirement') filtered = filtered.filter(t => t.accountType === 'retirement');
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No transactions recorded</td></tr>';
+            return;
+        }
+
+        filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        tbody.innerHTML = filtered.map(t => `
+            <tr>
+                <td>${this.formatDate(t.date)}</td>
+                <td>${t.accountType === 'brokerage' ? 'Brokerage' : '401k/IRA'}</td>
+                <td><strong>${Sanitizer.escapeHTML(t.ticker)}</strong></td>
+                <td class="transaction-type-${t.type}">${t.type.toUpperCase()}</td>
+                <td>${t.shares.toLocaleString(undefined, { maximumFractionDigits: 4 })}</td>
+                <td>${this.formatCurrency(t.pricePerShare)}</td>
+                <td>${this.formatCurrency(t.totalValue)}</td>
+                <td>${this.formatCurrency(t.fees || 0)}</td>
+                <td><button class="btn-delete-small" onclick="planner.deleteTransaction('${t.id}')">Delete</button></td>
+            </tr>
+        `).join('');
+    }
+
+    // ==================== COST BASIS METHODS ==================
+
+    calculateCostBasis(ticker, accountType) {
+        const buys = this.transactions
+            .filter(t => t.ticker === ticker && t.accountType === accountType && t.type === 'buy')
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const sells = this.transactions
+            .filter(t => t.ticker === ticker && t.accountType === accountType && t.type === 'sell')
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // FIFO cost basis calculation
+        const lots = buys.map(b => ({ ...b, remainingShares: b.shares }));
+        let totalSoldCost = 0;
+        let totalSoldShares = 0;
+
+        for (const sell of sells) {
+            let sharesToSell = sell.shares;
+            while (sharesToSell > 0 && lots.length > 0) {
+                const lot = lots.find(l => l.remainingShares > 0);
+                if (!lot) break;
+
+                const sharesFromLot = Math.min(sharesToSell, lot.remainingShares);
+                totalSoldCost += sharesFromLot * lot.pricePerShare;
+                totalSoldShares += sharesFromLot;
+                lot.remainingShares -= sharesFromLot;
+                sharesToSell -= sharesFromLot;
+            }
+        }
+
+        const remainingLots = lots.filter(l => l.remainingShares > 0);
+        const totalRemainingShares = remainingLots.reduce((sum, l) => sum + l.remainingShares, 0);
+        const totalRemainingCost = remainingLots.reduce((sum, l) => sum + (l.remainingShares * l.pricePerShare), 0);
+        const avgCostPerShare = totalRemainingShares > 0 ? totalRemainingCost / totalRemainingShares : 0;
+        const totalFees = [...buys, ...sells].reduce((sum, t) => sum + (t.fees || 0), 0);
+
+        return {
+            totalShares: totalRemainingShares,
+            totalCost: totalRemainingCost,
+            avgCostPerShare,
+            totalFees,
+            lots: remainingLots
+        };
+    }
+
+    calculateUnrealizedGains(ticker, accountType) {
+        const basis = this.calculateCostBasis(ticker, accountType);
+        if (basis.totalShares === 0) return null;
+
+        // Find current price from holdings
+        const holding = (this.holdings[accountType] || []).find(h => h.ticker === ticker);
+        const currentPrice = holding ? (holding.price || 0) : 0;
+        const currentValue = basis.totalShares * currentPrice;
+        const gainLoss = currentValue - basis.totalCost;
+        const gainLossPct = basis.totalCost > 0 ? (gainLoss / basis.totalCost) * 100 : 0;
+
+        return {
+            ...basis,
+            currentPrice,
+            currentValue,
+            gainLoss,
+            gainLossPct
+        };
+    }
+
+    renderCostBasisCards() {
+        const container = document.getElementById('cost-basis-cards');
+        if (!container) return;
+
+        // Get unique ticker+account combos from transactions
+        const combos = new Map();
+        this.transactions.forEach(t => {
+            const key = `${t.ticker}-${t.accountType}`;
+            if (!combos.has(key)) {
+                combos.set(key, { ticker: t.ticker, accountType: t.accountType });
+            }
+        });
+
+        if (combos.size === 0) {
+            container.innerHTML = '<div class="empty-state">Record transactions to see cost basis analysis</div>';
+            return;
+        }
+
+        let html = '<div class="cost-basis-grid">';
+        for (const [, combo] of combos) {
+            const data = this.calculateUnrealizedGains(combo.ticker, combo.accountType);
+            if (!data || data.totalShares === 0) continue;
+
+            const gainClass = data.gainLoss >= 0 ? 'positive' : 'negative';
+            const gainSign = data.gainLoss >= 0 ? '+' : '';
+
+            html += `
+                <div class="cost-basis-card">
+                    <div class="card-header">
+                        <span class="ticker-badge">${Sanitizer.escapeHTML(combo.ticker)}</span>
+                        <span class="account-badge">${combo.accountType === 'brokerage' ? 'Brokerage' : '401k/IRA'}</span>
+                    </div>
+                    <div class="card-metrics">
+                        <div class="metric">
+                            <span class="metric-label">Shares</span>
+                            <span class="metric-value">${data.totalShares.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Cost</span>
+                            <span class="metric-value">${this.formatCurrency(data.avgCostPerShare)}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Total Cost</span>
+                            <span class="metric-value">${this.formatCurrency(data.totalCost)}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Current Value</span>
+                            <span class="metric-value">${this.formatCurrency(data.currentValue)}</span>
+                        </div>
+                    </div>
+                    <div class="gain-loss">
+                        <div class="gain-loss-value ${gainClass}">${gainSign}${this.formatCurrency(data.gainLoss)}</div>
+                        <div class="gain-loss-pct">${gainSign}${data.gainLossPct.toFixed(2)}%</div>
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ==================== PERFORMANCE TRACKING METHODS ==================
+
+    handleSnapshotSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const snapshot = {
+            id: 'snap-' + Date.now(),
+            date: form['snap-date'].value,
+            brokerageValue: parseFloat(form['snap-brokerage'].value) || 0,
+            retirementValue: parseFloat(form['snap-retirement'].value) || 0,
+            cashValue: parseFloat(form['snap-cash'].value) || 0,
+            contributions: 0,
+            withdrawals: 0,
+            createdAt: new Date().toISOString()
+        };
+        snapshot.totalValue = snapshot.brokerageValue + snapshot.retirementValue + snapshot.cashValue;
+
+        this.performanceSnapshots.push(snapshot);
+        this.saveData();
+        this.renderPerformanceStats();
+        this.renderSnapshotHistory();
+        this.drawPortfolioValueChart();
+        form.reset();
+        this.setupDefaultDates();
+
+        UIUtils.showNotification('Performance snapshot recorded', 'success', 2000);
+    }
+
+    autoCreatePerformanceSnapshot() {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Don't create duplicate snapshots for the same day
+        const existsToday = this.performanceSnapshots.some(s => s.date === today);
+        if (existsToday) return;
+
+        let brokerageValue = 0;
+        let retirementValue = 0;
+
+        ['brokerage', 'retirement'].forEach(type => {
+            (this.holdings[type] || []).forEach(h => {
+                const value = (h.shares || 0) * (h.price || 0);
+                if (type === 'brokerage') brokerageValue += value;
+                else retirementValue += value;
+            });
+        });
+
+        const cashValue = (this.cashHoldings.brokerage || 0) + (this.cashHoldings.retirement || 0);
+
+        // Only create snapshot if there's actual portfolio value
+        if (brokerageValue === 0 && retirementValue === 0 && cashValue === 0) return;
+
+        const snapshot = {
+            id: 'snap-auto-' + Date.now(),
+            date: today,
+            brokerageValue,
+            retirementValue,
+            cashValue,
+            contributions: 0,
+            withdrawals: 0,
+            totalValue: brokerageValue + retirementValue + cashValue,
+            auto: true,
+            createdAt: new Date().toISOString()
+        };
+
+        this.performanceSnapshots.push(snapshot);
+        this.saveData();
+        this.renderPerformanceStats();
+        this.renderSnapshotHistory();
+        this.drawPortfolioValueChart();
+    }
+
+    deleteSnapshot(id) {
+        this.performanceSnapshots = this.performanceSnapshots.filter(s => s.id !== id);
+        this.saveData();
+        this.renderPerformanceStats();
+        this.renderSnapshotHistory();
+        this.drawPortfolioValueChart();
+        UIUtils.showNotification('Snapshot deleted', 'success', 2000);
+    }
+
+    autoFillSnapshot() {
+        let brokerageValue = 0;
+        let retirementValue = 0;
+
+        ['brokerage', 'retirement'].forEach(type => {
+            (this.holdings[type] || []).forEach(h => {
+                const value = (h.shares || 0) * (h.price || 0);
+                if (type === 'brokerage') brokerageValue += value;
+                else retirementValue += value;
+            });
+        });
+
+        const cashValue = (this.cashHoldings.brokerage || 0) + (this.cashHoldings.retirement || 0);
+
+        const dateInput = document.getElementById('snap-date');
+        const brokInput = document.getElementById('snap-brokerage');
+        const retInput = document.getElementById('snap-retirement');
+        const cashInput = document.getElementById('snap-cash');
+
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+        if (brokInput) brokInput.value = brokerageValue.toFixed(2);
+        if (retInput) retInput.value = retirementValue.toFixed(2);
+        if (cashInput) cashInput.value = cashValue.toFixed(2);
+    }
+
+    calculatePerformanceMetrics() {
+        const snapshots = [...this.performanceSnapshots].sort((a, b) => new Date(a.date) - new Date(b.date));
+        if (snapshots.length < 2) {
+            return { totalReturn: 0, ytd: 0, mtd: 0, bestDay: 0, worstDay: 0, cagr: 0 };
+        }
+
+        const first = snapshots[0];
+        const last = snapshots[snapshots.length - 1];
+
+        // Total return (simple)
+        const totalContributions = snapshots.reduce((sum, s) => sum + (s.contributions || 0), 0);
+        const totalWithdrawals = snapshots.reduce((sum, s) => sum + (s.withdrawals || 0), 0);
+        const netFlows = totalContributions - totalWithdrawals;
+        const totalReturn = first.totalValue > 0
+            ? ((last.totalValue - first.totalValue - netFlows) / first.totalValue) * 100
+            : 0;
+
+        // YTD
+        const yearStart = new Date().getFullYear() + '-01-01';
+        const ytdSnapshots = snapshots.filter(s => s.date >= yearStart);
+        let ytd = 0;
+        if (ytdSnapshots.length >= 2) {
+            const ytdFirst = ytdSnapshots[0];
+            const ytdLast = ytdSnapshots[ytdSnapshots.length - 1];
+            const ytdFlows = ytdSnapshots.reduce((sum, s) => sum + (s.contributions || 0) - (s.withdrawals || 0), 0);
+            ytd = ytdFirst.totalValue > 0
+                ? ((ytdLast.totalValue - ytdFirst.totalValue - ytdFlows) / ytdFirst.totalValue) * 100
+                : 0;
+        }
+
+        // MTD
+        const monthStart = new Date().toISOString().slice(0, 7) + '-01';
+        const mtdSnapshots = snapshots.filter(s => s.date >= monthStart);
+        let mtd = 0;
+        if (mtdSnapshots.length >= 2) {
+            const mtdFirst = mtdSnapshots[0];
+            const mtdLast = mtdSnapshots[mtdSnapshots.length - 1];
+            mtd = mtdFirst.totalValue > 0
+                ? ((mtdLast.totalValue - mtdFirst.totalValue) / mtdFirst.totalValue) * 100
+                : 0;
+        }
+
+        // Best / Worst day (period return between consecutive snapshots)
+        let bestDay = 0;
+        let worstDay = 0;
+        for (let i = 1; i < snapshots.length; i++) {
+            const prev = snapshots[i - 1];
+            const curr = snapshots[i];
+            if (prev.totalValue > 0) {
+                const dayReturn = ((curr.totalValue - prev.totalValue) / prev.totalValue) * 100;
+                if (dayReturn > bestDay) bestDay = dayReturn;
+                if (dayReturn < worstDay) worstDay = dayReturn;
+            }
+        }
+
+        // CAGR
+        const daysDiff = (new Date(last.date) - new Date(first.date)) / (1000 * 60 * 60 * 24);
+        const years = daysDiff / 365.25;
+        const cagr = years > 0 && first.totalValue > 0
+            ? (Math.pow((last.totalValue - netFlows) / first.totalValue, 1 / years) - 1) * 100
+            : 0;
+
+        return { totalReturn, ytd, mtd, bestDay, worstDay, cagr };
+    }
+
+    renderPerformanceStats() {
+        const metrics = this.calculatePerformanceMetrics();
+
+        const setMetric = (id, value, isPercent = true) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const sign = value >= 0 ? '+' : '';
+            el.textContent = isPercent ? `${sign}${value.toFixed(2)}%` : this.formatCurrency(value);
+            el.className = 'stat-value ' + (value >= 0 ? 'positive' : 'negative');
+        };
+
+        setMetric('perf-total-return', metrics.totalReturn);
+        setMetric('perf-ytd', metrics.ytd);
+        setMetric('perf-mtd', metrics.mtd);
+        setMetric('perf-best-day', metrics.bestDay);
+        setMetric('perf-worst-day', metrics.worstDay);
+
+        this.renderSnapshotHistory();
+    }
+
+    renderSnapshotHistory() {
+        const tbody = document.getElementById('snapshots-tbody');
+        if (!tbody) return;
+
+        if (this.performanceSnapshots.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No snapshots recorded. Refresh prices to auto-generate.</td></tr>';
+            return;
+        }
+
+        const sorted = [...this.performanceSnapshots].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        tbody.innerHTML = sorted.map((s, i) => {
+            // Calculate change from previous snapshot
+            const next = sorted[i + 1]; // next in sorted (previous in time)
+            let change = '';
+            if (next) {
+                const diff = s.totalValue - next.totalValue;
+                const pct = next.totalValue > 0 ? (diff / next.totalValue) * 100 : 0;
+                const sign = diff >= 0 ? '+' : '';
+                const cls = diff >= 0 ? 'positive' : 'negative';
+                change = `<span class="${cls}">${sign}${this.formatCurrency(diff)} (${sign}${pct.toFixed(1)}%)</span>`;
+            } else {
+                change = '--';
+            }
+
+            return `
+                <tr>
+                    <td>${this.formatDate(s.date)}${s.auto ? ' <small style="color:#9ca3af">(auto)</small>' : ''}</td>
+                    <td>${this.formatCurrency(s.brokerageValue)}</td>
+                    <td>${this.formatCurrency(s.retirementValue)}</td>
+                    <td>${this.formatCurrency(s.cashValue || 0)}</td>
+                    <td><strong>${this.formatCurrency(s.totalValue)}</strong></td>
+                    <td>${change}</td>
+                    <td><button class="btn-delete-small" onclick="planner.deleteSnapshot('${s.id}')">Delete</button></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    drawPortfolioValueChart(range) {
+        let snapshots = [...this.performanceSnapshots].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Apply range filter
+        if (range) {
+            const r = range.toUpperCase();
+            const now = new Date();
+            let cutoff;
+            if (r === 'YTD') cutoff = new Date(now.getFullYear(), 0, 1);
+            else if (r === '1Y') { const d = new Date(); d.setFullYear(d.getFullYear() - 1); cutoff = d; }
+            else if (r === '3Y') { const d = new Date(); d.setFullYear(d.getFullYear() - 3); cutoff = d; }
+            // 'ALL' = no filter
+
+            if (cutoff) {
+                snapshots = snapshots.filter(s => new Date(s.date) >= cutoff);
+            }
+
+            // Update active button
+            document.querySelectorAll('#performance-tab .range-btn').forEach(btn => btn.classList.remove('active'));
+            event?.target?.classList.add('active');
+        }
+
+        const canvas = document.getElementById('portfolioValueChart');
+        if (!canvas || snapshots.length === 0) return;
+
+        if (this.charts.portfolioValue) {
+            this.charts.portfolioValue.destroy();
+        }
+
+        this.charts.portfolioValue = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: snapshots.map(s => this.formatDate(s.date)),
+                datasets: [{
+                    label: 'Total Portfolio',
+                    data: snapshots.map(s => s.totalValue),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: value => '$' + (value / 1000).toFixed(0) + 'k'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    drawAccountPerformanceCharts() {
+        const snapshots = [...this.performanceSnapshots].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const canvas = document.getElementById('accountComparisonChart');
+        if (!canvas || snapshots.length === 0) return;
+
+        if (this.charts.accountComparison) {
+            this.charts.accountComparison.destroy();
+        }
+
+        this.charts.accountComparison = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: snapshots.map(s => this.formatDate(s.date)),
+                datasets: [
+                    {
+                        label: 'Brokerage',
+                        data: snapshots.map(s => s.brokerageValue),
+                        borderColor: '#667eea',
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Retirement',
+                        data: snapshots.map(s => s.retirementValue),
+                        borderColor: '#10b981',
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: value => '$' + (value / 1000).toFixed(0) + 'k'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ==================== ENHANCED DIVIDENDS METHODS ==================
+
+    handleDividendSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const symbol = form['dividend-symbol'].value.toUpperCase().trim();
+        const accountType = form['dividend-account']?.value || 'brokerage';
+
+        // Auto-fill shares from holdings if not provided
+        let sharesOwned = parseFloat(form['dividend-shares-owned']?.value) || 0;
+        if (sharesOwned === 0) {
+            const holding = (this.holdings[accountType] || []).find(h => h.ticker === symbol);
+            if (holding) sharesOwned = holding.shares || 0;
+        }
+
+        const dividend = {
+            id: 'dividend-' + Date.now(),
+            symbol: symbol,
+            accountType: accountType,
+            date: form['dividend-date'].value,
+            amount: parseFloat(form['dividend-amount'].value),
+            sharesOwned: sharesOwned,
+            taxWithheld: parseFloat(form['dividend-tax']?.value) || 0,
+            reinvested: form['dividend-drip'].checked,
+            notes: form['dividend-notes']?.value || '',
+            createdAt: new Date().toISOString()
+        };
+
+        // Calculate per-share dividend
+        if (dividend.sharesOwned > 0) {
+            dividend.dividendPerShare = dividend.amount / dividend.sharesOwned;
+        }
+
+        if (!this.dividends) this.dividends = [];
+        this.dividends.push(dividend);
+
+        // If DRIP enabled, auto-create a buy transaction
+        if (dividend.reinvested) {
+            this.handleDripReinvestment(dividend);
+        }
+
+        this.saveData();
+        this.renderDividends();
+        this.renderDividendYields();
+        this.renderDividendCalendar();
+        this.renderDividendStats();
+        form.reset();
+        this.setupDefaultDates();
+
+        UIUtils.showNotification('Dividend recorded', 'success', 2000);
+    }
+
+    handleDripReinvestment(dividend) {
+        // Find current price for the stock
+        const holding = (this.holdings[dividend.accountType] || []).find(h => h.ticker === dividend.symbol);
+        const pricePerShare = holding ? (holding.price || 0) : 0;
+
+        if (pricePerShare > 0) {
+            const sharesReinvested = dividend.amount / pricePerShare;
+            const transaction = {
+                id: 'txn-drip-' + Date.now(),
+                ticker: dividend.symbol,
+                accountType: dividend.accountType,
+                type: 'buy',
+                date: dividend.date,
+                shares: sharesReinvested,
+                pricePerShare: pricePerShare,
+                fees: 0,
+                totalValue: dividend.amount,
+                drip: true,
+                createdAt: new Date().toISOString()
+            };
+            this.transactions.push(transaction);
+        }
+    }
+
+    deleteDividend(id) {
+        this.dividends = this.dividends.filter(d => d.id !== id);
+        this.saveData();
+        this.renderDividends();
+        this.renderDividendYields();
+        this.renderDividendCalendar();
+        this.renderDividendStats();
+        UIUtils.showNotification('Dividend deleted', 'success', 2000);
+    }
+
+    renderDividends() {
+        const container = document.getElementById('dividends-list');
+        if (!container) return;
+
+        if (!this.dividends || this.dividends.length === 0) {
+            container.innerHTML = '<p style="color: #999; text-align: center;">No dividends recorded</p>';
+            this.renderDividendStats();
+            return;
+        }
+
+        const sorted = [...this.dividends].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        container.innerHTML = sorted.map(dividend => `
+            <div class="dividend-item">
+                <div class="dividend-symbol">${Sanitizer.escapeHTML(dividend.symbol)}</div>
+                <div>${this.formatDate(dividend.date)}</div>
+                <div style="font-size: 0.8rem; color: #6b7280;">${dividend.accountType === 'brokerage' ? 'Brokerage' : '401k/IRA'}</div>
+                <div class="dividend-amount">${this.formatCurrency(dividend.amount)}</div>
+                ${dividend.taxWithheld ? `<div style="font-size: 0.8rem; color: #ef4444;">Tax: ${this.formatCurrency(dividend.taxWithheld)}</div>` : ''}
+                ${dividend.reinvested ? '<span class="drip-badge">DRIP</span>' : '<span>Received</span>'}
+                <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteDividend('${dividend.id}')">Delete</button>
+            </div>
+        `).join('');
+
+        this.renderDividendStats();
+    }
+
+    renderDividendStats() {
+        const now = new Date();
+        const oneYearAgo = new Date(now);
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const dividends = this.dividends || [];
+
+        // LTM (Last Twelve Months)
+        const ltmDividends = dividends.filter(d => new Date(d.date) >= oneYearAgo);
+        const ltmTotal = ltmDividends.reduce((sum, d) => sum + d.amount, 0);
+
+        // YTD
+        const ytdDividends = dividends.filter(d => new Date(d.date) >= yearStart);
+        const ytdTotal = ytdDividends.reduce((sum, d) => sum + d.amount, 0);
+
+        // This month
+        const monthDividends = dividends.filter(d => new Date(d.date) >= monthStart);
+        const monthTotal = monthDividends.reduce((sum, d) => sum + d.amount, 0);
+
+        // Portfolio yield
+        let portfolioValue = 0;
+        ['brokerage', 'retirement'].forEach(type => {
+            (this.holdings[type] || []).forEach(h => {
+                portfolioValue += (h.shares || 0) * (h.price || 0);
+            });
+        });
+        const portfolioYield = portfolioValue > 0 ? (ltmTotal / portfolioValue) * 100 : 0;
+
+        // Annual income estimate (LTM as proxy)
+        const annualEstimate = ltmTotal;
+
+        // YoY Growth
+        const twoYearsAgo = new Date(now);
+        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+        const prevYearDividends = dividends.filter(d => {
+            const date = new Date(d.date);
+            return date >= twoYearsAgo && date < oneYearAgo;
+        });
+        const prevYearTotal = prevYearDividends.reduce((sum, d) => sum + d.amount, 0);
+        const yoyGrowth = prevYearTotal > 0 ? ((ltmTotal - prevYearTotal) / prevYearTotal) * 100 : 0;
+
+        // Update stats
+        const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setEl('dividends-total', this.formatCurrency(ltmTotal));
+        setEl('dividends-ytd', this.formatCurrency(ytdTotal));
+        setEl('dividends-month', this.formatCurrency(monthTotal));
+        setEl('dividends-annual', this.formatCurrency(annualEstimate));
+        setEl('portfolio-yield', portfolioYield.toFixed(2) + '%');
+
+        const growthEl = document.getElementById('dividend-growth');
+        if (growthEl) {
+            if (prevYearTotal > 0) {
+                const sign = yoyGrowth >= 0 ? '+' : '';
+                growthEl.textContent = `${sign}${yoyGrowth.toFixed(1)}%`;
+                growthEl.className = 'stat-value ' + (yoyGrowth >= 0 ? 'positive' : 'negative');
+            } else {
+                growthEl.textContent = '--';
+                growthEl.className = 'stat-value';
+            }
+        }
+    }
+
+    calculateDividendYield(ticker, accountType) {
+        const now = new Date();
+        const oneYearAgo = new Date(now);
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+        const ltmDividends = (this.dividends || []).filter(d =>
+            d.symbol === ticker && d.accountType === accountType && new Date(d.date) >= oneYearAgo
+        );
+        const ltmTotal = ltmDividends.reduce((sum, d) => sum + d.amount, 0);
+
+        const holding = (this.holdings[accountType] || []).find(h => h.ticker === ticker);
+        const holdingValue = holding ? (holding.shares || 0) * (holding.price || 0) : 0;
+        const yield_ = holdingValue > 0 ? (ltmTotal / holdingValue) * 100 : 0;
+
+        return { ltmTotal, holdingValue, yield: yield_, projected: ltmTotal };
+    }
+
+    renderDividendYields() {
+        const tbody = document.getElementById('dividend-yield-body');
+        if (!tbody) return;
+
+        // Get unique symbol+account combos from dividends
+        const combos = new Map();
+        (this.dividends || []).forEach(d => {
+            const key = `${d.symbol}-${d.accountType}`;
+            if (!combos.has(key)) {
+                combos.set(key, { symbol: d.symbol, accountType: d.accountType });
+            }
+        });
+
+        if (combos.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Record dividends to see yield analysis</td></tr>';
+            return;
+        }
+
+        let html = '';
+        for (const [, combo] of combos) {
+            const data = this.calculateDividendYield(combo.symbol, combo.accountType);
+            const yieldClass = data.yield >= 3 ? 'yield-high' : data.yield >= 1 ? '' : 'yield-low';
+
+            html += `
+                <tr>
+                    <td><strong>${Sanitizer.escapeHTML(combo.symbol)}</strong></td>
+                    <td>${combo.accountType === 'brokerage' ? 'Brokerage' : '401k/IRA'}</td>
+                    <td>${this.formatCurrency(data.ltmTotal)}</td>
+                    <td>${this.formatCurrency(data.holdingValue)}</td>
+                    <td class="${yieldClass}">${data.yield.toFixed(2)}%</td>
+                    <td>${this.formatCurrency(data.projected)}</td>
+                </tr>
+            `;
+        }
+        tbody.innerHTML = html;
+    }
+
+    estimateDividendCalendar() {
+        // Analyze payment frequency and project next 3 months
+        const dividends = this.dividends || [];
+        if (dividends.length === 0) return [];
+
+        // Group by symbol + accountType
+        const groups = {};
+        dividends.forEach(d => {
+            const key = `${d.symbol}-${d.accountType}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(d);
+        });
+
+        const projected = [];
+        const now = new Date();
+
+        for (const [key, divs] of Object.entries(groups)) {
+            if (divs.length < 2) continue;
+
+            // Sort by date and find average payment interval
+            const sorted = [...divs].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const intervals = [];
+            for (let i = 1; i < sorted.length; i++) {
+                const diff = (new Date(sorted[i].date) - new Date(sorted[i - 1].date)) / (1000 * 60 * 60 * 24);
+                intervals.push(diff);
+            }
+            const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length;
+            const avgAmount = sorted.reduce((s, d) => s + d.amount, 0) / sorted.length;
+
+            // Project next payments
+            const lastDate = new Date(sorted[sorted.length - 1].date);
+            let nextDate = new Date(lastDate);
+            nextDate.setDate(nextDate.getDate() + Math.round(avgInterval));
+
+            const threeMonths = new Date(now);
+            threeMonths.setMonth(threeMonths.getMonth() + 3);
+
+            while (nextDate <= threeMonths) {
+                if (nextDate >= now) {
+                    projected.push({
+                        symbol: divs[0].symbol,
+                        accountType: divs[0].accountType,
+                        date: nextDate.toISOString().split('T')[0],
+                        estimatedAmount: avgAmount,
+                        estimated: true
+                    });
+                }
+                nextDate = new Date(nextDate);
+                nextDate.setDate(nextDate.getDate() + Math.round(avgInterval));
+            }
+        }
+
+        return projected.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    renderDividendCalendar() {
+        const container = document.getElementById('dividend-calendar');
+        if (!container) return;
+
+        const projected = this.estimateDividendCalendar();
+        if (projected.length === 0) {
+            container.innerHTML = '<div class="empty-state">Record dividends to see projected calendar</div>';
+            return;
+        }
+
+        // Group by month
+        const months = {};
+        projected.forEach(p => {
+            const monthKey = p.date.slice(0, 7);
+            if (!months[monthKey]) months[monthKey] = [];
+            months[monthKey].push(p);
+        });
+
+        let html = '';
+        for (const [monthKey, payments] of Object.entries(months)) {
+            const monthName = new Date(monthKey + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const monthTotal = payments.reduce((s, p) => s + p.estimatedAmount, 0);
+
+            html += `
+                <div class="calendar-month">
+                    <div class="calendar-month-header">${monthName} <small style="float:right">~${this.formatCurrency(monthTotal)}</small></div>
+                    ${payments.map(p => `
+                        <div class="calendar-payment">
+                            <span class="symbol">${Sanitizer.escapeHTML(p.symbol)}</span>
+                            <span class="amount">~${this.formatCurrency(p.estimatedAmount)}</span>
+                            <span class="est-label">est. ${this.formatDate(p.date)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+    }
+
+    // ==================== WATCHLIST METHODS ==================
+
+    async handleWatchlistSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+
+        const ticker = form['watchlist-ticker'].value.toUpperCase().trim();
+        const name = form['watchlist-name'].value.trim();
+
+        // Check for duplicates
+        if (this.watchlist.some(w => w.ticker === ticker)) {
+            UIUtils.showNotification(`${ticker} is already on your watchlist`, 'warning');
+            return;
+        }
+
+        const item = {
+            id: 'watch-' + Date.now(),
+            ticker: ticker,
+            name: name,
+            sector: form['watchlist-sector'].value,
+            rating: form['watchlist-rating'].value,
+            targetBuyPrice: parseFloat(form['watchlist-target-price'].value) || null,
+            priceAlertEnabled: form['watchlist-alert-toggle'].checked,
+            currentPrice: null,
+            priceHistory: [],
+            notes: form['watchlist-notes']?.value || '',
+            alertTriggered: false,
+            createdAt: new Date().toISOString()
+        };
+
+        // Look up current price
+        const result = await this.lookupStockPrice(ticker);
+        if (result.success) {
+            item.currentPrice = result.price;
+            item.priceHistory.push({ date: new Date().toISOString().split('T')[0], price: result.price });
+            if (!item.name || item.name === ticker) item.name = result.name;
+            if (!item.sector) item.sector = result.sector;
+        }
+
+        this.watchlist.push(item);
+        this.saveData();
+        this.renderWatchlist();
+        this.checkPriceAlerts();
+        form.reset();
+
+        UIUtils.showNotification(`${ticker} added to watchlist`, 'success', 2000);
+    }
+
+    deleteWatchlistItem(id) {
+        this.watchlist = this.watchlist.filter(w => w.id !== id);
+        this.saveData();
+        this.renderWatchlist();
+        this.checkPriceAlerts();
+        UIUtils.showNotification('Removed from watchlist', 'success', 2000);
+    }
+
+    setWatchlistFilter(filter) {
+        this.watchlistFilter = filter;
+        document.querySelectorAll('#watchlist-tab .filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        this.renderWatchlist();
+    }
+
+    async refreshWatchlistPrice(id) {
+        const item = this.watchlist.find(w => w.id === id);
+        if (!item) return;
+
+        const result = await this.lookupStockPrice(item.ticker);
+        if (result.success) {
+            item.currentPrice = result.price;
+            item.priceHistory.push({ date: new Date().toISOString().split('T')[0], price: result.price });
+            item.lastUpdated = new Date().toISOString();
+            this.saveData();
+            this.renderWatchlist();
+            this.checkPriceAlerts();
+        } else {
+            UIUtils.showNotification(`Failed to fetch price for ${item.ticker}`, 'error');
+        }
+    }
+
+    async refreshWatchlistPrices() {
+        UIUtils.showNotification('Refreshing watchlist prices...', 'info', 3000);
+
+        for (const item of this.watchlist) {
+            const result = await this.lookupStockPrice(item.ticker);
+            if (result.success) {
+                item.currentPrice = result.price;
+                const today = new Date().toISOString().split('T')[0];
+                // Avoid duplicate entries for same day
+                const lastEntry = item.priceHistory[item.priceHistory.length - 1];
+                if (!lastEntry || lastEntry.date !== today) {
+                    item.priceHistory.push({ date: today, price: result.price });
+                } else {
+                    lastEntry.price = result.price;
+                }
+                item.lastUpdated = new Date().toISOString();
+            }
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+
+        this.saveData();
+        this.renderWatchlist();
+        this.checkPriceAlerts();
+        UIUtils.showNotification('Watchlist prices updated', 'success', 2000);
+    }
+
+    async lookupWatchlistStock() {
+        const tickerInput = document.getElementById('watchlist-ticker');
+        const nameInput = document.getElementById('watchlist-name');
+        if (!tickerInput?.value) {
+            UIUtils.showNotification('Enter a ticker first', 'warning');
+            return;
+        }
+
+        const result = await this.lookupStockPrice(tickerInput.value.toUpperCase().trim());
+        if (result.success) {
+            if (nameInput && (!nameInput.value || nameInput.value === tickerInput.value)) {
+                nameInput.value = result.name;
+            }
+            UIUtils.showNotification(`${tickerInput.value.toUpperCase()}: $${result.price.toFixed(2)}`, 'success', 3000);
+        } else {
+            UIUtils.showNotification(`Lookup failed: ${result.error}`, 'error');
+        }
+    }
+
+    checkPriceAlerts() {
+        const triggered = this.watchlist.filter(w => {
+            if (!w.priceAlertEnabled || !w.targetBuyPrice || !w.currentPrice) return false;
+            return w.currentPrice <= w.targetBuyPrice;
+        });
+
+        // Update stats
+        const countEl = document.getElementById('watchlist-count');
+        const alertsEl = document.getElementById('watchlist-alerts-active');
+        const triggeredEl = document.getElementById('watchlist-alerts-triggered');
+        const discountEl = document.getElementById('watchlist-avg-discount');
+
+        if (countEl) countEl.textContent = this.watchlist.length;
+        if (alertsEl) alertsEl.textContent = this.watchlist.filter(w => w.priceAlertEnabled).length;
+        if (triggeredEl) triggeredEl.textContent = triggered.length;
+
+        // Calculate average discount to target
+        const withTargets = this.watchlist.filter(w => w.targetBuyPrice && w.currentPrice);
+        if (discountEl) {
+            if (withTargets.length > 0) {
+                const avgDiscount = withTargets.reduce((sum, w) => {
+                    return sum + ((w.currentPrice - w.targetBuyPrice) / w.targetBuyPrice) * 100;
+                }, 0) / withTargets.length;
+                const sign = avgDiscount >= 0 ? '+' : '';
+                discountEl.textContent = `${sign}${avgDiscount.toFixed(1)}%`;
+            } else {
+                discountEl.textContent = '--';
+            }
+        }
+
+        // Render alert banner
+        const banner = document.getElementById('watchlist-alerts-banner');
+        const alertList = document.getElementById('triggered-alerts-list');
+        if (banner && alertList) {
+            if (triggered.length > 0) {
+                banner.style.display = 'block';
+                alertList.innerHTML = triggered.map(w => `
+                    <div class="alert-item">
+                        <div class="alert-info">
+                            <span class="alert-ticker">${Sanitizer.escapeHTML(w.ticker)} - ${Sanitizer.escapeHTML(w.name)}</span>
+                            <span class="alert-detail">Current: $${w.currentPrice.toFixed(2)} | Target: $${w.targetBuyPrice.toFixed(2)}</span>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn-alert-action btn-alert-add" onclick="planner.moveToHoldings('${w.id}')">Add to Holdings</button>
+                            <button class="btn-alert-action btn-alert-dismiss" onclick="planner.dismissAlert('${w.id}')">Dismiss</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+    }
+
+    dismissAlert(id) {
+        const item = this.watchlist.find(w => w.id === id);
+        if (item) {
+            item.priceAlertEnabled = false;
+            this.saveData();
+            this.renderWatchlist();
+            this.checkPriceAlerts();
+        }
+    }
+
+    moveToHoldings(watchlistId) {
+        const item = this.watchlist.find(w => w.id === watchlistId);
+        if (!item) return;
+
+        const accountType = prompt('Which account? (brokerage / retirement)', 'brokerage');
+        if (!accountType || !['brokerage', 'retirement'].includes(accountType)) return;
+
+        const shares = prompt('How many shares?', '1');
+        if (!shares || isNaN(parseFloat(shares))) return;
+
+        const numShares = parseFloat(shares);
+        const price = item.currentPrice || 0;
+
+        // Add as holding
+        this.holdings[accountType].push({
+            ticker: item.ticker,
+            name: item.name,
+            shares: numShares,
+            price: price,
+            sector: item.sector || 'Diversified',
+            lastUpdated: new Date().toISOString()
+        });
+
+        // Create buy transaction
+        const transaction = {
+            id: 'txn-' + Date.now(),
+            ticker: item.ticker,
+            accountType: accountType,
+            type: 'buy',
+            date: new Date().toISOString().split('T')[0],
+            shares: numShares,
+            pricePerShare: price,
+            fees: 0,
+            totalValue: numShares * price,
+            createdAt: new Date().toISOString()
+        };
+        this.transactions.push(transaction);
+
+        // Remove from watchlist
+        this.watchlist = this.watchlist.filter(w => w.id !== watchlistId);
+
+        this.saveData();
+        this.renderHoldings(accountType);
+        this.renderTransactions();
+        this.renderCostBasisCards();
+        this.renderWatchlist();
+        this.checkPriceAlerts();
+        this.populateTransactionTickerDropdown();
+
+        UIUtils.showNotification(`${item.ticker} added to ${accountType} holdings`, 'success', 3000);
+    }
+
+    renderWatchlist() {
+        const tbody = document.getElementById('watchlist-body');
+        if (!tbody) return;
+
+        let filtered = [...this.watchlist];
+
+        if (this.watchlistFilter === 'alerts') filtered = filtered.filter(w => w.priceAlertEnabled);
+        else if (this.watchlistFilter === 'triggered') filtered = filtered.filter(w =>
+            w.priceAlertEnabled && w.targetBuyPrice && w.currentPrice && w.currentPrice <= w.targetBuyPrice
+        );
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Add stocks to your watchlist to monitor prices</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(w => {
+            const discount = (w.targetBuyPrice && w.currentPrice)
+                ? ((w.currentPrice - w.targetBuyPrice) / w.targetBuyPrice) * 100
+                : null;
+            const discountClass = discount !== null ? (discount <= 0 ? 'discount-positive' : 'discount-negative') : '';
+            const isTriggered = w.priceAlertEnabled && w.targetBuyPrice && w.currentPrice && w.currentPrice <= w.targetBuyPrice;
+
+            const ratingStars = w.rating ? '★'.repeat(parseInt(w.rating)) : '-';
+            const alertBadge = !w.priceAlertEnabled ? '<span class="alert-badge off">Off</span>'
+                : isTriggered ? '<span class="alert-badge triggered">Triggered!</span>'
+                : '<span class="alert-badge active">Active</span>';
+
+            return `
+                <tr>
+                    <td><strong>${Sanitizer.escapeHTML(w.ticker)}</strong></td>
+                    <td>${Sanitizer.escapeHTML(w.name)}</td>
+                    <td>${w.currentPrice ? '$' + w.currentPrice.toFixed(2) : '--'}</td>
+                    <td>${w.targetBuyPrice ? '$' + w.targetBuyPrice.toFixed(2) : '--'}</td>
+                    <td class="${discountClass}">${discount !== null ? (discount <= 0 ? '' : '+') + discount.toFixed(1) + '%' : '--'}</td>
+                    <td class="watchlist-rating">${ratingStars}</td>
+                    <td>${alertBadge}</td>
+                    <td>
+                        <div class="watchlist-actions">
+                            <button class="btn-watchlist-action" onclick="planner.refreshWatchlistPrice('${w.id}')" title="Refresh price">↻</button>
+                            <button class="btn-watchlist-action buy" onclick="planner.moveToHoldings('${w.id}')" title="Add to holdings">Buy</button>
+                            <button class="btn-watchlist-action delete" onclick="planner.deleteWatchlistItem('${w.id}')" title="Remove">×</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // ==================== EXPENSES METHODS ==================
@@ -3167,60 +4424,6 @@ class FinancialPlanner {
                 </div>
             `;
         }).join('');
-    }
-
-    // ==================== DIVIDENDS METHODS ==================
-
-    handleDividendSubmit(e) {
-        e.preventDefault();
-
-        const form = e.target;
-        const dividend = {
-            id: 'dividend-' + Date.now(),
-            symbol: form['dividend-symbol'].value.toUpperCase(),
-            date: form['dividend-date'].value,
-            amount: parseFloat(form['dividend-amount'].value),
-            reinvested: form['dividend-drip'].checked,
-            createdAt: new Date().toISOString()
-        };
-
-        if (!this.dividends) this.dividends = [];
-        this.dividends.push(dividend);
-        this.saveData();
-        this.renderDividends();
-        form.reset();
-        this.setupDefaultDates();
-
-        UIUtils.showNotification('Dividend recorded', 'success', 2000);
-    }
-
-    deleteDividend(id) {
-        this.dividends = this.dividends.filter(d => d.id !== id);
-        this.saveData();
-        this.renderDividends();
-        UIUtils.showNotification('Dividend deleted', 'success', 2000);
-    }
-
-    renderDividends() {
-        const container = document.getElementById('dividends-list');
-        if (!container) return;
-
-        if (!this.dividends || this.dividends.length === 0) {
-            container.innerHTML = '<p style="color: #999; text-align: center;">No dividends recorded</p>';
-            return;
-        }
-
-        const sorted = [...this.dividends].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        container.innerHTML = sorted.map(dividend => `
-            <div class="dividend-item">
-                <div class="dividend-symbol">${dividend.symbol}</div>
-                <div>${this.formatDate(dividend.date)}</div>
-                <div class="dividend-amount">${this.formatCurrency(dividend.amount)}</div>
-                ${dividend.reinvested ? '<span class="drip-badge">DRIP</span>' : '<span>Received</span>'}
-                <button type="button" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="planner.deleteDividend('${dividend.id}')">Delete</button>
-            </div>
-        `).join('');
     }
 
     // ==================== RESEARCH METHODS ==================
@@ -4080,6 +5283,13 @@ class FinancialPlanner {
     }
 
     // ==================== UTILITIES ====================
+
+    setupDefaultDates() {
+        const today = new Date().toISOString().split('T')[0];
+        document.querySelectorAll('input[type="date"]').forEach(input => {
+            if (!input.value) input.value = today;
+        });
+    }
 
     formatCurrency(amount) {
         return new Intl.NumberFormat('en-US', {

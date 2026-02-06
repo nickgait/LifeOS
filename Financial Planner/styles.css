@@ -2732,3 +2732,539 @@ legend {
     border-radius: 8px;
     background: #fafafa;
 }
+
+/* ================================================
+   TRANSACTIONS TAB STYLES
+   ================================================ */
+
+/* Cost Basis Cards Grid */
+.cost-basis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.cost-basis-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cost-basis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cost-basis-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--planner-primary);
+}
+
+.cost-basis-card .ticker-badge {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--planner-primary);
+}
+
+.cost-basis-card .account-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #f0f0ff;
+    color: var(--planner-primary);
+    font-weight: 500;
+}
+
+.cost-basis-card .card-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.cost-basis-card .metric {
+    display: flex;
+    flex-direction: column;
+}
+
+.cost-basis-card .metric-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.cost-basis-card .metric-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.cost-basis-card .gain-loss {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f3f4f6;
+    text-align: center;
+}
+
+.cost-basis-card .gain-loss-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.cost-basis-card .gain-loss-value.positive {
+    color: var(--planner-success);
+}
+
+.cost-basis-card .gain-loss-value.negative {
+    color: #ef4444;
+}
+
+.cost-basis-card .gain-loss-pct {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* Transaction filter buttons */
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 6px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    background: white;
+    color: #6b7280;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--planner-primary);
+    color: var(--planner-primary);
+}
+
+.filter-btn.active {
+    background: var(--planner-primary);
+    border-color: var(--planner-primary);
+    color: white;
+}
+
+/* Transaction history table enhancements */
+.transaction-type-buy {
+    color: var(--planner-success);
+    font-weight: 600;
+}
+
+.transaction-type-sell {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.empty-state {
+    text-align: center;
+    color: #9ca3af;
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* ================================================
+   PERFORMANCE TAB STYLES
+   ================================================ */
+
+/* Chart range buttons */
+.chart-range-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: flex-end;
+}
+
+.range-btn {
+    padding: 4px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #6b7280;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.range-btn:hover {
+    border-color: var(--planner-primary);
+    color: var(--planner-primary);
+}
+
+.range-btn.active {
+    background: var(--planner-primary);
+    border-color: var(--planner-primary);
+    color: white;
+}
+
+/* Performance stats with color coding */
+.stat-card .stat-value.positive {
+    color: var(--planner-success);
+}
+
+.stat-card .stat-value.negative {
+    color: #ef4444;
+}
+
+/* Auto-fill button */
+.btn-autofill {
+    padding: 6px 14px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+    color: #0284c7;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-autofill:hover {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+}
+
+/* Snapshot history table actions */
+.btn-delete-small {
+    padding: 3px 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    color: #ef4444;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-small:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+}
+
+/* ================================================
+   DIVIDENDS TAB ENHANCEMENTS
+   ================================================ */
+
+/* Dividend calendar grid */
+.dividend-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.calendar-month {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.calendar-month-header {
+    font-weight: 700;
+    color: var(--planner-primary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--planner-primary);
+    font-size: 0.95rem;
+}
+
+.calendar-payment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.85rem;
+}
+
+.calendar-payment:last-child {
+    border-bottom: none;
+}
+
+.calendar-payment .symbol {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.calendar-payment .amount {
+    color: var(--planner-success);
+    font-weight: 500;
+}
+
+.calendar-payment .est-label {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Dividend yield table enhancements */
+#dividend-yield-table .yield-high {
+    color: var(--planner-success);
+    font-weight: 600;
+}
+
+#dividend-yield-table .yield-low {
+    color: #f59e0b;
+}
+
+/* ================================================
+   WATCHLIST TAB STYLES
+   ================================================ */
+
+/* Alerts banner */
+.alerts-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #f59e0b;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.alerts-banner h3 {
+    color: #92400e;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.alert-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.alert-item:last-child {
+    margin-bottom: 0;
+}
+
+.alert-item .alert-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.alert-item .alert-ticker {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.alert-item .alert-detail {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.alert-item .alert-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-alert-action {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-alert-add {
+    background: var(--planner-success);
+    color: white;
+}
+
+.btn-alert-add:hover {
+    background: #059669;
+}
+
+.btn-alert-dismiss {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.btn-alert-dismiss:hover {
+    background: #e5e7eb;
+}
+
+/* Watchlist table enhancements */
+#watchlist-table .discount-positive {
+    color: var(--planner-success);
+    font-weight: 600;
+}
+
+#watchlist-table .discount-negative {
+    color: #ef4444;
+}
+
+.watchlist-rating {
+    color: #f59e0b;
+    font-size: 0.9rem;
+}
+
+.alert-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.alert-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.alert-badge.triggered {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.alert-badge.off {
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+/* Watchlist action buttons */
+.watchlist-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-watchlist-action {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    border: 1px solid #d1d5db;
+    background: white;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.btn-watchlist-action:hover {
+    border-color: var(--planner-primary);
+    color: var(--planner-primary);
+}
+
+.btn-watchlist-action.delete:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+.btn-watchlist-action.buy {
+    border-color: var(--planner-success);
+    color: var(--planner-success);
+}
+
+.btn-watchlist-action.buy:hover {
+    background: #d1fae5;
+}
+
+/* Alert toggle group */
+.alert-toggle-group {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-top: 4px;
+}
+
+/* ================================================
+   SHARED RESPONSIVE OVERRIDES FOR NEW FEATURES
+   ================================================ */
+
+@media (max-width: 768px) {
+    .cost-basis-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dividend-calendar-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-range-buttons {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .filter-buttons {
+        flex-wrap: wrap;
+    }
+
+    .alert-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .alert-item .alert-actions {
+        width: 100%;
+    }
+
+    .alert-item .alert-actions .btn-alert-action {
+        flex: 1;
+        text-align: center;
+    }
+
+    .watchlist-actions {
+        flex-wrap: wrap;
+    }
+
+    #watchlist-table,
+    #transaction-history-table,
+    #snapshot-history-table,
+    #dividend-yield-table {
+        font-size: 0.8rem;
+    }
+
+    #watchlist-table th,
+    #watchlist-table td,
+    #transaction-history-table th,
+    #transaction-history-table td,
+    #snapshot-history-table th,
+    #snapshot-history-table td {
+        padding: 0.5rem 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cost-basis-card .card-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .range-btn {
+        padding: 3px 10px;
+        font-size: 0.75rem;
+    }
+
+    .filter-btn {
+        padding: 4px 12px;
+        font-size: 0.8rem;
+    }
+}

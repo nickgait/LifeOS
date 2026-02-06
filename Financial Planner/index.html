@@ -40,9 +40,12 @@
             <button class="nav-tab" onclick="switchTab('islamic-options')">Fixed Income Options</button>
             <button class="nav-tab" onclick="switchTab('rebalance')">Rebalancing Plan</button>
             <button class="nav-tab" onclick="switchTab('sensitivity')">Sensitivity Analysis</button>
-            <button class="nav-tab" onclick="switchTab('expenses')">💰 Expenses</button>
-            <button class="nav-tab" onclick="switchTab('dividends')">💵 Dividends</button>
-            <button class="nav-tab" onclick="switchTab('research')">🔍 Research</button>
+            <button class="nav-tab" onclick="switchTab('transactions')">Transactions</button>
+            <button class="nav-tab" onclick="switchTab('performance')">Performance</button>
+            <button class="nav-tab" onclick="switchTab('expenses')">Expenses</button>
+            <button class="nav-tab" onclick="switchTab('dividends')">Dividends</button>
+            <button class="nav-tab" onclick="switchTab('watchlist')">Watchlist</button>
+            <button class="nav-tab" onclick="switchTab('research')">Research</button>
         </nav>
 
         <main class="app-content">
@@ -1438,6 +1441,221 @@
                 </div>
             </div>
 
+            <!-- ============ TRANSACTIONS TAB ============ -->
+            <div id="transactions-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Transaction History & Cost Basis</h2>
+
+                    <!-- Transaction Entry Form -->
+                    <div class="calculator-form">
+                        <h3>Record Transaction</h3>
+                        <form id="transaction-form" onsubmit="planner.handleTransactionSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="txn-account">Account</label>
+                                    <select id="txn-account" name="txn-account" required>
+                                        <option value="brokerage">Brokerage</option>
+                                        <option value="retirement">401(k)/IRA</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-ticker">Ticker</label>
+                                    <select id="txn-ticker" name="txn-ticker" required>
+                                        <option value="">Select or type ticker</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-ticker-custom">Or Enter Ticker</label>
+                                    <input type="text" id="txn-ticker-custom" name="txn-ticker-custom" placeholder="AAPL" style="text-transform: uppercase;">
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-type">Type</label>
+                                    <select id="txn-type" name="txn-type" required>
+                                        <option value="buy">Buy</option>
+                                        <option value="sell">Sell</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="txn-date">Date</label>
+                                    <input type="date" id="txn-date" name="txn-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-shares">Shares</label>
+                                    <input type="number" id="txn-shares" name="txn-shares" min="0.0001" step="0.0001" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-price">Price Per Share ($)</label>
+                                    <input type="number" id="txn-price" name="txn-price" min="0.01" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txn-fees">Fees ($)</label>
+                                    <input type="number" id="txn-fees" name="txn-fees" min="0" step="0.01" value="0">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Record Transaction</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Cost Basis Summary -->
+                    <div class="analysis-section">
+                        <h3>Cost Basis Summary</h3>
+                        <p class="section-note">FIFO (First In, First Out) cost basis per holding. Shows unrealized gain/loss based on current prices.</p>
+                        <div id="cost-basis-cards" class="cost-basis-grid">
+                            <p style="color: #999; text-align: center;">Record transactions to see cost basis analysis</p>
+                        </div>
+                    </div>
+
+                    <!-- Transaction History -->
+                    <div class="analysis-section">
+                        <h3>Transaction History</h3>
+                        <div class="txn-filters">
+                            <button class="filter-btn active" onclick="planner.setTransactionFilter('all')">All</button>
+                            <button class="filter-btn" onclick="planner.setTransactionFilter('buy')">Buys</button>
+                            <button class="filter-btn" onclick="planner.setTransactionFilter('sell')">Sells</button>
+                            <button class="filter-btn" onclick="planner.setTransactionFilter('brokerage')">Brokerage</button>
+                            <button class="filter-btn" onclick="planner.setTransactionFilter('retirement')">401(k)</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="projection-table" id="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Account</th>
+                                        <th>Ticker</th>
+                                        <th>Type</th>
+                                        <th>Shares</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                        <th>Fees</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="transactions-empty" style="display: none;">
+                            <p style="color: #999; text-align: center; padding: 2rem;">No transactions recorded yet. Use the form above to record your first transaction.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ PERFORMANCE TAB ============ -->
+            <div id="performance-tab" class="tab-content">
+                <div class="planner-content">
+                    <h2>Portfolio Performance</h2>
+
+                    <!-- Performance Stats -->
+                    <div class="stats-grid" id="performance-stats">
+                        <div class="stat-card accent">
+                            <div class="stat-label">Total Return</div>
+                            <div class="stat-value" id="perf-total-return">--%</div>
+                            <div class="stat-subtitle">Since first snapshot</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">YTD Return</div>
+                            <div class="stat-value" id="perf-ytd">--%</div>
+                            <div class="stat-subtitle">Year to date</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">MTD Return</div>
+                            <div class="stat-value" id="perf-mtd">--%</div>
+                            <div class="stat-subtitle">Month to date</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Best Day</div>
+                            <div class="stat-value" id="perf-best-day">--</div>
+                            <div class="stat-subtitle" id="perf-best-day-date">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Worst Day</div>
+                            <div class="stat-value" id="perf-worst-day">--</div>
+                            <div class="stat-subtitle" id="perf-worst-day-date">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Value Chart -->
+                    <div class="chart-wrapper full-width">
+                        <h3>Portfolio Value Over Time</h3>
+                        <div class="chart-range-buttons">
+                            <button class="range-btn active" onclick="planner.drawPortfolioValueChart('YTD')">YTD</button>
+                            <button class="range-btn" onclick="planner.drawPortfolioValueChart('1Y')">1Y</button>
+                            <button class="range-btn" onclick="planner.drawPortfolioValueChart('3Y')">3Y</button>
+                            <button class="range-btn" onclick="planner.drawPortfolioValueChart('ALL')">All</button>
+                        </div>
+                        <canvas id="portfolioValueChart"></canvas>
+                    </div>
+
+                    <!-- Account Comparison Chart -->
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3>Brokerage vs 401(k)</h3>
+                            <canvas id="accountComparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Snapshot Management -->
+                    <div class="calculator-form">
+                        <h3>Record Portfolio Snapshot</h3>
+                        <p class="section-note">Snapshots are auto-created when you refresh prices. You can also record manual snapshots here.</p>
+                        <form id="snapshot-form" onsubmit="planner.handleSnapshotSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="snap-date">Date</label>
+                                    <input type="date" id="snap-date" name="snap-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="snap-brokerage">Brokerage Value ($)</label>
+                                    <input type="number" id="snap-brokerage" name="snap-brokerage" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="snap-retirement">401(k) Value ($)</label>
+                                    <input type="number" id="snap-retirement" name="snap-retirement" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="snap-cash">Cash ($)</label>
+                                    <input type="number" id="snap-cash" name="snap-cash" min="0" step="0.01" value="0">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Record Snapshot</button>
+                                <button type="button" class="btn-secondary" onclick="planner.autoFillSnapshot()">Use Current Values</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Snapshot History -->
+                    <div class="analysis-section">
+                        <h3>Snapshot History</h3>
+                        <div class="table-wrapper">
+                            <table class="projection-table" id="snapshots-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Brokerage</th>
+                                        <th>401(k)</th>
+                                        <th>Cash</th>
+                                        <th>Total</th>
+                                        <th>Change</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="snapshots-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="snapshots-empty" style="display: none;">
+                            <p style="color: #999; text-align: center; padding: 2rem;">No snapshots recorded yet. Refresh prices or record a manual snapshot above.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ============ EXPENSES TAB ============ -->
             <div id="expenses-tab" class="tab-content">
                 <div class="finance-content">
@@ -1553,27 +1771,57 @@
                 <div class="finance-content">
                     <h2>Dividend Tracking</h2>
 
-                    <!-- Dividend Summary -->
+                    <!-- Enhanced Dividend Summary -->
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-label">Total Dividends</div>
+                            <div class="stat-label">LTM Dividends</div>
                             <div class="stat-value" id="dividends-total">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">YTD Dividends</div>
+                            <div class="stat-value" id="dividends-ytd">$0.00</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">This Month</div>
                             <div class="stat-value" id="dividends-month">$0.00</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Annual Income</div>
+                            <div class="stat-label">Annual Income (Est.)</div>
                             <div class="stat-value" id="dividends-annual">$0.00</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Portfolio Yield</div>
                             <div class="stat-value" id="portfolio-yield">0.00%</div>
                         </div>
+                        <div class="stat-card">
+                            <div class="stat-label">YoY Growth</div>
+                            <div class="stat-value" id="dividend-growth">--</div>
+                        </div>
                     </div>
 
-                    <!-- Add Dividend Form -->
+                    <!-- Yield by Holding -->
+                    <div class="form-section">
+                        <h3>Yield by Holding</h3>
+                        <div class="table-responsive">
+                            <table class="projection-table" id="dividend-yield-table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Account</th>
+                                        <th>LTM Dividends</th>
+                                        <th>Holding Value</th>
+                                        <th>Yield</th>
+                                        <th>Projected Annual</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dividend-yield-body">
+                                    <tr><td colspan="6" class="empty-state">Record dividends to see yield analysis</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Add Dividend Form -->
                     <div class="form-section">
                         <h3>Record Dividend Payment</h3>
                         <form id="dividend-form" onsubmit="planner.handleDividendSubmit(event)">
@@ -1583,12 +1831,29 @@
                                     <input type="text" id="dividend-symbol" name="dividend-symbol" placeholder="AAPL" required>
                                 </div>
                                 <div class="form-group">
+                                    <label for="dividend-account">Account</label>
+                                    <select id="dividend-account" name="dividend-account" required>
+                                        <option value="brokerage">Brokerage</option>
+                                        <option value="retirement">Retirement (401k/IRA)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label for="dividend-date">Payment Date</label>
                                     <input type="date" id="dividend-date" name="dividend-date" required>
                                 </div>
+                            </div>
+                            <div class="form-row">
                                 <div class="form-group">
                                     <label for="dividend-amount">Amount Paid ($)</label>
                                     <input type="number" id="dividend-amount" name="dividend-amount" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-shares-owned">Shares Owned</label>
+                                    <input type="number" id="dividend-shares-owned" name="dividend-shares-owned" min="0" step="0.0001" placeholder="Auto-filled from holdings">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dividend-tax">Tax Withheld ($)</label>
+                                    <input type="number" id="dividend-tax" name="dividend-tax" min="0" step="0.01" value="0">
                                 </div>
                             </div>
                             <div class="form-row">
@@ -1598,11 +1863,24 @@
                                         <span>Reinvested (DRIP)</span>
                                     </label>
                                 </div>
+                                <div class="form-group">
+                                    <label for="dividend-notes">Notes</label>
+                                    <input type="text" id="dividend-notes" name="dividend-notes" placeholder="Optional notes" maxlength="200">
+                                </div>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="btn btn-primary">Record Dividend</button>
                             </div>
                         </form>
+                    </div>
+
+                    <!-- Dividend Calendar -->
+                    <div class="form-section">
+                        <h3>Upcoming Dividend Calendar</h3>
+                        <p class="section-note">Estimated based on past payment patterns</p>
+                        <div id="dividend-calendar" class="dividend-calendar-grid">
+                            <div class="empty-state">Record dividends to see projected calendar</div>
+                        </div>
                     </div>
 
                     <!-- Dividend History -->
@@ -1617,6 +1895,143 @@
                     <div class="chart-wrapper">
                         <h3>Monthly Dividend Income</h3>
                         <canvas id="dividendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ WATCHLIST TAB ============ -->
+            <div id="watchlist-tab" class="tab-content">
+                <div class="finance-content">
+                    <h2>Stock Watchlist</h2>
+
+                    <!-- Watchlist Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Watching</div>
+                            <div class="stat-value" id="watchlist-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Active Alerts</div>
+                            <div class="stat-value" id="watchlist-alerts-active">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Triggered</div>
+                            <div class="stat-value" id="watchlist-alerts-triggered">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Avg Target Discount</div>
+                            <div class="stat-value" id="watchlist-avg-discount">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Triggered Alerts Banner -->
+                    <div id="watchlist-alerts-banner" class="alerts-banner" style="display: none;">
+                        <h3>Price Alerts Triggered</h3>
+                        <div id="triggered-alerts-list"></div>
+                    </div>
+
+                    <!-- Add to Watchlist Form -->
+                    <div class="form-section">
+                        <h3>Add to Watchlist</h3>
+                        <form id="watchlist-form" onsubmit="planner.handleWatchlistSubmit(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="watchlist-ticker">Ticker Symbol</label>
+                                    <input type="text" id="watchlist-ticker" name="watchlist-ticker" placeholder="AAPL" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="watchlist-name">Company Name</label>
+                                    <input type="text" id="watchlist-name" name="watchlist-name" placeholder="Apple Inc." required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="watchlist-sector">Sector</label>
+                                    <select id="watchlist-sector" name="watchlist-sector">
+                                        <option value="">-- Select --</option>
+                                        <option value="Technology">Technology</option>
+                                        <option value="Healthcare">Healthcare</option>
+                                        <option value="Financial">Financial</option>
+                                        <option value="Consumer Staples">Consumer Staples</option>
+                                        <option value="Consumer Discretionary">Consumer Discretionary</option>
+                                        <option value="Energy">Energy</option>
+                                        <option value="Industrial">Industrial</option>
+                                        <option value="Materials">Materials</option>
+                                        <option value="Utilities">Utilities</option>
+                                        <option value="Real Estate">Real Estate</option>
+                                        <option value="Communication">Communication</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="watchlist-rating">Rating</label>
+                                    <select id="watchlist-rating" name="watchlist-rating">
+                                        <option value="">No Rating</option>
+                                        <option value="5">Strong Buy</option>
+                                        <option value="4">Buy</option>
+                                        <option value="3">Hold</option>
+                                        <option value="2">Underperform</option>
+                                        <option value="1">Sell</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="watchlist-target-price">Target Buy Price ($)</label>
+                                    <input type="number" id="watchlist-target-price" name="watchlist-target-price" min="0.01" step="0.01" placeholder="Optional">
+                                </div>
+                                <div class="form-group">
+                                    <label for="watchlist-alert-toggle">Price Alert</label>
+                                    <div class="alert-toggle-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="watchlist-alert-toggle" name="watchlist-alert-toggle">
+                                            <span>Enable alert when price hits target</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label for="watchlist-notes">Notes</label>
+                                    <textarea id="watchlist-notes" name="watchlist-notes" rows="2" placeholder="Why are you watching this stock?" maxlength="500"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                                <button type="button" class="btn btn-secondary" onclick="planner.lookupWatchlistStock()">Lookup Price</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Watchlist Filters -->
+                    <div class="form-section">
+                        <h3>Your Watchlist</h3>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" onclick="planner.setWatchlistFilter('all')">All</button>
+                            <button class="filter-btn" onclick="planner.setWatchlistFilter('alerts')">With Alerts</button>
+                            <button class="filter-btn" onclick="planner.setWatchlistFilter('triggered')">Triggered</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="projection-table" id="watchlist-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ticker</th>
+                                        <th>Name</th>
+                                        <th>Current Price</th>
+                                        <th>Target</th>
+                                        <th>Discount</th>
+                                        <th>Rating</th>
+                                        <th>Alert</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="watchlist-body">
+                                    <tr><td colspan="8" class="empty-state">Add stocks to your watchlist to monitor prices</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Refresh All Watchlist Prices -->
+                    <div class="form-actions" style="margin-top: 10px;">
+                        <button class="btn btn-secondary" onclick="planner.refreshWatchlistPrices()">Refresh All Prices</button>
                     </div>
                 </div>
             </div>
