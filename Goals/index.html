@@ -39,8 +39,13 @@
 
             <div class="goals-content">
                 <div class="goals-card">
-                    <h2>📋 Active Goals</h2>
+                    <h2>📋 Next Actionable Goals</h2>
                     <div id="dashboard-goals"></div>
+                </div>
+
+                <div class="goals-card">
+                    <h2>🚫 Blocked Goals</h2>
+                    <div id="blocked-goals"></div>
                 </div>
 
                 <div class="goals-card">
@@ -82,6 +87,14 @@
                             <input type="date" id="goal-target-date" data-default-days="90" required>
                         </div>
 
+                        <div class="form-group">
+                            <label>Dependencies (Optional)</label>
+                            <select id="goal-dependencies" multiple>
+                                <option value="">Select goals this depends on...</option>
+                            </select>
+                            <small>This goal will be blocked until selected dependencies are completed</small>
+                        </div>
+
                         <button type="submit" class="goals-btn">Create Goal</button>
                     </form>
                 </div>
@@ -112,6 +125,7 @@
     <script src="../shared/encrypted-storage.js"></script>
     <script src="../shared/theme-manager.js"></script>
     <script src="../shared/data-manager.js"></script>
+    <script src="../shared/export-utils.js"></script>
     <script src="../shared/base-app.js"></script>
     <script src="../shared/ui-utils.js"></script>
     <script src="../shared/form-utils.js"></script>

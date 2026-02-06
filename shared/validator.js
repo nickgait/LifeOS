@@ -342,10 +342,11 @@ Validator.expenseSchema = Validator.schema({
 });
 
 Validator.activitySchema = Validator.schema({
-  type: Validator.enum(['pushups', 'planks', 'crunches', 'bike', 'jog', 'walk', 'weights', 'other']),
+  type: Validator.string({ min: 1, max: 50 }),  // Changed from enum to string to support custom types
   amount: Validator.number({ min: 0.01, positive: true }),
   date: Validator.date(),
-  notes: Validator.string({ max: 1000, required: false })
+  notes: Validator.string({ max: 1000, required: false }),
+  unit: Validator.string({ max: 20, required: false })  // Added unit field
 });
 
 Validator.journalSchema = Validator.schema({
@@ -374,6 +375,13 @@ Validator.holdingSchema = Validator.schema({
     'Utilities', 'Real Estate', 'Communication', 'International',
     'Fixed Income', 'Diversified'
   ], { required: false })
+});
+
+// Custom activity type schema
+Validator.customActivitySchema = Validator.schema({
+  name: Validator.string({ min: 2, max: 50 }),
+  unit: Validator.string({ min: 1, max: 20 }),
+  category: Validator.enum(['strength', 'cardio', 'flexibility', 'sports', 'other'], { required: false })
 });
 
 // Make available globally

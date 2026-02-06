@@ -347,3 +347,117 @@
 .tab-content.active {
   display: block;
 }
+
+/* Activity Type Styles */
+.activity-type-item {
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border-left: 4px solid #667eea;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.activity-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.activity-type-badge.strength {
+  background: #ef4444;
+  color: white;
+}
+
+.activity-type-badge.cardio {
+  background: #3b82f6;
+  color: white;
+}
+
+.activity-type-badge.flexibility {
+  background: #8b5cf6;
+  color: white;
+}
+
+.activity-type-badge.sports {
+  background: #10b981;
+  color: white;
+}
+
+.activity-type-badge.other {
+  background: #6b7280;
+  color: white;
+}
+
+/* Goal edit mode styles */
+.fitness-goal-item.editing {
+  border: 2px solid #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Status badges */
+.status-active {
+  background: #10b981;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-completed {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-paused {
+  background: #f59e0b;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Export modal styles */
+.export-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.export-modal {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.export-modal h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.export-modal-buttons {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+  margin-top: 20px;
+}

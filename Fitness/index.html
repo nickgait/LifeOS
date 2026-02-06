@@ -18,6 +18,7 @@
                 <button class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</button>
                 <button class="nav-tab" onclick="switchTab('goals')">Goals</button>
                 <button class="nav-tab" onclick="switchTab('log')">Log Activity</button>
+                <button class="nav-tab" onclick="switchTab('types')">Activity Types</button>
                 <button class="nav-tab" onclick="switchTab('badges')">Badges</button>
             </div>
         </div>
@@ -92,7 +93,19 @@
                             <input type="date" id="goal-date" data-default-days="30" required>
                         </div>
 
-                        <button type="submit" class="fitness-btn">Create Goal</button>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="goal-status">
+                                <option value="active">Active</option>
+                                <option value="paused">Paused</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" class="fitness-btn">Create Goal</button>
+                            <button type="button" id="goal-cancel-edit" class="fitness-btn" style="background: #6b7280; display: none;">Cancel</button>
+                        </div>
                     </form>
                 </div>
 
@@ -149,6 +162,44 @@
             </div>
         </div>
 
+        <!-- Activity Types Tab -->
+        <div id="types-tab" class="tab-content">
+            <div class="fitness-content">
+                <div class="fitness-card">
+                    <h2>➕ Create Custom Activity Type</h2>
+                    <form id="custom-activity-form">
+                        <div class="form-group">
+                            <label>Activity Name</label>
+                            <input type="text" id="custom-activity-name" placeholder="e.g., Yoga" required maxlength="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Unit of Measurement</label>
+                            <input type="text" id="custom-activity-unit" placeholder="e.g., minutes, reps, miles" required maxlength="20">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="custom-activity-category">
+                                <option value="strength">Strength</option>
+                                <option value="cardio">Cardio</option>
+                                <option value="flexibility">Flexibility</option>
+                                <option value="sports">Sports</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="fitness-btn">Create Activity Type</button>
+                    </form>
+                </div>
+
+                <div class="fitness-card">
+                    <h2>🏋️ Your Custom Activity Types</h2>
+                    <div id="activity-types-list"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Badges Tab -->
         <div id="badges-tab" class="tab-content">
             <div class="fitness-card full-width">
@@ -164,6 +215,7 @@
     <script src="../shared/encrypted-storage.js"></script>
     <script src="../shared/theme-manager.js"></script>
     <script src="../shared/data-manager.js"></script>
+    <script src="../shared/export-utils.js"></script>
     <script src="../shared/base-app.js"></script>
     <script src="../shared/ui-utils.js"></script>
     <script src="../shared/form-utils.js"></script>

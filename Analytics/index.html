@@ -59,6 +59,9 @@
                     <div id="fitness-analytics" class="analytics-grid">
                         <!-- Populated by JavaScript -->
                     </div>
+                    <div class="chart-container">
+                        <canvas id="fitness-activity-chart"></canvas>
+                    </div>
                 </section>
 
                 <!-- Goals Analytics -->
@@ -66,6 +69,9 @@
                     <h2>🎯 Goals Analysis</h2>
                     <div id="goals-analytics" class="analytics-grid">
                         <!-- Populated by JavaScript -->
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="goals-category-chart"></canvas>
                     </div>
                 </section>
 
@@ -75,6 +81,9 @@
                     <div id="journal-analytics" class="analytics-grid">
                         <!-- Populated by JavaScript -->
                     </div>
+                    <div class="chart-container">
+                        <canvas id="journal-mood-chart"></canvas>
+                    </div>
                 </section>
 
                 <!-- Finance Analytics -->
@@ -82,6 +91,9 @@
                     <h2>💰 Financial Analysis</h2>
                     <div id="finance-analytics" class="analytics-grid">
                         <!-- Populated by JavaScript -->
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="finance-spending-chart"></canvas>
                     </div>
                 </section>
 
@@ -105,6 +117,9 @@
                     <div id="trends-analytics" class="analytics-grid">
                         <!-- Populated by JavaScript -->
                     </div>
+                    <div class="chart-container">
+                        <canvas id="trends-chart"></canvas>
+                    </div>
                 </section>
             </div>
 
@@ -123,8 +138,10 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../shared/storage-utils.js"></script>
     <script src="../shared/data-manager.js"></script>
+    <script src="../shared/export-utils.js"></script>
     <script src="../shared/analytics.js"></script>
     <script src="../shared/theme-manager.js"></script>
     <script src="script.js"></script>

@@ -16,6 +16,8 @@ class FitnessTracker extends BaseApp {
   setupEventListeners() {
     const goalForm = document.getElementById('goal-form');
     const activityForm = document.getElementById('activity-form');
+    const cancelEditBtn = document.getElementById('goal-cancel-edit');
+    const customActivityForm = document.getElementById('custom-activity-form');
 
     if (goalForm) {
       goalForm.addEventListener('submit', (e) => this.handleGoalSubmit(e));
@@ -24,31 +26,61 @@ class FitnessTracker extends BaseApp {
     if (activityForm) {
       activityForm.addEventListener('submit', (e) => this.handleActivitySubmit(e));
     }
+
+    if (cancelEditBtn) {
+      cancelEditBtn.addEventListener('click', () => this.clearGoalForm());
+    }
+
+    if (customActivityForm) {
+      customActivityForm.addEventListener('submit', (e) => this.handleCustomActivitySubmit(e));
+    }
   }
 
   handleGoalSubmit(e) {
     e.preventDefault();
 
-    const goal = this.createItem({
+    const goalData = {
       name: document.getElementById('goal-name').value,
       activity: document.getElementById('goal-activity').value,
       target: parseFloat(document.getElementById('goal-target').value),
-      current: 0,
-      targetDate: document.getElementById('goal-date').value,
-      createdDate: new Date().toISOString().split('T')[0],
-      status: 'active'
-    });
+      targetDate: document.getElementById('goal-date').value
+    };
 
-    this.goals.push(goal);
-    this.save();
+    const statusField = document.getElementById('goal-status');
+    if (statusField) {
+      goalData.status = statusField.value;
+    }
 
-    this.checkBadge('first-goal');
+    // Check if editing
+    if (this.editingGoalId) {
+      // Update existing goal
+      const success = this.updateGoal(this.editingGoalId, goalData);
+      if (success) {
+        alert('Goal updated successfully!');
+        this.clearGoalForm();
+        this.renderGoals();
+        this.updateDashboard();
+      }
+    } else {
+      // Create new goal
+      const goal = this.createItem({
+        ...goalData,
+        current: 0,
+        createdDate: new Date().toISOString().split('T')[0],
+        status: goalData.status || 'active'
+      });
 
-    e.target.reset();
-    this.setupDefaultDates();
-    alert('Goal created successfully!');
-    this.renderGoals();
-    this.updateDashboard();
+      this.goals.push(goal);
+      this.save();
+
+      this.checkBadge('first-goal');
+
+      alert('Goal created successfully!');
+      e.target.reset();
+      this.setupDefaultDates();
+      this.renderGoals();
+      this.updateDashboard();
+    }
   }
 
   handleActivitySubmit(e) {
@@ -174,29 +206,262 @@ class FitnessTracker extends BaseApp {
   }
 
   getActivityLabel(type) {
-    const labels = {
-      'pushups': 'Push-ups',
-      'planks': 'Planks',
-      'crunches': 'Crunches',
-      'bike': 'Stationary Bike',
-      'jog': 'Jogging',
-      'walk': 'Walking',
-      'weights': 'Weight Lifting'
-    };
-    return labels[type] || type;
+    const allTypes = this.getAllActivityTypes();
+    const found = allTypes.find(t => t.id === type);
+    return found ? found.name : type;
   }
 
   getActivityUnit(type) {
-    const units = {
-      'pushups': 'reps',
-      'planks': 'seconds',
-      'crunches': 'reps',
-      'bike': 'minutes',
-      'jog': 'miles',
-      'walk': 'miles',
-      'weights': 'minutes'
+    const allTypes = this.getAllActivityTypes();
+    const found = allTypes.find(t => t.id === type);
+    return found ? found.unit : '';
+  }
+
+  // ==================== CUSTOM ACTIVITY TYPES ====================
+
+  editingGoalId = null;
+
+  getCustomActivities() {
+    return StorageManager.get('fitness-custom-activities') || [];
+  }
+
+  getDefaultActivityTypes() {
+    return [
+      { id: 'pushups', name: 'Push-ups', unit: 'reps', category: 'strength', isDefault: true },
+      { id: 'planks', name: 'Planks', unit: 'seconds', category: 'strength', isDefault: true },
+      { id: 'crunches', name: 'Crunches', unit: 'reps', category: 'strength', isDefault: true },
+      { id: 'bike', name: 'Stationary Bike', unit: 'minutes', category: 'cardio', isDefault: true },
+      { id: 'jog', name: 'Jogging', unit: 'miles', category: 'cardio', isDefault: true },
+      { id: 'walk', name: 'Walking', unit: 'miles', category: 'cardio', isDefault: true },
+      { id: 'weights', name: 'Weight Lifting', unit: 'minutes', category: 'strength', isDefault: true }
+    ];
+  }
+
+  getAllActivityTypes() {
+    const defaults = this.getDefaultActivityTypes();
+    const custom = this.getCustomActivities().filter(a => a.active !== false);
+    return [...defaults, ...custom];
+  }
+
+  addCustomActivity(activity) {
+    // Validate using schema
+    const validation = Validator.customActivitySchema.safeParse(activity);
+    if (!validation.success) {
+      const errorMessages = validation.errors.map(err => err.message).join('\n');
+      alert('Validation Error:\n' + errorMessages);
+      return false;
+    }
+
+    const customActivities = this.getCustomActivities();
+
+    // Check for duplicates
+    const duplicate = customActivities.find(a =>
+      a.name.toLowerCase() === validation.data.name.toLowerCase()
+    );
+    if (duplicate) {
+      alert('An activity with this name already exists');
+      return false;
+    }
+
+    // Create new activity type
+    const newActivity = this.createItem({
+      ...validation.data,
+      id: validation.data.name.toLowerCase().replace(/\s+/g, '-'),
+      active: true,
+      isDefault: false
+    });
+
+    customActivities.push(newActivity);
+    StorageManager.set('fitness-custom-activities', customActivities);
+
+    return true;
+  }
+
+  updateCustomActivity(id, updates) {
+    const customActivities = this.getCustomActivities();
+    const index = customActivities.findIndex(a => a.id === id);
+
+    if (index === -1) return false;
+
+    customActivities[index] = { ...customActivities[index], ...updates };
+    StorageManager.set('fitness-custom-activities', customActivities);
+    return true;
+  }
+
+  archiveCustomActivity(id) {
+    return this.updateCustomActivity(id, { active: false });
+  }
+
+  deleteCustomActivity(id) {
+    if (!confirm('Delete this custom activity type? This cannot be undone.')) return;
+
+    const customActivities = this.getCustomActivities();
+    const filtered = customActivities.filter(a => a.id !== id);
+    StorageManager.set('fitness-custom-activities', filtered);
+    this.renderActivityTypes();
+  }
+
+  renderActivityTypes() {
+    const typesList = document.getElementById('activity-types-list');
+    if (!typesList) return;
+
+    const customActivities = this.getCustomActivities();
+
+    if (customActivities.length === 0) {
+      typesList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🏋️</div>
+          <p>No custom activity types yet. Create your first one!</p>
+        </div>
+      `;
+      return;
+    }
+
+    typesList.innerHTML = customActivities
+      .filter(a => a.active !== false)
+      .map(activity => {
+        const safeName = Sanitizer.escapeHTML(activity.name);
+        const safeUnit = Sanitizer.escapeHTML(activity.unit);
+        const safeCategory = Sanitizer.escapeHTML(activity.category || 'other');
+
+        return `
+          <div class="activity-type-item">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; color: #333; margin-bottom: 3px;">
+                ${safeName}
+              </div>
+              <div style="font-size: 13px; color: #666;">
+                Unit: ${safeUnit} • Category: ${safeCategory}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="fitness-btn fitness-btn-small fitness-btn-danger"
+                      onclick="fitnessApp.deleteCustomActivity('${Sanitizer.escapeHTML(activity.id)}')">
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+  }
+
+  handleCustomActivitySubmit(e) {
+    e.preventDefault();
+
+    const activityData = {
+      name: document.getElementById('custom-activity-name').value,
+      unit: document.getElementById('custom-activity-unit').value,
+      category: document.getElementById('custom-activity-category').value
     };
-    return units[type] || '';
+
+    if (this.addCustomActivity(activityData)) {
+      e.target.reset();
+      alert('Custom activity type created successfully!');
+      this.renderActivityTypes();
+      this.updateActivityTypeSelects();
+    }
+  }
+
+  updateActivityTypeSelects() {
+    const allTypes = this.getAllActivityTypes();
+
+    // Update goal activity select
+    const goalActivitySelect = document.getElementById('goal-activity');
+    if (goalActivitySelect) {
+      const currentValue = goalActivitySelect.value;
+      goalActivitySelect.innerHTML = '<option value="">Select Activity</option>' +
+        allTypes.map(type =>
+          `<option value="${Sanitizer.escapeHTML(type.id)}">${Sanitizer.escapeHTML(type.name)}</option>`
+        ).join('');
+      goalActivitySelect.value = currentValue;
+    }
+
+    // Update activity type select
+    const activityTypeSelect = document.getElementById('activity-type');
+    if (activityTypeSelect) {
+      const currentValue = activityTypeSelect.value;
+      activityTypeSelect.innerHTML = '<option value="">Select Activity</option>' +
+        allTypes.map(type =>
+          `<option value="${Sanitizer.escapeHTML(type.id)}">${Sanitizer.escapeHTML(type.name)}</option>`
+        ).join('');
+      activityTypeSelect.value = currentValue;
+    }
+  }
+
+  // ==================== GOAL EDITING ====================
+
+  editGoal(goalId) {
+    const goal = this.goals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    this.editingGoalId = goalId;
+    this.populateGoalForm(goal);
+
+    // Switch to goals tab
+    switchTab('goals');
+
+    // Scroll to form
+    document.getElementById('goal-form').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  populateGoalForm(goal) {
+    document.getElementById('goal-name').value = goal.name;
+    document.getElementById('goal-activity').value = goal.activity;
+    document.getElementById('goal-target').value = goal.target;
+    document.getElementById('goal-date').value = goal.targetDate;
+
+    const statusField = document.getElementById('goal-status');
+    if (statusField) {
+      statusField.value = goal.status;
+    }
+
+    // Update button text
+    const submitBtn = document.querySelector('#goal-form button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = 'Update Goal';
+    }
+
+    // Show cancel button
+    const cancelBtn = document.getElementById('goal-cancel-edit');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'inline-block';
+    }
+  }
+
+  clearGoalForm() {
+    this.editingGoalId = null;
+    document.getElementById('goal-form').reset();
+    this.setupDefaultDates();
+
+    // Reset button text
+    const submitBtn = document.querySelector('#goal-form button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.textContent = 'Create Goal';
+    }
+
+    // Hide cancel button
+    const cancelBtn = document.getElementById('goal-cancel-edit');
+    if (cancelBtn) {
+      cancelBtn.style.display = 'none';
+    }
+  }
+
+  updateGoal(goalId, updates) {
+    const index = this.goals.findIndex(g => g.id === goalId);
+    if (index === -1) return false;
+
+    // Preserve important fields
+    const goal = this.goals[index];
+    this.goals[index] = {
+      ...goal,
+      ...updates,
+      id: goal.id,
+      createdDate: goal.createdDate,
+      current: goal.current  // Preserve progress
+    };
+
+    this.save();
+    return true;
   }
 
   renderGoals() {
@@ -229,8 +494,8 @@ class FitnessTracker extends BaseApp {
                   ${this.getActivityLabel(goal.activity)} • Target: ${goal.target} ${this.getActivityUnit(goal.activity)}
                 </div>
               </div>
-              <span class="status-badge ${goal.status === 'active' ? 'status-active' : 'status-completed'}">
-                ${goal.status === 'active' ? 'Active' : 'Completed'}
+              <span class="status-badge ${goal.status === 'active' ? 'status-active' : goal.status === 'completed' ? 'status-completed' : 'status-paused'}">
+                ${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
               </span>
             </div>
 
@@ -242,10 +507,13 @@ class FitnessTracker extends BaseApp {
 
             <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; color: #666;">
               <span>${goal.current} / ${goal.target} ${this.getActivityUnit(goal.activity)}</span>
-              <span>${goal.status === 'active' ? `${Math.max(daysLeft, 0)} days left` : `Completed ${Sanitizer.escapeHTML(goal.completedDate)}`}</span>
+              <span>${goal.status === 'active' ? `${Math.max(daysLeft, 0)} days left` : goal.status === 'completed' ? `Completed ${Sanitizer.escapeHTML(goal.completedDate)}` : 'Paused'}</span>
             </div>
 
-            <button class="fitness-btn fitness-btn-small fitness-btn-danger" style="margin-top: 10px;" onclick="fitnessApp.deleteGoal(${goal.id})">Delete</button>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+              <button class="fitness-btn fitness-btn-small" style="background: #3b82f6;" onclick="fitnessApp.editGoal(${goal.id})">Edit</button>
+              <button class="fitness-btn fitness-btn-small fitness-btn-danger" onclick="fitnessApp.deleteGoal(${goal.id})">Delete</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -406,6 +674,8 @@ class FitnessTracker extends BaseApp {
     this.activities = StorageManager.get('fitness-activities') || [];
     this.badges = StorageManager.get('fitness-badges') || DataManager.getDefaultFitnessBadges();
     this.updateDashboard();
+    this.updateActivityTypeSelects();
+    this.renderActivityTypes();
   }
 }
 
@@ -415,6 +685,7 @@ function switchTab(tabName) {
     'dashboard': () => fitnessApp.updateDashboard(),
     'goals': () => fitnessApp.renderGoals(),
     'log': () => fitnessApp.renderActivityHistory(),
+    'types': () => fitnessApp.renderActivityTypes(),
     'badges': () => fitnessApp.renderAllBadges()
   });
 }
